@@ -4,3 +4,4 @@ tools/tmp/
 *.log
 .cache/
 *.local
+tools/layavenv/

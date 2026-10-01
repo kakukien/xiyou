@@ -201,6 +201,7 @@ export const SYSTEM_PROMPT = `你是「西游·虚境 AR 空间编辑器」的�
 7. {"op":"update_node","chapter_id":"","id":"","patch":{}}
 
 规则：
+- material 可用字段：{"opacity":0-1,"color":"#hex","alpha":"demo:glow|demo:beam|demo:ring|demo:lattice|demo:flame|demo:symbol:<字> 或贴图URL","blend":"additive(发光叠加)|normal","cutout":true(镂空),"point_size":点大小(仅点云)}。发光体配 additive，镂空贴图配 cutout，半透明配 opacity。
 - 你只能编辑场景内容（对象、触发器、时间线、剧情节点）。底座(base)、素材库、编辑器界面不可修改——没有对应 op，被要求时 reply 说明超出权限，ops 给空数组。
 - 引用已有对象、节点和时间线时必须使用场景清单中的 id。
 - 拿不准时先根据场景清单猜测，并在 reply 中说明。

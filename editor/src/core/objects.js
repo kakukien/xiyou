@@ -16,22 +16,120 @@ function materialValue(material, key, fallback) {
   return material && material[key] !== undefined ? material[key] : fallback;
 }
 
-function createQuad(objDef, assets) {
+/* ===== 程序化透明/特效贴图 demo:<kind> ===== */
+function demoTexture(spec) {
+  const kind = String(spec || '').replace(/^demo:/, '') || 'glow';
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const c = canvas.getContext('2d');
+  c.clearRect(0, 0, 256, 256);
+
+  if (kind === 'glow') {
+    const g = c.createRadialGradient(128, 128, 8, 128, 128, 128);
+    g.addColorStop(0, 'rgba(255,255,255,0.95)');
+    g.addColorStop(0.35, 'rgba(255,255,255,0.45)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = g;
+    c.fillRect(0, 0, 256, 256);
+  } else if (kind === 'beam') {
+    const v = c.createLinearGradient(0, 256, 0, 0);
+    v.addColorStop(0, 'rgba(255,255,255,0.9)');
+    v.addColorStop(0.7, 'rgba(255,255,255,0.3)');
+    v.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = v;
+    c.fillRect(0, 0, 256, 256);
+    c.globalCompositeOperation = 'destination-in';
+    const h = c.createLinearGradient(0, 0, 256, 0);
+    h.addColorStop(0, 'rgba(0,0,0,0)');
+    h.addColorStop(0.5, 'rgba(0,0,0,1)');
+    h.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = h;
+    c.fillRect(0, 0, 256, 256);
+    c.globalCompositeOperation = 'source-over';
+  } else if (kind === 'lattice') {
+    c.strokeStyle = 'rgba(255,255,255,0.9)';
+    c.lineWidth = 3;
+    for (let i = 0; i <= 256; i += 32) {
+      c.beginPath(); c.moveTo(i, 0); c.lineTo(i, 256); c.stroke();
+      c.beginPath(); c.moveTo(0, i); c.lineTo(256, i); c.stroke();
+    }
+  } else if (kind === 'ring') {
+    c.strokeStyle = 'rgba(255,255,255,0.95)';
+    c.lineWidth = 6;
+    c.beginPath(); c.arc(128, 128, 104, 0, Math.PI * 2); c.stroke();
+    c.lineWidth = 3;
+    c.beginPath(); c.arc(128, 128, 78, 0, Math.PI * 2); c.stroke();
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      c.beginPath();
+      c.moveTo(128 + Math.cos(a) * 78, 128 + Math.sin(a) * 78);
+      c.lineTo(128 + Math.cos(a) * 104, 128 + Math.sin(a) * 104);
+      c.stroke();
+    }
+  } else if (kind.startsWith('symbol')) {
+    const ch = kind.split(':')[1] || '符';
+    c.fillStyle = 'rgba(255,255,255,0.95)';
+    c.font = 'bold 180px serif';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText(ch, 128, 140);
+  } else if (kind === 'flame') {
+    for (let i = 0; i < 40; i++) {
+      const x = 128 + (Math.random() - 0.5) * 120;
+      const y = 230 - Math.random() * 200;
+      const r = 8 + Math.random() * 22;
+      const g = c.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, 'rgba(255,255,255,0.55)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      c.fillStyle = g;
+      c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  if (texture.colorSpace !== undefined) texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+function quadTextureFor(objDef, assets) {
+  const alpha = materialValue(objDef.material, 'alpha', '');
+  if (typeof alpha === 'string' && alpha.startsWith('demo:')) return demoTexture(alpha);
   const asset = assetFor(objDef, assets);
-  const texture = asset && asset.url
-    ? new THREE.TextureLoader().load(asset.url)
-    : placeholderTexture(objDef.name || 'QUAD');
+  if (asset && asset.url) return new THREE.TextureLoader().load(asset.url);
+  if (typeof alpha === 'string' && alpha) return new THREE.TextureLoader().load(alpha);
+  return placeholderTexture(objDef.name || 'QUAD');
+}
+
+function applyCommonMaterial(material, mat) {
+  const opacity = materialValue(mat, 'opacity', 1);
+  const hasAlpha = typeof mat?.alpha === 'string' && mat.alpha.length > 0;
+  material.transparent = opacity < 1 || hasAlpha || mat?.blend === 'additive';
+  material.opacity = opacity;
+  if (mat?.blend === 'additive') {
+    material.blending = THREE.AdditiveBlending;
+    material.depthWrite = false;
+  }
+  if (mat?.cutout) {
+    material.alphaTest = 0.35;
+    material.transparent = false;
+  }
+  if (mat?.color) material.color = new THREE.Color(mat.color);
+  return material;
+}
+
+function createQuad(objDef, assets) {
+  const texture = quadTextureFor(objDef, assets);
 
   if (texture.colorSpace !== undefined) {
     texture.colorSpace = THREE.SRGBColorSpace;
   }
 
-  const material = new THREE.MeshBasicMaterial({
+  const material = applyCommonMaterial(new THREE.MeshBasicMaterial({
     map: texture,
-    side: THREE.DoubleSide,
-    transparent: true,
-    opacity: materialValue(objDef.material, 'opacity', 1)
-  });
+    side: THREE.DoubleSide
+  }), objDef.material);
 
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material);
   mesh.name = objDef.name || 'Quad';
@@ -61,6 +159,8 @@ function createVideoQuad(objDef, assets) {
     texture.colorSpace = THREE.SRGBColorSpace;
     uniforms.map.value = texture;
     uniforms.texel.value.set(1 / 2048, 1 / 2048);
+  } else {
+    uniforms.map.value = demoTexture('lattice');
   }
 
   const shader = stackedAlphaShader();
@@ -95,7 +195,7 @@ function createGlb(objDef, assets) {
   const box = new THREE.Mesh(
     new THREE.BoxGeometry(1, 1, 1),
     new THREE.MeshBasicMaterial({
-      color: 0xe68a2e,
+      color: materialValue(objDef.material, 'color', 0xe68a2e),
       wireframe: true,
       transparent: true,
       opacity: 0.95
@@ -157,14 +257,21 @@ function createSplatSegment(objDef) {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
+  const segMat = objDef.material || {};
+  const segColor = segMat.color ? new THREE.Color(segMat.color) : new THREE.Color(0x7fd4c1);
+  const segOpacity = materialValue(segMat, 'opacity', 0.9);
+  const pointSize = Number(segMat.point_size) || 0.02;
+
   const points = new THREE.Points(
     geometry,
     new THREE.PointsMaterial({
-      size: 0.02,
-      color: 0x7fd4c1,
+      size: pointSize,
+      color: segColor,
       sizeAttenuation: true,
       transparent: true,
-      opacity: 0.9
+      opacity: segOpacity,
+      blending: segMat.blend === 'additive' ? THREE.AdditiveBlending : THREE.NormalBlending,
+      depthWrite: segMat.blend !== 'additive'
     })
   );
   group.add(points);
@@ -172,9 +279,9 @@ function createSplatSegment(objDef) {
   const shell = new THREE.Mesh(
     new THREE.SphereGeometry(1, 24, 16),
     new THREE.MeshBasicMaterial({
-      color: 0x7fd4c1,
+      color: segColor,
       transparent: true,
-      opacity: 0.08,
+      opacity: segOpacity * 0.09,
       wireframe: false,
       depthWrite: false,
       side: THREE.DoubleSide

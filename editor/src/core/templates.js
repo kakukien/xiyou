@@ -183,6 +183,38 @@ export function demoScene() {
     }
   });
 
+  // —— 特效演示 ——
+  const beam = newObject('quad', {
+    id: 'fx_光柱', name: '佛光柱·半透明',
+    node_id: 'n3', visible: true,
+    material: { alpha: 'demo:beam', blend: 'additive', color: '#ff9a3d', opacity: 0.85 },
+    transform: { p: [0.2, 1.6, -2.6], r: [0, 0, 0], s: [0.9, 2.6, 1] }
+  });
+  const sigil = newObject('quad', {
+    id: 'fx_符纹', name: '镂空符纹·透明贴图',
+    node_id: 'n3', visible: true,
+    material: { alpha: 'demo:symbol:符', cutout: true, color: '#ffcf6b' },
+    transform: { p: [-1.1, 1.9, -2.8], r: [0, 14, 0], s: [0.8, 0.8, 0.8] }
+  });
+  const circle = newObject('quad', {
+    id: 'fx_法阵', name: '地面法阵·叠加发光',
+    node_id: 'n3', visible: true,
+    material: { alpha: 'demo:ring', blend: 'additive', color: '#5bb6ff', opacity: 0.9 },
+    transform: { p: [0.2, 0.05, -2.6], r: [-90, 0, 0], s: [3, 3, 1] }
+  });
+  const mist = newObject('quad', {
+    id: 'fx_山雾', name: '山雾·半透粒子',
+    node_id: '', visible: true,
+    material: { alpha: 'demo:flame', blend: 'additive', color: '#9fb4d8', opacity: 0.5 },
+    transform: { p: [1.5, 0.8, -4.5], r: [0, -10, 0], s: [4, 1.6, 1] }
+  });
+  const halo = newObject('quad', {
+    id: 'fx_光晕', name: '角色光晕',
+    node_id: 'n1', visible: true,
+    material: { alpha: 'demo:glow', blend: 'additive', color: '#ffb26b', opacity: 0.7 },
+    transform: { p: [0, 1, -3.35], r: [0, 0, 0], s: [1.6, 1.6, 1] }
+  });
+
   const appear = newSequence({
     id: 'seq_出场',
     name: '出场飞入',
@@ -329,7 +361,8 @@ export function demoScene() {
     videoA, videoB,
     monkey, tang,
     lightA, lightB,
-    talisman
+    talisman,
+    beam, sigil, circle, mist, halo
   ];
   scene.sequences = [appear, reveal, dissolve, videoSeq, eventSeq];
   scene.triggers = [enterTrigger, gazeTrigger, holdTrigger];
