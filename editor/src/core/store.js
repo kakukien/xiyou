@@ -72,6 +72,7 @@ function normalizeScene(input) {
   source.base = {
     sog_url: typeof base.sog_url === 'string' ? base.sog_url : '',
     collider_url: base.collider_url ?? null,
+    env: isObject(base.env) ? base.env : {},
     transform: {
       s: Number.isFinite(baseTransform.s) ? baseTransform.s : 1,
       R: Array.isArray(baseTransform.R) ? baseTransform.R : [1, 0, 0, 0, 1, 0, 0, 0, 1],

@@ -1,13 +1,7 @@
 import { store } from './store.js'
 import { OBJECT_TYPES } from './schema.js'
 
-const OBJECT_TYPE_IDS = new Set([
-  'quad',
-  'video_quad',
-  'glb',
-  'light',
-  'splat_segment'
-])
+const OBJECT_TYPE_IDS = new Set(Object.keys(OBJECT_TYPES))
 
 const CONDITION_IDS = new Set([
   'tap',
@@ -192,13 +186,19 @@ export const SYSTEM_PROMPT = `你是「西游·虚境 AR 空间编辑器」的�
 {"reply":"给用户的中文回复（≤60字）","ops":[]}
 
 允许的 ops 及字段：
-1. {"op":"add_object","type":"quad|video_quad|glb|light|splat_segment","name":"","transform":{"p":[x,y,z],"r":[0,0,0],"s":[1,1,1]},"node_id":"","material":{},"asset":""}
+1. {"op":"add_object","type":"quad|video_quad|glb|light|splat_segment|compound","name":"","transform":{"p":[x,y,z],"r":[0,0,0],"s":[1,1,1]},"node_id":"","material":{},"asset":"","parts":[]}
 2. {"op":"update_object","id":"","patch":{}}
 3. {"op":"remove_object","id":""}
 4. {"op":"add_trigger","id":"","target":"<objectId>","when":"tap|gaze|hold|enter|seq_event|node_done","params":{},"do":[{"action":"play_seq|show|hide|highlight|card|reward|goto_node","args":{}}]}
 5. {"op":"add_sequence","id":"","name":"","duration":2,"tracks":[{"target":"<objectId>","kind":"transform|opacity","keys":[{"t":0,"v":{},"ease":"out"}]}]}
 6. {"op":"add_node","chapter_id":"","id":"","title":"","text":"≤40字","next":""}
 7. {"op":"update_node","chapter_id":"","id":"","patch":{}}
+8. {"op":"set_sky","top":"#hex","horizon":"#hex","bottom":"#hex","sun":[x,y,z],"sunColor":"#hex"} // 更换天空穹顶配色
+
+compound 组装体（实时生成任意 3D）：parts 是数组，每项 {"shape":"box|sphere|cylinder|cone|torus|icosa|octa|tetra|capsule|plane|ring","p":[x,y,z],"r":[deg,deg,deg],"s":[x,y,z],"color":"#hex","opacity":0-1,"emissive":"#hex","metalness":0-1,"roughness":0-1,"blend":"additive","flat":true,"shader":{"kind":""}}。
+例：生成莲花台 = 底部 cylinder 灰座 + 中层 6 个倾斜的 capsule 花瓣(粉色) + 顶部 sphere 莲心(金) + 环绕 ring(additive 金色光晕)。多思考物体的组成部分再动手。
+
+material.shader 动态效果（quad/compound 部件可用）：{"kind":"nebula星云|flame火焰|sigil法阵光环|holo全息|ripple涟漪","color1":"#hex","color2":"#hex","speed":1,"intensity":1.2,"blend":"additive"}
 
 规则：
 - material 可用字段：{"opacity":0-1,"color":"#hex","alpha":"demo:glow|demo:beam|demo:ring|demo:lattice|demo:flame|demo:symbol:<字> 或贴图URL","blend":"additive(发光叠加)|normal","cutout":true(镂空),"point_size":点大小(仅点云)}。发光体配 additive，镂空贴图配 cutout，半透明配 opacity。
@@ -222,7 +222,8 @@ function validateAddObject(op) {
     transform: op.transform,
     node_id: typeof op.node_id === 'string' ? op.node_id : '',
     material: op.material && typeof op.material === 'object' ? op.material : {},
-    asset: typeof op.asset === 'string' ? op.asset : ''
+    asset: typeof op.asset === 'string' ? op.asset : '',
+    parts: Array.isArray(op.parts) ? clone(op.parts) : undefined
   })
 
   return props
@@ -333,6 +334,17 @@ function executeOp(op) {
       }
 
       return store.updateNode(op.chapter_id, op.id, patch)
+    }
+
+    case 'set_sky': {
+      const sky = {}
+      for (const k of ['top', 'horizon', 'bottom', 'sunColor']) {
+        if (typeof op[k] === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(op[k])) sky[k] = op[k]
+      }
+      if (Array.isArray(op.sun) && op.sun.length === 3) sky.sun = op.sun.map(Number)
+      if (!Object.keys(sky).length) throw new Error('set_sky 参数无效')
+      store.setBase({ env: { sky } })
+      return store.scene.base.env
     }
 
     case 'set_base':

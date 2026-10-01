@@ -129,19 +129,25 @@ function applyCommonMaterial(material, mat) {
 }
 
 function createQuad(objDef, assets) {
-  const texture = quadTextureFor(objDef, assets);
-
-  if (texture.colorSpace !== undefined) {
-    texture.colorSpace = THREE.SRGBColorSpace;
+  let material;
+  if (objDef.material && objDef.material.shader) {
+    material = shaderMaterial(objDef.material);
+  } else {
+    const texture = quadTextureFor(objDef, assets);
+    if (texture.colorSpace !== undefined) {
+      texture.colorSpace = THREE.SRGBColorSpace;
+    }
+    material = applyCommonMaterial(new THREE.MeshBasicMaterial({
+      map: texture,
+      side: THREE.DoubleSide
+    }), objDef.material);
   }
-
-  const material = applyCommonMaterial(new THREE.MeshBasicMaterial({
-    map: texture,
-    side: THREE.DoubleSide
-  }), objDef.material);
 
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material);
   mesh.name = objDef.name || 'Quad';
+  if (material.userData && material.userData.uniforms) {
+    mesh.userData.shaderUniforms = material.userData.uniforms;
+  }
   return mesh;
 }
 
@@ -328,6 +334,165 @@ function createSplatSegment(objDef) {
   return group;
 }
 
+/* ===== 动画 shader 模板：material.shader = { kind, color1, color2, speed, intensity } ===== */
+const SHADER_FRAG_COMMON = `
+  varying vec2 vUv;
+  uniform float uTime;
+  uniform vec3 uColor1;
+  uniform vec3 uColor2;
+  uniform float uSpeed;
+  uniform float uIntensity;
+  float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }
+  float noise(vec2 p){
+    vec2 i=floor(p), f=fract(p);
+    vec2 u=f*f*(3.0-2.0*f);
+    return mix(mix(hash(i),hash(i+vec2(1.,0.)),u.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),u.x),u.y);
+  }
+  float fbm(vec2 p){ float v=0.,a=.5; for(int i=0;i<4;i++){ v+=a*noise(p); p*=2.1; a*=.5; } return v; }
+`;
+const SHADER_VERT = `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`;
+
+const SHADER_KINDS = {
+  nebula: `
+    vec2 p = vUv - 0.5; float t = uTime * uSpeed * 0.4;
+    float n = fbm(p*3.0 + vec2(t, -t*0.7));
+    float n2 = fbm(p*6.0 - vec2(t*0.5, t*0.3));
+    vec3 col = mix(uColor1, uColor2, n);
+    col += uColor2 * n2 * 0.6;
+    float edge = smoothstep(0.55, 0.15, length(p));
+    gl_FragColor = vec4(col * uIntensity, n * edge);
+  `,
+  flame: `
+    vec2 p = vUv; float t = uTime * uSpeed;
+    float n = fbm(vec2(p.x*4.0, p.y*3.0 - t*1.2));
+    float body = smoothstep(0.15, 0.75, n - p.y*0.55 + 0.25);
+    vec3 col = mix(uColor1, uColor2, p.y + n*0.3);
+    gl_FragColor = vec4(col * uIntensity, body * 0.9);
+  `,
+  sigil: `
+    vec2 p = vUv - 0.5; float t = uTime * uSpeed;
+    float r = length(p); float a = atan(p.y, p.x);
+    float ring1 = smoothstep(0.02, 0.0, abs(r - 0.32 - 0.02*sin(t*2.0)));
+    float ring2 = smoothstep(0.015, 0.0, abs(r - 0.2));
+    float rays = smoothstep(0.9, 1.0, sin(a*6.0 + t*3.0)) * smoothstep(0.3, 0.05, abs(r-0.26));
+    float core = smoothstep(0.12, 0.0, r);
+    float glow = ring1 + ring2 + rays*0.7 + core*0.8;
+    vec3 col = mix(uColor1, uColor2, r*2.0);
+    gl_FragColor = vec4(col * glow * uIntensity, glow);
+  `,
+  holo: `
+    vec2 p = vUv; float t = uTime * uSpeed;
+    float scan = 0.75 + 0.25*sin(p.y*80.0 - t*8.0);
+    float flick = 0.9 + 0.1*sin(t*23.0);
+    float border = max(step(0.97, abs(p.x*2.-1.)), step(0.95, abs(p.y*2.-1.)));
+    float body = 0.35 + 0.65*fbm(p*5.0 + t*0.2);
+    vec3 col = uColor1 * scan * flick + uColor2 * border;
+    gl_FragColor = vec4(col * uIntensity, (body*0.5 + border) * 0.8);
+  `,
+  ripple: `
+    vec2 p = vUv - 0.5; float t = uTime * uSpeed;
+    float r = length(p);
+    float wave = sin(r*30.0 - t*4.0) * 0.5 + 0.5;
+    float fade = smoothstep(0.5, 0.05, r);
+    vec3 col = mix(uColor1, uColor2, wave);
+    gl_FragColor = vec4(col * uIntensity, wave * fade);
+  `
+};
+
+function shaderMaterial(mat) {
+  const spec = mat && mat.shader ? mat.shader : {};
+  const kind = SHADER_KINDS[spec.kind] ? spec.kind : 'sigil';
+  const uniforms = {
+    uTime: { value: 0 },
+    uColor1: { value: new THREE.Color(spec.color1 || spec.color || '#ff8c3b') },
+    uColor2: { value: new THREE.Color(spec.color2 || '#5bb6ff') },
+    uSpeed: { value: Number(spec.speed) || 1 },
+    uIntensity: { value: Number(spec.intensity) || 1.2 }
+  };
+  const material = new THREE.ShaderMaterial({
+    vertexShader: SHADER_VERT,
+    fragmentShader: SHADER_FRAG_COMMON + 'void main(){' + SHADER_KINDS[kind] + '}',
+    uniforms,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: spec.blend === 'normal' ? THREE.NormalBlending : THREE.AdditiveBlending
+  });
+  material.userData = { uniforms };
+  return material;
+}
+
+/* ===== 组装体：parts 基元拼装（AI 实时生成 3D） ===== */
+const PART_SHAPES = {
+  box:      () => new THREE.BoxGeometry(1, 1, 1),
+  sphere:   () => new THREE.SphereGeometry(0.5, 32, 20),
+  cylinder: () => new THREE.CylinderGeometry(0.5, 0.5, 1, 24),
+  cone:     () => new THREE.ConeGeometry(0.5, 1, 24),
+  torus:    () => new THREE.TorusGeometry(0.5, 0.12, 12, 40),
+  icosa:    () => new THREE.IcosahedronGeometry(0.5, 0),
+  octa:     () => new THREE.OctahedronGeometry(0.5, 0),
+  tetra:    () => new THREE.TetrahedronGeometry(0.5, 0),
+  capsule:  () => new THREE.CapsuleGeometry(0.3, 0.5, 6, 16),
+  plane:    () => new THREE.PlaneGeometry(1, 1),
+  ring:     () => new THREE.RingGeometry(0.32, 0.5, 48)
+};
+
+function createCompound(objDef) {
+  const group = new THREE.Group();
+  group.name = objDef.name || 'Compound';
+  const parts = Array.isArray(objDef.parts) ? objDef.parts : [];
+
+  parts.slice(0, 64).forEach(part => {
+    if (!part || typeof part !== 'object') return;
+    const geomFn = PART_SHAPES[part.shape] || PART_SHAPES.box;
+    const useStd = !part.flat && part.blend !== 'additive' && !part.shader;
+    const matSpec = part.material || part;
+    const params = {
+      color: new THREE.Color(matSpec.color || '#e8e4dc'),
+      transparent: (matSpec.opacity ?? 1) < 1 || matSpec.blend === 'additive',
+      opacity: matSpec.opacity ?? 1,
+      side: THREE.DoubleSide
+    };
+    let material;
+    if (part.shader) {
+      material = shaderMaterial(matSpec);
+    } else if (useStd) {
+      material = new THREE.MeshStandardMaterial({
+        ...params,
+        roughness: matSpec.roughness ?? 0.7,
+        metalness: matSpec.metalness ?? 0.15,
+        emissive: new THREE.Color(matSpec.emissive || '#000000'),
+        emissiveIntensity: matSpec.emissive ? (matSpec.emissive_intensity ?? 1) : 0
+      });
+    } else {
+      material = new THREE.MeshBasicMaterial(params);
+      if (matSpec.blend === 'additive') {
+        material.blending = THREE.AdditiveBlending;
+        material.depthWrite = false;
+      }
+    }
+    const mesh = new THREE.Mesh(geomFn(), material);
+    if (material.userData && material.userData.uniforms) {
+      mesh.userData.shaderUniforms = material.userData.uniforms;
+    }
+    const p = part.p || [0, 0, 0];
+    const r = part.r || [0, 0, 0];
+    const s = part.s || [1, 1, 1];
+    mesh.position.set(p[0] || 0, p[1] || 0, p[2] || 0);
+    mesh.rotation.set((r[0] || 0) * Math.PI / 180, (r[1] || 0) * Math.PI / 180, (r[2] || 0) * Math.PI / 180);
+    mesh.scale.set(s[0] || 1, s[1] || 1, s[2] || 1);
+    group.add(mesh);
+  });
+
+  if (!parts.length) {
+    group.add(new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.5, 0),
+      new THREE.MeshStandardMaterial({ color: 0xe68a2e, roughness: 0.5, metalness: 0.3 })
+    ));
+  }
+  return group;
+}
+
 function createLight(objDef) {
   const material = objDef.material || {};
   const color = materialValue(material, 'color', 0xffe0a0);
@@ -459,6 +624,8 @@ export function createNode(objDef, assets = []) {
     node = createSplatSegment(objDef);
   } else if (type === 'light') {
     node = createLight(objDef);
+  } else if (type === 'compound') {
+    node = createCompound(objDef);
   } else {
     node = new THREE.Group();
   }

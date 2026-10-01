@@ -46,6 +46,14 @@ export const OBJECT_TYPES = {
     defaultSize: [1, 1, 1],
     canInteract: true,
     hitbox: 'none'
+  },
+  compound: {
+    id: 'compound',
+    label: '组装体',
+    icon: '⬡',
+    defaultSize: [1, 1, 1],
+    canInteract: true,
+    hitbox: 'auto'
   }
 };
 

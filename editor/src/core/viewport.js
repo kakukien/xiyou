@@ -324,13 +324,18 @@ export const viewport = {
           disposeNode(existing);
         }
 
-        const node = createNode(objDef, store.scene.meta?.assets || []);
-        node.userData.id = objDef.id;
-        this.scene.add(node);
-        this.nodes.set(objDef.id, node);
-        this.nodeSignatures.set(objDef.id, signature);
-        applyTransform(node, objDef);
-        node.visible = objDef.visible !== false;
+        try {
+          const node = createNode(objDef, store.scene.meta?.assets || []);
+          node.userData.id = objDef.id;
+          this.scene.add(node);
+          this.nodes.set(objDef.id, node);
+          this.nodeSignatures.set(objDef.id, signature);
+          applyTransform(node, objDef);
+          node.visible = objDef.visible !== false;
+        } catch (error) {
+          console.error('[viewport] 对象渲染失败', objDef.id, error);
+          this.nodeSignatures.set(objDef.id, signature);
+        }
         return;
       }
 
@@ -465,6 +470,45 @@ export const viewport = {
       log('SOG 场景底座加载接口暂未接入', 'info');
     }
 
+    // 天空穹顶：base.env.sky = {top, horizon, bottom, sun:[x,y,z], sunColor}
+    const sky = base?.env?.sky;
+    if (sky) {
+      const skyMat = new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        depthWrite: false,
+        fog: false,
+        uniforms: {
+          uTop: { value: new THREE.Color(sky.top || '#3d6db5') },
+          uHorizon: { value: new THREE.Color(sky.horizon || '#dfe8f2') },
+          uBottom: { value: new THREE.Color(sky.bottom || '#8a97a8') },
+          uSunDir: { value: new THREE.Vector3(...(sky.sun || [0.4, 0.35, -0.6])).normalize() },
+          uSunColor: { value: new THREE.Color(sky.sunColor || '#ffd9a0') }
+        },
+        vertexShader: `varying vec3 vDir; void main(){ vDir=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+        fragmentShader: `
+          varying vec3 vDir;
+          uniform vec3 uTop; uniform vec3 uHorizon; uniform vec3 uBottom;
+          uniform vec3 uSunDir; uniform vec3 uSunColor;
+          void main(){
+            float h = vDir.y;
+            vec3 col = h >= 0.0
+              ? mix(uHorizon, uTop, pow(min(h*1.6,1.0), 0.75))
+              : mix(uHorizon, uBottom, pow(min(-h*2.2,1.0), 0.8));
+            float sun = pow(max(dot(vDir, uSunDir), 0.0), 600.0);
+            float halo = pow(max(dot(vDir, uSunDir), 0.0), 18.0) * 0.35;
+            col += uSunColor * (sun*2.2 + halo);
+            gl_FragColor = vec4(col, 1.0);
+          }`
+      });
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(60, 32, 20), skyMat);
+      dome.name = 'sky-dome';
+      dome.userData.isBase = true;
+      this.baseGroup.add(dome);
+      this.scene.background = null;
+    } else if (this.scene.background === null) {
+      this.scene.background = new THREE.Color('#dfe6ef');
+    }
+
     this.scene.add(this.baseGroup);
     this.helpersVisible(store.mode !== 'play');
   },
@@ -574,5 +618,14 @@ export const viewport = {
     this._tickFlight(dt);
     this._tickFocus(dt);
     this.controls.update();
+
+    // 动画 shader 心跳：所有节点上的 shader 材质统一推进 uTime
+    this._shaderTime = (this._shaderTime || 0) + dt;
+    if (this.scene) {
+      this.scene.traverse(node => {
+        const uniforms = node.userData && node.userData.shaderUniforms;
+        if (uniforms && uniforms.uTime) uniforms.uTime.value = this._shaderTime;
+      });
+    }
   }
 };

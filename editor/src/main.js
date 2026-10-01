@@ -37,7 +37,15 @@ mountChat()
 if (presenceEl && presenceEl._connect) presenceEl._connect()
 
 // ---- react to store ----
-store.on('change', () => { viewport.sync(); store.save() })
+let lastBase = store.scene.base
+store.on('change', () => {
+  if (store.scene.base !== lastBase) {
+    lastBase = store.scene.base
+    viewport.setBase(lastBase)
+  }
+  viewport.sync()
+  store.save()
+})
 store.on('mode', () => {
   const play = store.mode === 'play'
   viewport.helpersVisible(!play)

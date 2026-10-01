@@ -44,6 +44,15 @@ export function demoScene() {
       R: [1, 0, 0, 0, 1, 0, 0, 0, 1],
       t: [0, 0, 0],
       scale_source: 'manual'
+    },
+    env: {
+      sky: {
+        top: '#2e5a9e',
+        horizon: '#f2d9b8',
+        bottom: '#6b7686',
+        sun: [0.5, 0.28, -0.7],
+        sunColor: '#ffc37a'
+      }
     }
   };
 
@@ -215,6 +224,38 @@ export function demoScene() {
     node_id: 'n1', visible: true,
     material: { alpha: 'demo:glow', blend: 'additive', color: '#ffb26b', opacity: 0.7 },
     transform: { p: [0, 1, -3.35], r: [0, 0, 0], s: [1.6, 1.6, 1] }
+  });
+
+  // —— 组装体演示：莲花台（AI 实时生成同款语法）——
+  const petals = [];
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    petals.push({
+      shape: 'capsule', color: '#f2b8c6', flat: false, roughness: 0.6,
+      p: [Math.cos(a) * 0.42, 0.62, Math.sin(a) * 0.42],
+      r: [Math.cos(a) * 62, -a * 180 / Math.PI, Math.sin(a) * -62],
+      s: [0.55, 0.5, 0.55]
+    });
+  }
+  const lotus = newObject('compound', {
+    id: 'cmp_莲花台', name: '莲花台·组装体',
+    node_id: 'n3', visible: true,
+    parts: [
+      { shape: 'cylinder', color: '#8d97a5', roughness: 0.9, p: [0, 0.12, 0], s: [1.1, 0.24, 1.1] },
+      { shape: 'cylinder', color: '#b7bec8', roughness: 0.85, p: [0, 0.34, 0], s: [0.8, 0.2, 0.8] },
+      ...petals,
+      { shape: 'sphere', color: '#ffd98a', emissive: '#c9880f', emissive_intensity: 0.8, p: [0, 0.68, 0], s: [0.34, 0.34, 0.34] },
+      { shape: 'torus', color: '#ffb03a', blend: 'additive', opacity: 0.75, flat: true, p: [0, 0.68, 0], r: [90, 0, 0], s: [1.6, 1.6, 1.6] }
+    ],
+    transform: { p: [1.2, 0, -1.4], r: [0, 0, 0], s: [1, 1, 1] }
+  });
+
+  // 动态 shader 演示：旋转法阵
+  const animSigil = newObject('quad', {
+    id: 'fx_动法阵', name: '旋转法阵·动态',
+    node_id: 'n3', visible: true,
+    material: { shader: { kind: 'sigil', color1: '#ffb03a', color2: '#5bb6ff', speed: 0.8, intensity: 1.4 } },
+    transform: { p: [1.2, 1.55, -1.4], r: [-90, 0, 0], s: [2.2, 2.2, 1] }
   });
 
   const appear = newSequence({
@@ -398,7 +439,8 @@ export function demoScene() {
     monkey, tang,
     lightA, lightB,
     talisman,
-    beam, sigil, circle, mist, halo
+    beam, sigil, circle, mist, halo,
+    lotus, animSigil
   ];
   scene.sequences = [appear, reveal, dissolve, videoSeq, eventSeq];
   scene.triggers = [enterTrigger, gazeTrigger, holdTrigger];
