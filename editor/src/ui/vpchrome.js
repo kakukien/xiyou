@@ -295,11 +295,24 @@ export function mount(wrap, viewport) {
   function updateLabels() {
     const selected = new Set(store.selected());
     const known = new Set();
+    const camPos = viewport.camera ? viewport.camera.position : null;
 
+    // 只显示最近的 10 个 + 选中项，防标签糊屏
+    const candidates = [];
     (store.scene.objects || []).forEach((obj) => {
       const node = getViewportNode(obj.id);
-      if (!node) return;
+      if (!node || obj.visible === false) return;
+      const world = new THREE.Vector3();
+      node.getWorldPosition(world);
+      const dist = camPos ? world.distanceTo(camPos) : world.length();
+      if (dist > 60) return;
+      candidates.push({ obj, node, dist });
+    });
+    candidates.sort((a, b) => a.dist - b.dist);
+    const shown = new Set(selected);
+    candidates.slice(0, 10).forEach(c => shown.add(c.obj.id));
 
+    candidates.forEach(({ obj, node, dist }) => {
       known.add(obj.id);
       let label = state.labels.get(obj.id);
       if (!label) {
@@ -310,8 +323,6 @@ export function mount(wrap, viewport) {
       }
 
       const pos = objectScreenPosition(node);
-      const world = new THREE.Vector3();
-      node.getWorldPosition(world);
       const name = obj.type === 'splat_segment'
         ? `分块 ${obj.name || obj.id}`
         : (obj.name || obj.id);
@@ -319,10 +330,11 @@ export function mount(wrap, viewport) {
       label.textContent = name;
       label.classList.toggle('sel', selected.has(obj.id));
 
-      if (!pos || world.length() > 60 || obj.visible === false) {
+      if (!pos || !shown.has(obj.id)) {
         label.style.display = 'none';
       } else {
         label.style.display = '';
+        label.style.opacity = dist > 25 ? '0.55' : '';
         label.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -100%)`;
       }
     });

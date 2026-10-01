@@ -15,9 +15,9 @@ import { collab } from './core/collab.js'
 // ---- bootstrap ----
 const params = new URLSearchParams(location.search)
 const ROOM = params.get('room') || 'demo'
-store.setStorageKey(`xiyou.scene.${ROOM}`)
+store.setStorageKey(`xiyou.scene.v2.${ROOM}`)
 if (params.has('reset')) {
-  try { localStorage.removeItem(`xiyou.scene.${ROOM}`) } catch {}
+  try { localStorage.removeItem(`xiyou.scene.v2.${ROOM}`) } catch {}
 }
 if (!store.load()) store.newScene(demoScene())
 
