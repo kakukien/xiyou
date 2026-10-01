@@ -46,13 +46,7 @@ export function demoScene() {
       scale_source: 'manual'
     },
     env: {
-      sky: {
-        top: '#2e5a9e',
-        horizon: '#f2d9b8',
-        bottom: '#6b7686',
-        sun: [0.5, 0.28, -0.7],
-        sunColor: '#ffc37a'
-      }
+      sky: { image: 'fx/sky_dusk.jpg' }
     }
   };
 
@@ -258,6 +252,28 @@ export function demoScene() {
     transform: { p: [1.2, 1.55, -1.4], r: [-90, 0, 0], s: [2.2, 2.2, 1] }
   });
 
+  // 粒子演示：萤火虫群绕着莲花台 + 光尘柱
+  const fireflies = newObject('compound', {
+    id: 'fx_萤火', name: '萤火虫群',
+    node_id: 'n3', visible: true,
+    parts: [
+      { shape: 'points', count: 120, spread: [2.4, 1.6, 2.4], size: 0.06, speed: 0.12, drift: 0.5,
+        material: { color: '#ffe28a', alpha: 'fx:mote', opacity: 0.95 } }
+    ],
+    transform: { p: [1.2, 0.4, -1.4], r: [0, 0, 0], s: [1, 1, 1] }
+  });
+  const dustColumn = newObject('compound', {
+    id: 'fx_光尘柱', name: '上升光尘',
+    node_id: 'n1', visible: true,
+    parts: [
+      { shape: 'points', count: 200, spread: [0.7, 2.6, 0.7], size: 0.035, speed: 0.25, drift: 0.1,
+        material: { color: '#ffd9a0', alpha: 'fx:mote', opacity: 0.7 } },
+      { shape: 'plane', alpha: 'fx:glow_orb', color: '#ffb03a', blend: 'additive', opacity: 0.8, flat: true,
+        p: [0, 0.06, 0], r: [-90, 0, 0], s: [1.6, 1.6, 1] }
+    ],
+    transform: { p: [0, 0, -3], r: [0, 0, 0], s: [1, 1, 1] }
+  });
+
   const appear = newSequence({
     id: 'seq_出场',
     name: '出场飞入',
@@ -440,7 +456,7 @@ export function demoScene() {
     lightA, lightB,
     talisman,
     beam, sigil, circle, mist, halo,
-    lotus, animSigil
+    lotus, animSigil, fireflies, dustColumn
   ];
   scene.sequences = [appear, reveal, dissolve, videoSeq, eventSeq];
   scene.triggers = [enterTrigger, gazeTrigger, holdTrigger];

@@ -1,6 +1,7 @@
 import { store } from '../core/store.js';
 import { publishCheck } from '../core/schema.js';
 import { demoScene } from '../core/templates.js';
+import { openAR } from './arview.js';
 import { log } from './log.js';
 
 function randomDraftCode() {
@@ -137,6 +138,12 @@ export function mount(el) {
   demoButton.title = '把演示场景载入当前房间（会同步给所有协作者）';
   demoButton.textContent = '演示';
 
+  const arButton = document.createElement('button');
+  arButton.className = 'btn';
+  arButton.type = 'button';
+  arButton.title = '以游客视角看场景：手机上是相机画面+陀螺仪';
+  arButton.textContent = '游客视角';
+
   const previewButton = document.createElement('button');
   previewButton.className = 'btn';
   previewButton.type = 'button';
@@ -164,6 +171,7 @@ export function mount(el) {
     spacer,
     draftChip,
     demoButton,
+    arButton,
     previewButton,
     publishButton,
     connection,
@@ -396,6 +404,8 @@ export function mount(el) {
     store.newScene(demoScene());
     log('已载入演示场景');
   });
+
+  arButton.addEventListener('click', () => openAR());
 
   previewButton.addEventListener('click', () => {
     showOverlay('发布预览', getValidation());

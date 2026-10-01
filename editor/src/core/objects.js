@@ -101,9 +101,16 @@ function resolveAssetUrl(url) {
   return url;
 }
 
+function fxTexture(name) {
+  const texture = new THREE.TextureLoader().load(`fx/${name}.png`);
+  if (texture.colorSpace !== undefined) texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 function quadTextureFor(objDef, assets) {
   const alpha = materialValue(objDef.material, 'alpha', '');
   if (typeof alpha === 'string' && alpha.startsWith('demo:')) return demoTexture(alpha);
+  if (typeof alpha === 'string' && alpha.startsWith('fx:')) return fxTexture(alpha.slice(3));
   const asset = assetFor(objDef, assets);
   const assetUrl = resolveAssetUrl(asset?.url);
   if (assetUrl) return new THREE.TextureLoader().load(assetUrl);
@@ -444,6 +451,55 @@ function createCompound(objDef) {
 
   parts.slice(0, 64).forEach(part => {
     if (!part || typeof part !== 'object') return;
+
+    // 粒子发射器
+    if (part.shape === 'points') {
+      const spec = part.material || part;
+      const count = Math.min(2000, Math.max(10, Number(part.count) || 300));
+      const spread = part.spread || [1, 1, 1];
+      const positions = new Float32Array(count * 3);
+      const seeds = new Float32Array(count * 2);
+      for (let i = 0; i < count; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * spread[0];
+        positions[i * 3 + 1] = Math.random() * spread[1];
+        positions[i * 3 + 2] = (Math.random() - 0.5) * spread[2];
+        seeds[i * 2] = Math.random();
+        seeds[i * 2 + 1] = 0.5 + Math.random();
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const pm = new THREE.PointsMaterial({
+        size: Number(part.size) || 0.05,
+        map: spec.alpha ? fxTexture(String(spec.alpha).replace(/^fx:/, '')) : fxTexture('mote'),
+        color: new THREE.Color(spec.color || '#ffd9a0'),
+        transparent: true,
+        opacity: spec.opacity ?? 0.9,
+        depthWrite: false,
+        blending: spec.blend === 'normal' ? THREE.NormalBlending : THREE.AdditiveBlending,
+        sizeAttenuation: true
+      });
+      const points = new THREE.Points(geo, pm);
+      const p0 = part.p || [0, 0, 0];
+      const r0 = part.r || [0, 0, 0];
+      const s0 = part.s || [1, 1, 1];
+      points.position.set(p0[0] || 0, p0[1] || 0, p0[2] || 0);
+      points.rotation.set((r0[0] || 0) * Math.PI / 180, (r0[1] || 0) * Math.PI / 180, (r0[2] || 0) * Math.PI / 180);
+      points.scale.set(s0[0] || 1, s0[1] || 1, s0[2] || 1);
+      const speed = Number(part.speed) || 0.3;
+      const drift = Number(part.drift) || 0.15;
+      points.userData.animate = t => {
+        const arr = geo.attributes.position.array;
+        for (let i = 0; i < count; i++) {
+          const rise = (seeds[i * 2] + t * speed * seeds[i * 2 + 1]) % 1;
+          arr[i * 3 + 1] = rise * spread[1];
+          arr[i * 3] += Math.sin(t * 0.8 + seeds[i * 2] * 6.28) * drift * 0.002;
+        }
+        geo.attributes.position.needsUpdate = true;
+      };
+      group.add(points);
+      return;
+    }
+
     const geomFn = PART_SHAPES[part.shape] || PART_SHAPES.box;
     const useStd = !part.flat && part.blend !== 'additive' && !part.shader;
     const matSpec = part.material || part;
@@ -470,6 +526,17 @@ function createCompound(objDef) {
         material.blending = THREE.AdditiveBlending;
         material.depthWrite = false;
       }
+    }
+    // plane/ring 部件可贴 fx:/demo: 贴图
+    if (!part.shader && matSpec.alpha && (part.shape === 'plane' || part.shape === 'ring')) {
+      const tex = String(matSpec.alpha).startsWith('demo:')
+        ? demoTexture(matSpec.alpha)
+        : String(matSpec.alpha).startsWith('fx:')
+          ? fxTexture(String(matSpec.alpha).slice(3))
+          : new THREE.TextureLoader().load(String(matSpec.alpha));
+      material.map = tex;
+      material.transparent = true;
+      material.needsUpdate = true;
     }
     const mesh = new THREE.Mesh(geomFn(), material);
     if (material.userData && material.userData.uniforms) {

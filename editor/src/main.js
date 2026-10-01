@@ -13,6 +13,7 @@ import { mount as mountVpchrome } from './ui/vpchrome.js'
 import { collab } from './core/collab.js'
 
 // ---- bootstrap ----
+window.__xiyou = { viewport }
 const params = new URLSearchParams(location.search)
 const ROOM = params.get('room') || 'demo'
 store.setStorageKey(`xiyou.scene.v2.${ROOM}`)
@@ -56,6 +57,16 @@ store.on('node-goto', ({ nodeId }) => {
   store.select(nodeId)
 })
 store.on('published', () => log('已发布快照'))
+
+// 剧情卡片弹窗（编辑器内）
+store.on('card', ({ text }) => {
+  const toast = document.createElement('div')
+  toast.className = 'story-toast'
+  toast.textContent = text || '…'
+  document.body.appendChild(toast)
+  requestAnimationFrame(() => toast.classList.add('in'))
+  setTimeout(() => { toast.classList.remove('in'); setTimeout(() => toast.remove(), 300) }, 2600)
+})
 
 // ---- drag from content browser ----
 const vpEl = document.getElementById('viewport')

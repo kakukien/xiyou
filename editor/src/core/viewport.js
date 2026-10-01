@@ -470,9 +470,20 @@ export const viewport = {
       log('SOG 场景底座加载接口暂未接入', 'info');
     }
 
-    // 天空穹顶：base.env.sky = {top, horizon, bottom, sun:[x,y,z], sunColor}
+    // 天空穹顶：base.env.sky = {top, horizon, bottom, sun, sunColor} 或 {image:'fx/sky_dusk.jpg'}
     const sky = base?.env?.sky;
-    if (sky) {
+    if (sky && sky.image) {
+      const tex = new THREE.TextureLoader().load(sky.image);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const dome = new THREE.Mesh(
+        new THREE.SphereGeometry(60, 48, 28),
+        new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, depthWrite: false, fog: false })
+      );
+      dome.name = 'sky-dome';
+      dome.userData.isBase = true;
+      this.baseGroup.add(dome);
+      this.scene.background = null;
+    } else if (sky) {
       const skyMat = new THREE.ShaderMaterial({
         side: THREE.BackSide,
         depthWrite: false,
@@ -619,12 +630,14 @@ export const viewport = {
     this._tickFocus(dt);
     this.controls.update();
 
-    // 动画 shader 心跳：所有节点上的 shader 材质统一推进 uTime
+    // 动画 shader + 粒子心跳
     this._shaderTime = (this._shaderTime || 0) + dt;
     if (this.scene) {
+      const t = this._shaderTime;
       this.scene.traverse(node => {
         const uniforms = node.userData && node.userData.shaderUniforms;
-        if (uniforms && uniforms.uTime) uniforms.uTime.value = this._shaderTime;
+        if (uniforms && uniforms.uTime) uniforms.uTime.value = t;
+        if (node.userData && typeof node.userData.animate === 'function') node.userData.animate(t);
       });
     }
   }

@@ -201,7 +201,10 @@ compound 组装体（实时生成任意 3D）：parts 是数组，每项 {"shape
 material.shader 动态效果（quad/compound 部件可用）：{"kind":"nebula星云|flame火焰|sigil法阵光环|holo全息|ripple涟漪","color1":"#hex","color2":"#hex","speed":1,"intensity":1.2,"blend":"additive"}
 
 规则：
-- material 可用字段：{"opacity":0-1,"color":"#hex","alpha":"demo:glow|demo:beam|demo:ring|demo:lattice|demo:flame|demo:symbol:<字> 或贴图URL","blend":"additive(发光叠加)|normal","cutout":true(镂空),"point_size":点大小(仅点云)}。发光体配 additive，镂空贴图配 cutout，半透明配 opacity。
+- material 可用字段：{"opacity":0-1,"color":"#hex","alpha":"贴图","blend":"additive(发光叠加)|normal","cutout":true(镂空),"point_size":点大小(仅点云),"shader":{"kind":"nebula星云|flame火焰|sigil法阵|holo全息|ripple涟漪","color1":"#hex","color2":"#hex","speed":1,"intensity":1.2}}。发光体配 additive，镂空贴图配 cutout，半透明配 opacity。
+- alpha 贴图三种来源：demo:glow|beam|ring|lattice|flame|symbol:<字>（程序化）；fx:glow_orb|spark|smoke|flare|ring_glow|rune_ring|petal|cloud|bokeh|mote（内置高清特效 PNG）；或直接给图片 URL。
+- 粒子发射器：compound 的 parts 里放 {"shape":"points","count":300,"spread":[宽,高,深],"size":0.05,"speed":0.3,"drift":0.2,"material":{"color":"#hex","alpha":"fx:mote"}}——萤火虫/下雪/上升光尘/星尘都能做。
+- set_sky 可选 {"image":"fx/sky_dusk.jpg|fx/sky_night.jpg|fx/sky_dawn.jpg"} 用内置全景天空图，或传 top/horizon/bottom 纯色渐变。
 - 你只能编辑场景内容（对象、触发器、时间线、剧情节点）。底座(base)、素材库、编辑器界面不可修改——没有对应 op，被要求时 reply 说明超出权限，ops 给空数组。
 - 引用已有对象、节点和时间线时必须使用场景清单中的 id。
 - 拿不准时先根据场景清单猜测，并在 reply 中说明。

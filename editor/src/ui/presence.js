@@ -68,6 +68,16 @@ export function mount(el) {
   const wrap = document.createElement('div');
   wrap.className = 'presence-wrap';
   wrap.style.cssText = 'position:relative;display:flex;align-items:center;gap:8px';
+  statusText.addEventListener('click', () => {
+    if (connectionState === 'connected') return;
+    const url = new URL(location.href);
+    url.searchParams.set('room', roomInput?.value?.trim() || new URLSearchParams(location.search).get('room') || 'demo');
+    navigator.clipboard?.writeText(url.toString()).then(() => {
+      statusText.textContent = '链接已复制 ✓';
+      setTimeout(renderStatus, 1500);
+    }).catch(() => window.prompt('复制协作链接', url.toString()));
+  });
+
   wrap.append(status, peersCount, avatars, roomInput, lockHint);
   root.append(wrap);
   el.append(root);
@@ -129,7 +139,9 @@ export function mount(el) {
       ? '已连接'
       : connectionState === 'connecting'
         ? '连接中'
-        : '单机';
+        : '邀请协作 →';
+    statusText.style.cursor = connectionState === 'connected' ? '' : 'pointer';
+    statusText.style.color = connectionState === 'connected' ? '' : 'var(--accent,#e8842c)';
 
     peersCount.textContent = connectionState === 'connected'
       ? `${peers.length} 人在线`
