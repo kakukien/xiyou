@@ -370,3 +370,11 @@ label { color:var(--fg-dim); font-size:12px; }
 /* 剧情卡片（编辑器内） */
 .story-toast { position:fixed; bottom:320px; left:50%; transform:translateX(-50%) translateY(12px); background:#fffdf8f2; border:1px solid var(--accent); border-radius:10px; padding:12px 24px; font-size:14px; font-weight:600; color:#2a2216; box-shadow:var(--shadow2), 0 0 0 4px #ffb03a22; opacity:0; transition:all .25s; z-index:150; pointer-events:none; }
 .story-toast.in { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* 时间线关键帧分轴编辑 */
+.key-popover { display:flex; flex-direction:column; gap:6px; padding:8px; background:#fffdf8; border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow2); position:absolute; bottom:calc(100% + 6px); left:8px; z-index:30; min-width:230px; }
+.key-row { display:flex; align-items:center; gap:4px; }
+.key-tag { font-size:10px; color:var(--text-muted); width:38px; flex:none; }
+.key-axis { width:52px; padding:3px 5px; font-size:11px; }
+.tl-lane { position:relative; }
+.tl-key { cursor:ew-resize; }

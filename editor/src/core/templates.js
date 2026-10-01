@@ -8,7 +8,9 @@ export const ACTION_CARDS = [
   { id: 'transform', label: '变身' },
   { id: 'orbit', label: '环绕' },
   { id: 'blink', label: '闪现' },
-  { id: 'float', label: '浮动' }
+  { id: 'float', label: '浮动' },
+  { id: 'rise', label: '升起' },
+  { id: 'pulse', label: '脉动' }
 ];
 
 function transformKey(t, p, r = [0, 0, 0], s = [1, 1, 1], ease = 'linear') {
@@ -489,124 +491,97 @@ export function demoScene() {
   return scene;
 }
 
-export function cardToSequence(cardId, targetId) {
+export function cardToSequence(cardId, targetId, base) {
+  const bp = base?.p || [0, 0, 0];
+  const br = base?.r || [0, 0, 0];
+  const bs = base?.s || [1, 1, 1];
+  // 关键帧是绝对值：delta 位移/旋转叠加在对象当前 transform 上，缩放做乘法
+  const T = (t, dp, dr, sm, ease) => transformKey(
+    t,
+    [bp[0] + dp[0], bp[1] + dp[1], bp[2] + dp[2]],
+    [br[0] + dr[0], br[1] + dr[1], br[2] + dr[2]],
+    [bs[0] * sm[0], bs[1] * sm[1], bs[2] * sm[2]],
+    ease
+  );
+
   switch (cardId) {
     case 'fly_in':
-      return makeCardSequence(
-        '飞入',
-        1.2,
-        targetId,
-        'transform',
-        [
-          transformKey(0, [0, 2, 0], [0, 0, 0], [0.2, 0.2, 0.2], 'out'),
-          transformKey(1.2, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'out')
-        ]
-      );
+      return makeCardSequence('飞入', 1.2, targetId, 'transform', [
+        T(0, [0, 2, 0], [0, 0, 0], [0.2, 0.2, 0.2], 'out'),
+        T(1.2, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'out')
+      ]);
 
     case 'land':
-      return makeCardSequence(
-        '落地',
-        1,
-        targetId,
-        'transform',
-        [
-          transformKey(0, [0, 1.2, 0], [0, 0, 0], [1, 1, 1], 'out'),
-          transformKey(0.7, [0, -0.08, 0], [0, 0, 0], [1.05, 0.95, 1.05], 'in'),
-          transformKey(1, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'out')
-        ]
-      );
+      return makeCardSequence('落地', 1, targetId, 'transform', [
+        T(0, [0, 1.2, 0], [0, 0, 0], [1, 1, 1], 'out'),
+        T(0.7, [0, -0.08, 0], [0, 0, 0], [1.05, 0.95, 1.05], 'in'),
+        T(1, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'out')
+      ]);
 
     case 'roll':
-      return makeCardSequence(
-        '翻滚',
-        1.2,
-        targetId,
-        'transform',
-        [
-          transformKey(0, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'inout'),
-          transformKey(0.6, [0, 0, 0], [0, 180, 0], [1, 1, 1], 'linear'),
-          transformKey(1.2, [0, 0, 0], [0, 360, 0], [1, 1, 1], 'out')
-        ]
-      );
+      return makeCardSequence('翻滚', 1.2, targetId, 'transform', [
+        T(0, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'inout'),
+        T(0.6, [0, 0, 0], [0, 180, 0], [1, 1, 1], 'linear'),
+        T(1.2, [0, 0, 0], [0, 360, 0], [1, 1, 1], 'out')
+      ]);
 
     case 'dissolve':
-      return makeCardSequence(
-        '消散',
-        1.5,
-        targetId,
-        'opacity',
-        [
-          opacityKey(0, 1, 'in'),
-          opacityKey(1.1, 0.35, 'inout'),
-          opacityKey(1.5, 0, 'out')
-        ]
-      );
+      return makeCardSequence('消散', 1.5, targetId, 'opacity', [
+        opacityKey(0, 1, 'in'),
+        opacityKey(1.1, 0.35, 'inout'),
+        opacityKey(1.5, 0, 'out')
+      ]);
 
     case 'transform':
-      return makeCardSequence(
-        '变身',
-        1.5,
-        targetId,
-        'transform',
-        [
-          transformKey(0, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'in'),
-          transformKey(0.7, [0, 0.15, 0], [0, 180, 0], [0.75, 1.2, 0.75], 'inout'),
-          transformKey(1.5, [0, 0, 0], [0, 360, 0], [1, 1, 1], 'out')
-        ]
-      );
+      return makeCardSequence('变身', 1.5, targetId, 'transform', [
+        T(0, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'in'),
+        T(0.7, [0, 0.15, 0], [0, 180, 0], [0.75, 1.2, 0.75], 'inout'),
+        T(1.5, [0, 0, 0], [0, 360, 0], [1, 1, 1], 'out')
+      ]);
 
     case 'orbit':
-      return makeCardSequence(
-        '环绕',
-        2,
-        targetId,
-        'transform',
-        [
-          transformKey(0, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'linear'),
-          transformKey(0.66, [0.7, 0, 0], [0, 120, 0], [1, 1, 1], 'linear'),
-          transformKey(1.33, [0, 0, 0.7], [0, 240, 0], [1, 1, 1], 'linear'),
-          transformKey(2, [-0.7, 0, 0], [0, 360, 0], [1, 1, 1], 'linear')
-        ]
-      );
+      return makeCardSequence('环绕', 2, targetId, 'transform', [
+        T(0, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'linear'),
+        T(0.66, [0.7, 0, 0], [0, 120, 0], [1, 1, 1], 'linear'),
+        T(1.33, [0, 0, 0.7], [0, 240, 0], [1, 1, 1], 'linear'),
+        T(2, [0, 0, 0], [0, 360, 0], [1, 1, 1], 'linear')
+      ]);
 
     case 'blink':
-      return makeCardSequence(
-        '闪现',
-        1,
-        targetId,
-        'opacity',
-        [
-          opacityKey(0, 0, 'linear'),
-          opacityKey(0.2, 1, 'out'),
-          opacityKey(0.5, 1, 'linear'),
-          opacityKey(0.7, 0, 'in'),
-          opacityKey(1, 1, 'out')
-        ]
-      );
+      return makeCardSequence('闪现', 1, targetId, 'opacity', [
+        opacityKey(0, 0, 'linear'),
+        opacityKey(0.2, 1, 'out'),
+        opacityKey(0.5, 1, 'linear'),
+        opacityKey(0.7, 0, 'in'),
+        opacityKey(1, 1, 'out')
+      ]);
 
     case 'float':
-      return makeCardSequence(
-        '浮动',
-        2,
-        targetId,
-        'transform',
-        [
-          transformKey(0, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'inout'),
-          transformKey(1, [0, 0.25, 0], [0, 0, 0], [1, 1, 1], 'inout'),
-          transformKey(2, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'inout')
-        ]
-      );
+      return makeCardSequence('浮动', 2, targetId, 'transform', [
+        T(0, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'inout'),
+        T(1, [0, 0.25, 0], [0, 0, 0], [1, 1, 1], 'inout'),
+        T(2, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'inout')
+      ]);
+
+    case 'rise':
+      return makeCardSequence('升起', 1.5, targetId, 'transform', [
+        T(0, [0, -0.8, 0], [0, 0, 0], [1, 1, 1], 'out'),
+        T(1.5, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'out')
+      ]);
+
+    case 'pulse':
+      return makeCardSequence('脉动', 1.2, targetId, 'transform', [
+        T(0, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'inout'),
+        T(0.3, [0, 0, 0], [0, 0, 0], [1.25, 1.25, 1.25], 'inout'),
+        T(0.6, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'inout'),
+        T(0.9, [0, 0, 0], [0, 0, 0], [1.15, 1.15, 1.15], 'inout'),
+        T(1.2, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'out')
+      ]);
 
     default:
-      return makeCardSequence(
-        '占位动作',
-        1,
-        targetId,
-        'transform',
-        [
-          transformKey(0, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'linear'),
-          transformKey(1, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'linear')
-        ]
-      );
+      return makeCardSequence('占位动作', 1, targetId, 'transform', [
+        T(0, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'linear'),
+        T(1, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'linear')
+      ]);
   }
 }

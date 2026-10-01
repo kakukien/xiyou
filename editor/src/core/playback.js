@@ -370,6 +370,19 @@ export const player = {
     });
   },
 
+  // 拖动播放头实时预览：计算各轨在 t 的值并应用到节点（不进 active，不触发事件）
+  preview(seqId, time) {
+    const seq = (store.scene.sequences || []).find((item) => item.id === seqId);
+    if (!seq) return false;
+    const t = Math.max(0, Number(time) || 0);
+    (seq.tracks || []).forEach((track) => {
+      const node = viewport.node(track.target);
+      if (!node) return;
+      updateTrack({ track, node, events: new Set() }, t);
+    });
+    return true;
+  },
+
   tick(dt) {
     const delta = Math.max(0, Number(dt) || 0);
     const finished = [];

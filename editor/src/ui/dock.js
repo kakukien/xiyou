@@ -89,7 +89,7 @@ function renderCardChips() {
         return;
       }
 
-      const sequence = cardToSequence(card.id, obj.id);
+      const sequence = cardToSequence(card.id, obj.id, obj.transform);
       if (!sequence) {
         log(`无法创建动作卡：${card.label}`, 'error');
         return;
@@ -378,11 +378,16 @@ function renderTimeline() {
     const lane = document.createElement('div');
     lane.className = 'tl-lane';
 
-    lane.addEventListener('click', event => {
-      if (event.target !== lane) return;
+    const laneSeek = (event) => {
       const rect = lane.getBoundingClientRect();
       playhead = Math.max(0, Math.min(durationValue, ((event.clientX - rect.left) / rect.width) * durationValue));
+      player.preview(seq.id, playhead);
       requestRender();
+    };
+
+    lane.addEventListener('click', event => {
+      if (event.target !== lane) return;
+      laneSeek(event);
     });
 
     lane.addEventListener('dblclick', event => {
@@ -411,19 +416,53 @@ function renderTimeline() {
       nextTracks[trackIndex] = { ...track, keys };
       store.updateSequence(seq.id, { tracks: nextTracks });
       playhead = t;
+      player.preview(seq.id, t);
     });
 
     (track.keys || []).forEach((key, keyIndex) => {
       const point = document.createElement('button');
       point.type = 'button';
       point.className = 'tl-key';
-      point.title = `${Number(key.t || 0).toFixed(2)}s`;
+      point.title = `${Number(key.t || 0).toFixed(2)}s · 拖动调时间`;
       point.style.left = `${Math.max(0, Math.min(100, Number(key.t || 0) / durationValue * 100))}%`;
-      point.addEventListener('click', event => {
+
+      // 关键帧可左右拖动调时间
+      point.addEventListener('pointerdown', event => {
         event.stopPropagation();
-        selectedKey = { seqId: seq.id, trackIndex, keyIndex };
-        playhead = Number(key.t) || 0;
-        requestRender();
+        event.preventDefault();
+        const rect = lane.getBoundingClientRect();
+        const startX = event.clientX;
+        const startT = Number(key.t) || 0;
+        let moved = false;
+        const onMove = e2 => {
+          const dx = e2.clientX - startX;
+          if (Math.abs(dx) > 3) moved = true;
+          if (!moved) return;
+          const nt = Math.max(0, Math.min(durationValue, startT + (dx / rect.width) * durationValue));
+          point.style.left = `${(nt / durationValue) * 100}%`;
+          point.title = `${nt.toFixed(2)}s`;
+          playhead = nt;
+          player.preview(seq.id, nt);
+        };
+        const onUp = e2 => {
+          window.removeEventListener('pointermove', onMove);
+          window.removeEventListener('pointerup', onUp);
+          if (moved) {
+            const dx = e2.clientX - startX;
+            const nt = Math.max(0, Math.min(durationValue, startT + (dx / rect.width) * durationValue));
+            const keys = [...(track.keys || [])];
+            keys[keyIndex] = { ...keys[keyIndex], t: nt };
+            keys.sort((a, b) => Number(a.t) - Number(b.t));
+            store.updateSequence(seq.id, { tracks: replaceTrack(seq, trackIndex, { keys }) });
+          } else {
+            selectedKey = { seqId: seq.id, trackIndex, keyIndex };
+            playhead = Number(key.t) || 0;
+            player.preview(seq.id, playhead);
+            requestRender();
+          }
+        };
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
       });
       lane.appendChild(point);
 
@@ -511,19 +550,34 @@ function renderKeyEditor(seq, track, trackIndex, key, keyIndex) {
   editor.appendChild(time);
 
   if (track.kind === 'transform') {
+    // 分轴编辑：位移 XYZ / 旋转 XYZ° / 缩放 XYZ
+    const propLabel = { p: '位移', r: '旋转°', s: '缩放' };
     ['p', 'r', 's'].forEach(prop => {
-      const input = document.createElement('input');
-      input.className = 'field';
-      input.placeholder = prop;
-      input.value = JSON.stringify(key.v?.[prop] || (prop === 's' ? [1, 1, 1] : [0, 0, 0]));
-      input.addEventListener('change', () => {
-        const value = parseValue(input.value, key.v?.[prop] || [0, 0, 0]);
-        const nextValue = { ...(key.v || {}), [prop]: value };
-        const keys = [...(track.keys || [])];
-        keys[keyIndex] = { ...keys[keyIndex], v: nextValue };
-        store.updateSequence(seq.id, { tracks: replaceTrack(seq, trackIndex, { keys }) });
+      const row = document.createElement('div');
+      row.className = 'key-row';
+      const tag = document.createElement('span');
+      tag.className = 'key-tag';
+      tag.textContent = propLabel[prop];
+      row.appendChild(tag);
+      const arr = key.v?.[prop] || (prop === 's' ? [1, 1, 1] : [0, 0, 0]);
+      arr.forEach((v, i) => {
+        const input = document.createElement('input');
+        input.className = 'field key-axis';
+        input.type = 'number';
+        input.step = prop === 's' ? '0.05' : '0.1';
+        input.value = Number(v).toFixed(2);
+        input.title = `${propLabel[prop]} ${'XYZ'[i]}`;
+        input.addEventListener('change', () => {
+          const next = [...arr];
+          next[i] = Number(input.value) || 0;
+          const keys = [...(track.keys || [])];
+          keys[keyIndex] = { ...keys[keyIndex], v: { ...(key.v || {}), [prop]: next } };
+          store.updateSequence(seq.id, { tracks: replaceTrack(seq, trackIndex, { keys }) });
+          player.preview(seq.id, Number(keys[keyIndex].t) || 0);
+        });
+        row.appendChild(input);
       });
-      editor.appendChild(input);
+      editor.appendChild(row);
     });
   } else if (track.kind === 'opacity') {
     const input = document.createElement('input');

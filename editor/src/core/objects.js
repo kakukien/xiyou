@@ -557,6 +557,25 @@ function createCompound(objDef) {
       new THREE.MeshStandardMaterial({ color: 0xe68a2e, roughness: 0.5, metalness: 0.3 })
     ));
   }
+
+  // 顶层材质覆写：details 面板调透明度/颜色/混合模式时对全部部件生效
+  const topMat = objDef.material || {};
+  group.traverse(m => {
+    if ((!m.isMesh && !m.isPoints) || !m.material) return;
+    const mat = m.material;
+    if (Number.isFinite(topMat.opacity) && topMat.opacity < 1) {
+      mat.transparent = true;
+      mat.opacity = (mat.opacity ?? 1) * topMat.opacity;
+    }
+    if (typeof topMat.color === 'string' && topMat.color && mat.color) {
+      mat.color.multiply(new THREE.Color(topMat.color));
+    }
+    if (topMat.blend === 'additive' && 'blending' in mat) {
+      mat.blending = THREE.AdditiveBlending;
+      mat.depthWrite = false;
+      mat.transparent = true;
+    }
+  });
   return group;
 }
 

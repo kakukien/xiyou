@@ -274,7 +274,11 @@ export function mount(el) {
 
     el.querySelectorAll('[data-node-id]').forEach(row => {
       row.addEventListener('click', () => {
-        store.select(row.dataset.nodeId);
+        const nodeId = row.dataset.nodeId;
+        store.select(nodeId);
+        // 聚焦到该节点第一个对象，让视口跟着跳
+        const target = (store.scene.objects || []).find(o => o.node_id === nodeId);
+        if (target && viewport.focus) viewport.focus(target.id);
       });
     });
 
