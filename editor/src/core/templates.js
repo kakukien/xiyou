@@ -152,6 +152,8 @@ export function demoScene() {
 
   const videoA = newObject('video_quad', {
     id: 'vqu_视频01', name: '视频图片_01', node_id: 'n1', visible: true,
+    asset: 'a_clip',
+    material: { preset: 'plain' },
     transform: { p: [-1.6, 1.4, -2.4], r: [0, 22, 0], s: [1.15, 1.15, 1.15] }
   });
   const videoB = newObject('video_quad', {
@@ -356,7 +358,41 @@ export function demoScene() {
     ]
   });
 
+  // —— 现场重建占位：视频抽帧照片墙（裁切出大概的空间范围）——
+  const SITE = 'site/';
+  const backdrop = newObject('quad', {
+    id: 'site_背景板', name: '背景板·主会场',
+    asset: 'a_f13', node_id: '', visible: true,
+    transform: { p: [0, 1.35, -5.2], r: [0, 0, 0], s: [4.8, 2.7, 1] }
+  });
+  const stageFloor = newObject('quad', {
+    id: 'site_舞台', name: '舞台地面',
+    asset: 'a_floor', node_id: '', visible: true,
+    transform: { p: [0, 0.03, -3.2], r: [-90, 0, 0], s: [4.6, 2.4, 1] }
+  });
+  const speakers = newObject('quad', {
+    id: 'site_音箱', name: '线阵音箱',
+    asset: 'a_speakers', node_id: '', visible: true,
+    transform: { p: [2.55, 0.95, -2.2], r: [0, -38, 0], s: [0.78, 1.9, 1] }
+  });
+  // 弧形照片墙：6 帧环绕后方
+  const arcFrames = ['f01', 'f05', 'f09', 'f17', 'f21', 'f25'];
+  const photoArc = arcFrames.map((f, i) => {
+    const theta = ((i - 2.5) / 5) * Math.PI * 0.82; // ~148°
+    const r = 6.2;
+    return newObject('quad', {
+      id: `site_${f}`, name: `现场_${f}`,
+      asset: `a_${f}`, node_id: '', visible: true,
+      transform: {
+        p: [Math.sin(theta) * r, 1.55, -Math.cos(theta) * r + 0.6],
+        r: [0, -theta * 180 / Math.PI, 0],
+        s: [2.1, 1.18, 1]
+      }
+    });
+  });
+
   scene.objects = [
+    backdrop, stageFloor, speakers, ...photoArc,
     segGround, cliff, segPillar, segHill,
     videoA, videoB,
     monkey, tang,
@@ -377,12 +413,18 @@ export function demoScene() {
   scene.meta = {
     name: '花果山觉醒',
     assets: [
-      { id: 'a_pano', name: '花果山全景.png', url: 'local://花果山全景.png', bytes: 482344960, mime: 'image/png' },
+      { id: 'a_f01', name: '现场_入场.jpg', url: 'site/f01.jpg', bytes: 130049, mime: 'image/jpeg' },
+      { id: 'a_f05', name: '现场_走廊.jpg', url: 'site/f05.jpg', bytes: 100859, mime: 'image/jpeg' },
+      { id: 'a_f09', name: '现场_侧墙.jpg', url: 'site/f09.jpg', bytes: 98031, mime: 'image/jpeg' },
+      { id: 'a_f13', name: '背景板.jpg', url: 'site/f13.jpg', bytes: 88940, mime: 'image/jpeg' },
+      { id: 'a_f17', name: '现场_全景.jpg', url: 'site/f17.jpg', bytes: 100805, mime: 'image/jpeg' },
+      { id: 'a_f21', name: '现场_签到台.jpg', url: 'site/f21.jpg', bytes: 106023, mime: 'image/jpeg' },
+      { id: 'a_f25', name: '现场_出口.jpg', url: 'site/f25.jpg', bytes: 105922, mime: 'image/jpeg' },
+      { id: 'a_floor', name: '舞台地面.png', url: 'site/floor.jpg', bytes: 15671, mime: 'image/jpeg' },
+      { id: 'a_speakers', name: '线阵音箱.png', url: 'site/speakers.jpg', bytes: 90012, mime: 'image/jpeg' },
+      { id: 'a_clip', name: '现场片段.mp4', url: 'site/clip.mp4', bytes: 709560, mime: 'video/mp4' },
       { id: 'a_wukong', name: '孙悟空.glb', url: 'local://孙悟空.glb', bytes: 356515840, mime: 'model/gltf-binary' },
-      { id: 'a_va', name: '视频_A.mp4', url: 'local://视频_A.mp4', bytes: 188743680, mime: 'video/mp4' },
-      { id: 'a_vb', name: '视频_B.mp4', url: 'local://视频_B.mp4', bytes: 150994944, mime: 'video/mp4' },
-      { id: 'a_xb', name: '雪豹.png', url: 'local://雪豹.png', bytes: 18874368, mime: 'image/png' },
-      { id: 'a_fx', name: '粒子特效.png', url: 'local://粒子特效.png', bytes: 5242880, mime: 'image/png' }
+      { id: 'a_va', name: '视频_A.mp4', url: 'local://视频_A.mp4', bytes: 188743680, mime: 'video/mp4' }
     ]
   };
 

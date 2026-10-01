@@ -93,11 +93,20 @@ function demoTexture(spec) {
   return texture;
 }
 
+function resolveAssetUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  if (url.startsWith('local://')) {
+    return (typeof window !== 'undefined' && window.__xiyouBlobMap?.get(url)) || '';
+  }
+  return url;
+}
+
 function quadTextureFor(objDef, assets) {
   const alpha = materialValue(objDef.material, 'alpha', '');
   if (typeof alpha === 'string' && alpha.startsWith('demo:')) return demoTexture(alpha);
   const asset = assetFor(objDef, assets);
-  if (asset && asset.url) return new THREE.TextureLoader().load(asset.url);
+  const assetUrl = resolveAssetUrl(asset?.url);
+  if (assetUrl) return new THREE.TextureLoader().load(assetUrl);
   if (typeof alpha === 'string' && alpha) return new THREE.TextureLoader().load(alpha);
   return placeholderTexture(objDef.name || 'QUAD');
 }
@@ -138,17 +147,43 @@ function createQuad(objDef, assets) {
 
 function createVideoQuad(objDef, assets) {
   const asset = assetFor(objDef, assets);
+  const plain = objDef.material && objDef.material.preset === 'plain';
   const preset = objDef.material && VIDEO_PRESETS[objDef.material.preset]
     ? VIDEO_PRESETS[objDef.material.preset]
     : null;
-  const aspect = preset ? (preset.w * 2) / preset.h : 0.75;
+  const aspect = preset ? (preset.w * 2) / preset.h : (plain ? 16 / 9 : 0.75);
+
+  if (plain) {
+    // 普通视频：无透明通道，直接贴 VideoTexture
+    const material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+    let plainVideo = null;
+    if (resolveAssetUrl(asset?.url)) {
+      plainVideo = document.createElement('video');
+      plainVideo.src = resolveAssetUrl(asset.url);
+      plainVideo.loop = true;
+      plainVideo.muted = true;
+      plainVideo.playsInline = true;
+      plainVideo.setAttribute('playsinline', '');
+      plainVideo.preload = 'auto';
+      const vt = new THREE.VideoTexture(plainVideo);
+      vt.colorSpace = THREE.SRGBColorSpace;
+      material.map = vt;
+    } else {
+      material.map = demoTexture('lattice');
+    }
+    applyCommonMaterial(material, objDef.material);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(aspect, 1), material);
+    m.name = objDef.name || 'Video Quad';
+    m.userData.video = plainVideo;
+    return m;
+  }
 
   const uniforms = stackedAlphaShader().uniforms;
   let video = null;
 
-  if (asset && asset.url) {
+  if (resolveAssetUrl(asset?.url)) {
     video = document.createElement('video');
-    video.src = asset.url;
+    video.src = resolveAssetUrl(asset.url);
     video.loop = true;
     video.muted = true;
     video.playsInline = true;
@@ -219,10 +254,10 @@ function createGlb(objDef, assets) {
 
   root.userData.placeholder = placeholder;
 
-  if (asset && asset.url) {
+  if (resolveAssetUrl(asset?.url)) {
     const loader = new GLTFLoader();
     loader.load(
-      asset.url,
+      resolveAssetUrl(asset.url),
       gltf => {
         root.remove(placeholder);
         root.add(gltf.scene);

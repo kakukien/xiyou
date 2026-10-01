@@ -152,11 +152,29 @@ function renderAssets() {
     const thumb = document.createElement('div');
     thumb.className = 'cb-thumb';
 
-    if (asset.mime?.startsWith('image/') && asset.url && !asset.url.startsWith('local://')) {
+    const realUrl = asset.url && !asset.url.startsWith('local://')
+      ? asset.url
+      : window.__xiyouBlobMap?.get(asset.url);
+
+    if (asset.mime?.startsWith('image/') && realUrl) {
       const image = document.createElement('img');
-      image.src = asset.url;
+      image.src = realUrl;
       image.alt = asset.name || '';
+      image.onerror = () => {
+        image.remove();
+        thumb.textContent = 'IMAGE';
+      };
       thumb.appendChild(image);
+    } else if (asset.mime?.startsWith('video/') && realUrl) {
+      const vid = document.createElement('video');
+      vid.src = realUrl;
+      vid.muted = true;
+      vid.playsInline = true;
+      vid.onerror = () => {
+        vid.remove();
+        thumb.textContent = 'VIDEO';
+      };
+      thumb.appendChild(vid);
     } else {
       thumb.textContent = asset.type || asset.mime?.split('/')[0]?.toUpperCase() || 'ASSET';
     }
@@ -203,13 +221,18 @@ function renderAssets() {
       else if (mime.startsWith('video/')) type = 'video';
       else if (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf')) type = 'glb';
 
+      let url = `local://${file.name}`;
+      // 本机导入的素材用 blob URL 挂起来，缩略图和贴图立即可见
+      if (!window.__xiyouBlobMap) window.__xiyouBlobMap = new Map();
+      window.__xiyouBlobMap.set(url, URL.createObjectURL(file));
+
       store.addAsset({
         name: file.name,
         type,
         size: file.size,
         bytes: file.size,
         mime,
-        url: `local://${file.name}`
+        url
       });
     });
     input.value = '';

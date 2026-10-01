@@ -1,5 +1,6 @@
 import { store } from '../core/store.js';
 import { publishCheck } from '../core/schema.js';
+import { demoScene } from '../core/templates.js';
 import { log } from './log.js';
 
 function randomDraftCode() {
@@ -130,6 +131,12 @@ export function mount(el) {
   draftChip.type = 'button';
   draftChip.title = '点击复制房间链接';
 
+  const demoButton = document.createElement('button');
+  demoButton.className = 'btn';
+  demoButton.type = 'button';
+  demoButton.title = '把演示场景载入当前房间（会同步给所有协作者）';
+  demoButton.textContent = '演示';
+
   const previewButton = document.createElement('button');
   previewButton.className = 'btn';
   previewButton.type = 'button';
@@ -156,6 +163,7 @@ export function mount(el) {
     modeToggle,
     spacer,
     draftChip,
+    demoButton,
     previewButton,
     publishButton,
     connection,
@@ -381,6 +389,12 @@ export function mount(el) {
     } catch {
       window.prompt('复制房间链接', url.toString());
     }
+  });
+
+  demoButton.addEventListener('click', () => {
+    if (!window.confirm('载入演示场景会覆盖当前房间的场景内容，确定继续？')) return;
+    store.newScene(demoScene());
+    log('已载入演示场景');
   });
 
   previewButton.addEventListener('click', () => {
