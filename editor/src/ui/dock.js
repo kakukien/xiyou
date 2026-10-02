@@ -1,8 +1,9 @@
 import { store } from '../core/store.js';
-import { ACTION_CARDS, cardToSequence } from '../core/templates.js';
+import { ACTION_CARDS, cardToSequence, INTERACTION_TEMPLATES, interactionTemplate } from '../core/templates.js';
 import { budget } from '../core/schema.js';
 import { player } from '../core/playback.js';
 import { log } from './log.js';
+import { iconMarkup } from './components/icon.js';
 
 const KIND_LABELS = {
   transform: '变换',
@@ -34,6 +35,10 @@ let renderQueued = false;
 let dockMaximized = false;
 let dockPrevHeight = null;
 let tlZoom = 140; // 时间线缩放：像素/秒
+let assetQuery = '';
+let assetKind = 'all';
+let selectedAssetId = null;
+let keyPopoverCleanup = null;
 
 function esc(value) {
   return String(value ?? '');
@@ -122,7 +127,8 @@ function renderTabs() {
   row.className = 'dock-tabs';
 
   const tabs = [
-    ['assets', '内容浏览器'],
+    ['assets', '资源库'],
+    ['components', '互动组件'],
     ['timeline', '时间线'],
     ['log', '输出日志']
   ];
@@ -147,7 +153,8 @@ function renderTabs() {
   spacer.className = 'dock-tabs-spacer';
   row.appendChild(spacer);
 
-  const maximize = makeButton(dockMaximized ? '⤡' : '⤢', 'tab dock-max');
+  const maximize = makeButton('', 'tab dock-max');
+  maximize.innerHTML = iconMarkup(dockMaximized ? 'collapse-diagonal-line' : 'expand-diagonal-line', dockMaximized ? '还原面板高度' : '放大编辑区');
   maximize.title = dockMaximized ? '还原面板高度' : '放大编辑区';
   maximize.addEventListener('click', () => {
     if (!root) return;
@@ -165,17 +172,65 @@ function renderTabs() {
   return row;
 }
 
+function assetKindOf(asset) {
+  if (asset?.kind && asset.kind !== 'unknown') return asset.kind
+  if (asset?.type === 'glb' || asset?.mime?.includes('gltf')) return 'model'
+  if (asset?.mime?.startsWith('image/')) return 'image'
+  if (asset?.mime?.startsWith('video/')) return 'video'
+  if (asset?.mime?.startsWith('audio/')) return 'audio'
+  return 'other'
+}
+
 function renderAssets() {
   const panel = document.createElement('div');
   panel.className = 'dock-panel content-browser';
 
+  const toolbar = document.createElement('div');
+  toolbar.className = 'asset-toolbar';
+
+  const search = document.createElement('input');
+  search.className = 'field asset-search';
+  search.type = 'search';
+  search.placeholder = '搜索资源名称、标签';
+  search.value = assetQuery;
+  search.addEventListener('input', event => {
+    assetQuery = event.target.value;
+    requestRender();
+    const next = root?.querySelector('.asset-search');
+    next?.focus();
+    next?.setSelectionRange(assetQuery.length, assetQuery.length);
+  });
+
+  const kind = document.createElement('select');
+  kind.className = 'field asset-kind';
+  [['all', '全部类型'], ['splat', '空间底座'], ['model', '模型'], ['image', '图片'], ['video', '视频'], ['audio', '音频'], ['fx', '特效'], ['template', '模板']].forEach(([value, label]) => {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = label;
+    option.selected = value === assetKind;
+    kind.appendChild(option);
+  });
+  kind.addEventListener('change', event => { assetKind = event.target.value; requestRender(); });
+
+  const importButton = makeButton('', 'btn btn-secondary btn-sm');
+  importButton.innerHTML = `${iconMarkup('upload-2-line')}<span>导入资源</span>`;
+  importButton.addEventListener('click', () => root?.querySelector('.cb-import input')?.click());
+  toolbar.append(search, kind, importButton);
+  panel.appendChild(toolbar);
+
   const strip = document.createElement('div');
   strip.className = 'asset-strip';
 
-  const assets = store.scene.meta?.assets || [];
+  const assets = (store.scene.meta?.assets || []).filter(asset => {
+    const category = assetKindOf(asset);
+    const haystack = [asset.name, asset.id, asset.kind, asset.type, category, ...(asset.tags || [])].join(' ').toLowerCase();
+    const matchesQuery = !assetQuery.trim() || haystack.includes(assetQuery.trim().toLowerCase());
+    const matchesKind = assetKind === 'all' || category === assetKind || asset.kind === assetKind || asset.type === assetKind || asset.subtype === assetKind;
+    return matchesQuery && matchesKind;
+  });
   assets.forEach(asset => {
     const card = document.createElement('div');
-    card.className = 'cb-card';
+    card.className = `cb-card${selectedAssetId === asset.id ? ' active' : ''}`;
 
     const thumb = document.createElement('div');
     thumb.className = 'cb-thumb';
@@ -204,7 +259,8 @@ function renderAssets() {
       };
       thumb.appendChild(vid);
     } else {
-      thumb.textContent = asset.type || asset.mime?.split('/')[0]?.toUpperCase() || 'ASSET';
+      const typeIcon = { splat: 'landscape-line', model: 'box-3-line', glb: 'box-3-line', image: 'image-2-line', video: 'movie-2-line', audio: 'volume-up-line', fx: 'sparkling-2-line', template: 'layout-grid-line' }[assetKindOf(asset)] || 'file-3-line';
+      thumb.innerHTML = `${iconMarkup(typeIcon)}<span>${assetKindOf(asset)}</span>`;
     }
 
     const name = document.createElement('div');
@@ -215,7 +271,8 @@ function renderAssets() {
     size.className = 'cb-size';
     size.textContent = formatBytes(asset.bytes ?? asset.size);
 
-    const remove = makeButton('×', 'cb-remove');
+    const remove = makeButton('', 'cb-remove');
+    remove.innerHTML = iconMarkup('close-line', '删除素材');
     remove.title = '删除素材';
     remove.addEventListener('click', event => {
       event.stopPropagation();
@@ -223,6 +280,14 @@ function renderAssets() {
     });
 
     card.append(thumb, name, size, remove);
+    card.addEventListener('click', () => {
+      selectedAssetId = asset.id
+      if (assetKindOf(asset) === 'splat') {
+        store.setBase?.({ sog_url: asset.url || '' })
+        log(`已将空间底座切换为「${asset.name || asset.id}」`)
+      }
+      requestRender()
+    })
     card.draggable = true;
     card.addEventListener('dragstart', event => {
       event.dataTransfer?.setData('text/x-xiyou-asset', asset.id);
@@ -233,12 +298,13 @@ function renderAssets() {
   const importCard = document.createElement('button');
   importCard.type = 'button';
   importCard.className = 'cb-card cb-import';
-  importCard.innerHTML = '<span class="cb-import-plus">＋</span><span>导入素材</span>';
+  importCard.innerHTML = `${iconMarkup('upload-2-line', '导入素材')}<span>导入素材</span>`;
+  importCard.title = '导入图片、视频、音频、GLB 或高斯泼溅 PLY / SOG / SPZ 文件';
 
   const input = document.createElement('input');
   input.type = 'file';
   input.multiple = true;
-  input.accept = 'image/*,video/*,.glb,.gltf,model/gltf-binary,model/gltf+json';
+  input.accept = 'image/*,video/*,audio/*,.glb,.gltf,.sog,.ply,.spz,.splat,.ksplat,model/gltf-binary,model/gltf+json';
   input.hidden = true;
 
   input.addEventListener('change', () => {
@@ -248,20 +314,28 @@ function renderAssets() {
       if (mime.startsWith('image/')) type = 'image';
       else if (mime.startsWith('video/')) type = 'video';
       else if (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf')) type = 'glb';
+      else if (/\.(sog|ply|spz|splat|ksplat)$/i.test(file.name)) type = 'splat';
+      else if (mime.startsWith('audio/')) type = 'audio';
 
       let url = `local://${file.name}`;
       // 本机导入的素材用 blob URL 挂起来，缩略图和贴图立即可见
       if (!window.__xiyouBlobMap) window.__xiyouBlobMap = new Map();
       window.__xiyouBlobMap.set(url, URL.createObjectURL(file));
 
-      store.addAsset({
+      const asset = store.addAsset({
         name: file.name,
+        kind: type === 'glb' ? 'model' : type,
         type,
         size: file.size,
         bytes: file.size,
         mime,
-        url
+        url,
+        metadata: type === 'splat' ? { format: file.name.split('.').pop()?.toLowerCase() || 'ply', local: true } : {}
       });
+      if (asset && type === 'splat') {
+        store.setBase?.({ sog_url: url });
+        log(`已导入高斯泼溅「${file.name}」，正在加载到底座`, 'info');
+      }
     });
     input.value = '';
   });
@@ -270,8 +344,92 @@ function renderAssets() {
   importCard.appendChild(input);
   strip.appendChild(importCard);
 
-  panel.appendChild(strip);
+  panel.appendChild(strip)
+
+  const selectedAsset = (store.scene.meta?.assets || []).find(asset => asset.id === selectedAssetId)
+  if (selectedAsset) {
+    const detail = document.createElement('section')
+    detail.className = 'asset-detail'
+    const references = store.assetReferences?.(selectedAsset.id) || { objects: [], base: [], total: 0 }
+    const refs = references.objects || []
+    const refNames = refs.map(object => object.name || object.id)
+    const baseRefs = references.base || []
+    const refSummary = references.total
+      ? `${references.total} 处引用 · ${refNames.length ? `对象：${refNames.join('、')}` : ''}${baseRefs.length ? `${refNames.length ? '；' : ''}底座：${baseRefs.map(item => item.name).join('、')}` : ''}`
+      : '暂无引用'
+    detail.innerHTML = `<div class="asset-detail-head"><div><strong>${selectedAsset.name || selectedAsset.id}</strong><span>${selectedAsset.kind || selectedAsset.type || '资源'} · v${selectedAsset.version || '1.0.0'}</span></div><button class="btn icon-btn asset-detail-close" title="关闭" aria-label="关闭">${iconMarkup('close-line')}</button></div><div class="asset-detail-grid"><label>标签<input class="field" data-asset-field="tags" value="${(selectedAsset.tags || []).join(', ')}"></label><label>授权<select class="field" data-asset-field="license"><option value="project" ${selectedAsset.license === 'project' ? 'selected' : ''}>项目</option><option value="site" ${selectedAsset.license === 'site' ? 'selected' : ''}>景区</option><option value="organization" ${selectedAsset.license === 'organization' ? 'selected' : ''}>组织</option></select></label></div><div class="asset-detail-refs"><strong>影响范围</strong><br>${refSummary}</div><div class="asset-detail-actions"><button class="btn btn-secondary btn-sm asset-replace">${iconMarkup('refresh-line')}<span>替换文件</span></button><input type="file" class="asset-replace-input" hidden></div>`
+    detail.querySelector('.asset-detail-close').addEventListener('click', () => { selectedAssetId = null; requestRender() })
+    const replaceInput = detail.querySelector('.asset-replace-input')
+    detail.querySelector('.asset-replace').addEventListener('click', () => replaceInput.click())
+    replaceInput.addEventListener('change', () => {
+      const file = replaceInput.files?.[0]
+      if (!file) return
+      const url = `local://${file.name}`
+      window.__xiyouBlobMap ||= new Map()
+      window.__xiyouBlobMap.set(url, URL.createObjectURL(file))
+      const references = store.assetReferences?.(selectedAsset.id) || { objects: [], base: [], total: 0 }
+      if (references.total && !window.confirm(`替换资源将影响 ${references.total} 处引用（对象 ${references.objects.length} 个、底座 ${references.base.length} 处），是否继续？`)) {
+        replaceInput.value = ''
+        return
+      }
+      const next = store.replaceAsset?.(selectedAsset.id, file, url)
+      log(`已替换资源 v${next?.version || selectedAsset.version}，影响 ${references.total} 处引用（对象 ${references.objects.length} 个、底座 ${references.base.length} 处）`)
+      replaceInput.value = ''
+    })
+    detail.querySelectorAll('[data-asset-field]').forEach(field => field.addEventListener('change', () => {
+      const key = field.dataset.assetField
+      const value = key === 'tags' ? field.value.split(',').map(item => item.trim()).filter(Boolean) : field.value
+      store.updateAsset?.(selectedAsset.id, { [key]: value })
+    }))
+    panel.appendChild(detail)
+  }
   return panel;
+}
+
+function renderComponents() {
+  const panel = document.createElement('div')
+  panel.className = 'dock-panel component-browser'
+
+  const intro = document.createElement('div')
+  intro.className = 'component-intro'
+  intro.innerHTML = `<div class="component-intro-title">互动组件</div><div class="component-intro-copy">把对象、触发条件和反馈动作组合成可复用的互动元素。</div>`
+  panel.appendChild(intro)
+
+  const grid = document.createElement('div')
+  grid.className = 'component-grid'
+  const obj = currentObject()
+  INTERACTION_TEMPLATES.forEach(template => {
+    const card = document.createElement('article')
+    card.className = 'component-card'
+    card.innerHTML = `<div class="component-card-icon">${iconMarkup(template.icon)}</div><div class="component-card-body"><strong>${template.label}</strong><span>${template.description}</span><small>${template.when === 'tap' ? '点击' : template.when === 'gaze' ? '注视' : template.when === 'hold' ? '按住' : '进入区域'}</small></div>`
+    const apply = makeButton('', 'btn btn-secondary btn-sm')
+    apply.innerHTML = `${iconMarkup('add-line')}<span>添加</span>`
+    apply.disabled = !obj
+    apply.title = obj ? `应用到「${obj.name || obj.id}」` : '请先选择一个对象'
+    apply.addEventListener('click', () => {
+      if (!obj) return
+      const result = interactionTemplate(template.id, obj.id, obj)
+      if (!result) return
+      if (result.sequence) {
+        const sequence = store.addSequence(result.sequence)
+        result.trigger.do = (result.trigger.do || []).map(action => action.action === 'play_seq' ? { ...action, args: { seqId: sequence.id } } : action)
+      }
+      store.addTrigger(result.trigger)
+      log(`已添加互动组件「${template.label}」到 ${obj.name || obj.id}`)
+      requestRender()
+    })
+    card.appendChild(apply)
+    grid.appendChild(card)
+  })
+
+  if (!obj) {
+    const hint = document.createElement('div')
+    hint.className = 'component-selection-hint'
+    hint.innerHTML = `${iconMarkup('cursor-line')}<span>先在视口或左侧大纲选择一个对象</span>`
+    panel.appendChild(hint)
+  }
+  panel.appendChild(grid)
+  return panel
 }
 
 function getSequence() {
@@ -326,7 +484,8 @@ function renderTimeline() {
   duration.min = '0.1';
   duration.step = '0.1';
 
-  const addSequence = makeButton('＋ 新建', 'btn');
+  const addSequence = makeButton('', 'btn');
+  addSequence.innerHTML = `${iconMarkup('add-line')}<span>新建</span>`;
   addSequence.addEventListener('click', () => {
     const seq = store.addSequence({
       name: '新时间线',
@@ -372,13 +531,15 @@ function renderTimeline() {
     playhead = Math.min(playhead, value);
   });
 
-  const play = makeButton('▶ 播放', 'btn');
+  const play = makeButton('', 'btn');
+  play.innerHTML = `${iconMarkup('play-fill')}<span>播放</span>`;
   play.disabled = !seq;
   play.addEventListener('click', () => {
     if (seq) player.play(seq.id);
   });
 
-  const stop = makeButton('■ 停止', 'btn');
+  const stop = makeButton('', 'btn');
+  stop.innerHTML = `${iconMarkup('stop-fill')}<span>停止</span>`;
   stop.disabled = !seq;
   stop.addEventListener('click', () => {
     player.stop(true);
@@ -387,13 +548,15 @@ function renderTimeline() {
     requestRender();
   });
 
-  const zoomOut = makeButton('－', 'btn');
+  const zoomOut = makeButton('', 'btn');
+  zoomOut.innerHTML = iconMarkup('zoom-out-line', '缩小时间刻度');
   zoomOut.title = '缩小时间刻度（Ctrl+滚轮也可）';
   zoomOut.addEventListener('click', () => {
     tlZoom = Math.max(20, tlZoom * 0.75);
     requestRender();
   });
-  const zoomIn = makeButton('＋', 'btn');
+  const zoomIn = makeButton('', 'btn');
+  zoomIn.innerHTML = iconMarkup('zoom-in-line', '放大时间刻度');
   zoomIn.title = '放大时间刻度';
   zoomIn.addEventListener('click', () => {
     tlZoom = Math.min(800, tlZoom * 1.33);
@@ -417,14 +580,15 @@ function renderTimeline() {
   if (!seq) {
     const empty = document.createElement('div');
     empty.className = 'empty-state';
-    empty.textContent = '暂无时间线，点击「＋ 新建」创建';
+    empty.textContent = '暂无时间线，点击「新建」创建';
     panel.appendChild(empty);
     return panel;
   }
 
   const durationValue = Number(seq.duration) || 1;
   const NAME_W = 170;
-  const pxW = Math.max(200, durationValue * tlZoom);
+  const availableLaneWidth = Math.max(240, (root?.clientWidth || 900) - NAME_W - 24);
+  const pxW = Math.max(200, durationValue * tlZoom, availableLaneWidth);
   const t2x = t => NAME_W + t * tlZoom;
   const x2t = (lane, clientX) => {
     const rect = lane.getBoundingClientRect();
@@ -477,7 +641,7 @@ function renderTimeline() {
   if (!(seq.tracks || []).length) {
     const hint = document.createElement('div');
     hint.className = 'tl-empty-hint';
-    hint.textContent = '还没有轨道——用下方「＋ 轨道」给对象加一条，轨道上双击空白处打关键帧';
+    hint.textContent = '还没有轨道——用下方「轨道」给对象加一条，轨道上双击空白处打关键帧';
     inner.appendChild(hint);
   }
 
@@ -499,7 +663,8 @@ function renderTimeline() {
       if (track.target) store.select(track.target);
     });
 
-    const removeTrack = makeButton('×', 'tl-track-del');
+    const removeTrack = makeButton('', 'tl-track-del');
+    removeTrack.innerHTML = iconMarkup('delete-bin-6-line', '删除轨道');
     removeTrack.title = '删除轨道';
     removeTrack.addEventListener('click', () => {
       const nextTracks = (seq.tracks || []).filter((_, i) => i !== trackIndex);
@@ -553,6 +718,7 @@ function renderTimeline() {
       const point = document.createElement('button');
       point.type = 'button';
       point.className = 'tl-key';
+      point.dataset.keyAnchor = `${trackIndex}-${keyIndex}`;
       point.title = `${Number(key.t || 0).toFixed(2)}s · 拖动调时间`;
       point.style.left = `${Number(key.t || 0) * tlZoom}px`;
 
@@ -639,7 +805,8 @@ function renderTimeline() {
     targetSelect.appendChild(option);
   });
 
-  const addTrack = makeButton('＋ 轨道', 'btn');
+  const addTrack = makeButton('', 'btn');
+  addTrack.innerHTML = `${iconMarkup('add-line')}<span>轨道</span>`;
   addTrack.disabled = !(store.scene.objects || []).length;
   addTrack.addEventListener('click', () => {
     const tracksNext = [
@@ -659,9 +826,48 @@ function renderTimeline() {
   return panel;
 }
 
+function mountKeyPopover(editor, anchor, scroll) {
+  if (!editor || !anchor) return;
+
+  editor.dataset.keyPortal = 'true';
+  document.body.appendChild(editor);
+
+  const position = () => {
+    if (!document.body.contains(editor) || !document.body.contains(anchor)) return;
+    const anchorRect = anchor.getBoundingClientRect();
+    const width = editor.offsetWidth;
+    const height = editor.offsetHeight;
+    const gap = 10;
+    const margin = 12;
+    let left = anchorRect.left + anchorRect.width / 2 - width / 2;
+    let top = anchorRect.bottom + gap;
+
+    left = Math.max(margin, Math.min(left, window.innerWidth - width - margin));
+    if (top + height > window.innerHeight - margin) top = anchorRect.top - height - gap;
+    top = Math.max(margin, Math.min(top, window.innerHeight - height - margin));
+
+    editor.style.left = `${Math.round(left)}px`;
+    editor.style.top = `${Math.round(top)}px`;
+  };
+
+  const cleanup = () => {
+    scroll?.removeEventListener('scroll', position);
+    window.removeEventListener('resize', position);
+    window.removeEventListener('scroll', position, true);
+    if (editor.parentNode) editor.remove();
+  };
+
+  keyPopoverCleanup = cleanup;
+  scroll?.addEventListener('scroll', position, { passive: true });
+  window.addEventListener('resize', position);
+  window.addEventListener('scroll', position, true);
+  requestAnimationFrame(position);
+}
+
 function renderKeyEditor(seq, track, trackIndex, key, keyIndex) {
   const editor = document.createElement('div');
   editor.className = 'key-popover';
+  editor.dataset.keyEditor = `${trackIndex}-${keyIndex}`;
 
   const title = document.createElement('strong');
   title.textContent = '关键帧';
@@ -754,7 +960,8 @@ function renderKeyEditor(seq, track, trackIndex, key, keyIndex) {
     editor.appendChild(input);
   }
 
-  const close = makeButton('×', 'btn');
+  const close = makeButton('', 'btn');
+  close.innerHTML = iconMarkup('close-line', '关闭');
   close.addEventListener('click', event => {
     event.stopPropagation();
     selectedKey = null;
@@ -843,6 +1050,8 @@ function renderStatusbar() {
 }
 
 function render() {
+  keyPopoverCleanup?.();
+  keyPopoverCleanup = null;
   if (!root) return;
   root.replaceChildren();
 
@@ -851,10 +1060,19 @@ function render() {
   content.className = 'dock-content';
 
   if (activeTab === 'assets') content.appendChild(renderAssets());
+  if (activeTab === 'components') content.appendChild(renderComponents());
   if (activeTab === 'timeline') content.appendChild(renderTimeline());
   if (activeTab === 'log') content.appendChild(renderLogs());
 
   root.append(tabs, content, renderStatusbar());
+
+  if (activeTab === 'timeline') {
+    const keyEditor = root.querySelector('[data-key-editor]');
+    if (keyEditor) {
+      const anchor = root.querySelector(`[data-key-anchor=\"${keyEditor.dataset.keyEditor}\"]`);
+      mountKeyPopover(keyEditor, anchor, root.querySelector('.tl-scroll'));
+    }
+  }
 }
 
 export function mount(el) {

@@ -1,0 +1,3889 @@
+{
+  "catalogId": "sidebar-interactive-elements",
+  "catalogVersion": "0.1.0",
+  "status": "planning",
+  "title": "侧边栏互动元素目录",
+  "purpose": "固定元素目录：用户从侧边栏选择或拖入视口后创建场景对象。",
+  "notProjectAssetLibrary": true,
+  "sourceOfTruth": "docs/sidebar-element-asset-table.json",
+  "uiTarget": "空间侧边栏 > 固定元素",
+  "excludedContent": [
+    "西游人物",
+    "西游剧情章节",
+    "西游地点",
+    "花果山演示场景",
+    "唐僧/悟空等专属对象"
+  ],
+  "renderKinds": {
+    "compound": "由基础几何/程序化部件构成，可直接预览，不依赖外部模型文件。",
+    "effect": "粒子、Shader、透明贴图或体积效果。",
+    "quad": "图片、信息牌或屏幕平面。",
+    "helper": "编辑辅助或逻辑控制对象，可按配置在 Runtime 隐藏。",
+    "model": "可选的外部 GLB/GLTF 资产；不是第一阶段的硬依赖。"
+  },
+  "interactionProfileDefinitions": {
+    "static": "静态摆放：可移动、缩放、旋转、显隐和删除。",
+    "tap_feedback": "点击反馈：点击后高亮、播放短动画，可接音效/粒子。",
+    "gaze_feedback": "注视反馈：注视达到阈值后触发高亮或动作。",
+    "hold_feedback": "按住反馈：按住达到阈值后触发动作。",
+    "pushable": "可推动：支持平面移动、碰撞和阻尼。",
+    "openable": "可开合：支持打开/关闭状态和进度动画。",
+    "pickup_throw": "可拾取投掷：支持拾取、拖拽、投掷、落地和回收。",
+    "collectible": "可收集：触碰或点击后计数、隐藏并触发反馈。",
+    "switchable": "开关机关：支持开/关状态、联动对象和冷却时间。",
+    "triggerable": "触发器：进入、离开、靠近或条件满足时执行动作。",
+    "moving": "运动机关：沿轨道、往返、旋转或弹跳。",
+    "vehicle": "载具/玩具：支持点击启动、驾驶或自动巡航。",
+    "particle_emitter": "粒子发射：支持数量、速度、方向、生命周期、颜色和区域。",
+    "flyby": "飞掠运动：按路径或随机轨迹从视野中飘飞经过。",
+    "atmosphere": "氛围效果：持续或按区域启停的环境视觉效果。",
+    "volume_effect": "空间体积效果：有范围、密度、流速和进入/离开事件。",
+    "display": "展示交互：显示图文/数值/状态，并支持更新内容。",
+    "audio": "声音交互：播放、停止、循环、音量和空间衰减。",
+    "path": "路径控制：作为移动、镜头、巡逻或粒子轨迹的路径。",
+    "helper": "编辑辅助：仅编辑器或运行时定位/约束使用，可配置显隐。",
+    "camera": "镜头控制：设置生成点、轨道、跟随目标或观察范围。",
+    "physics": "物理交互：碰撞、受力、弹性、重力和触发事件。",
+    "damage": "危险反馈：碰撞或触发后扣除生命/耐久，必须有可关闭状态。"
+  },
+  "categories": [
+    {
+      "id": "furniture",
+      "name": "家居与室内",
+      "description": "家具、室内陈设和可推动物件；用于快速搭建可交互的小场景。",
+      "items": [
+        {
+          "id": "furniture.box",
+          "name": "盒子",
+          "render": {
+            "kind": "compound",
+            "preset": "box"
+          },
+          "interactionProfiles": [
+            "static",
+            "pushable",
+            "pickup_throw"
+          ],
+          "priority": "P0",
+          "tags": [
+            "盒子",
+            "基础",
+            "可推动"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.8,
+              0.8,
+              0.8
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "furniture.crate",
+          "name": "木箱",
+          "render": {
+            "kind": "compound",
+            "preset": "crate"
+          },
+          "interactionProfiles": [
+            "static",
+            "pushable",
+            "pickup_throw",
+            "openable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "木箱",
+            "容器",
+            "可打开"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.9,
+              0.9,
+              0.9
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "furniture.table",
+          "name": "桌子",
+          "render": {
+            "kind": "compound",
+            "preset": "table"
+          },
+          "interactionProfiles": [
+            "static",
+            "tap_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "桌子",
+            "家具",
+            "平台"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.2,
+              1,
+              1.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "furniture.chair",
+          "name": "椅子",
+          "render": {
+            "kind": "compound",
+            "preset": "chair"
+          },
+          "interactionProfiles": [
+            "static",
+            "pushable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "椅子",
+            "家具",
+            "可推动"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.75,
+              0.75,
+              0.75
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "furniture.stool",
+          "name": "凳子",
+          "render": {
+            "kind": "compound",
+            "preset": "stool"
+          },
+          "interactionProfiles": [
+            "static",
+            "pushable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "凳子",
+            "家具",
+            "可推动"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.6,
+              0.6,
+              0.6
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "furniture.bench",
+          "name": "长凳",
+          "render": {
+            "kind": "compound",
+            "preset": "bench"
+          },
+          "interactionProfiles": [
+            "static",
+            "pushable"
+          ],
+          "priority": "P1",
+          "tags": [
+            "长凳",
+            "家具",
+            "平台"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1,
+              0.8,
+              1
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "furniture.cabinet",
+          "name": "柜子",
+          "render": {
+            "kind": "compound",
+            "preset": "cabinet"
+          },
+          "interactionProfiles": [
+            "static",
+            "openable"
+          ],
+          "priority": "P1",
+          "tags": [
+            "柜子",
+            "家具",
+            "开合"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1,
+              1.2,
+              1
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "furniture.shelf",
+          "name": "货架",
+          "render": {
+            "kind": "compound",
+            "preset": "shelf"
+          },
+          "interactionProfiles": [
+            "static",
+            "tap_feedback"
+          ],
+          "priority": "P1",
+          "tags": [
+            "货架",
+            "家具",
+            "陈列"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1,
+              1.3,
+              0.8
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "furniture.barrel",
+          "name": "木桶",
+          "render": {
+            "kind": "compound",
+            "preset": "barrel"
+          },
+          "interactionProfiles": [
+            "static",
+            "pushable",
+            "pickup_throw"
+          ],
+          "priority": "P1",
+          "tags": [
+            "木桶",
+            "容器",
+            "滚动"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "cylinder",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.65,
+              0.9,
+              0.65
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "furniture.lamp",
+          "name": "台灯",
+          "render": {
+            "kind": "compound",
+            "preset": "lamp"
+          },
+          "interactionProfiles": [
+            "static",
+            "tap_feedback",
+            "switchable"
+          ],
+          "priority": "P1",
+          "tags": [
+            "台灯",
+            "开关",
+            "灯光"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.45,
+              0.7,
+              0.45
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "furniture.rug",
+          "name": "地毯",
+          "render": {
+            "kind": "compound",
+            "preset": "rug"
+          },
+          "interactionProfiles": [
+            "static",
+            "tap_feedback"
+          ],
+          "priority": "P1",
+          "tags": [
+            "地毯",
+            "地面",
+            "装饰"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.5,
+              0.05,
+              1.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "furniture.screen",
+          "name": "桌面屏幕",
+          "render": {
+            "kind": "quad",
+            "preset": "screen"
+          },
+          "interactionProfiles": [
+            "static",
+            "display",
+            "tap_feedback"
+          ],
+          "priority": "P1",
+          "tags": [
+            "屏幕",
+            "展示",
+            "信息"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1,
+              1,
+              1
+            ]
+          },
+          "assetPolicy": "optional-external"
+        }
+      ]
+    },
+    {
+      "id": "environment",
+      "name": "建筑与自然环境",
+      "description": "房子、建筑构件和自然元素；用于组成可探索的三维场景。",
+      "items": [
+        {
+          "id": "environment.house",
+          "name": "房子",
+          "render": {
+            "kind": "compound",
+            "preset": "house"
+          },
+          "interactionProfiles": [
+            "static",
+            "tap_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "房子",
+            "建筑",
+            "场景"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2.5,
+              2.5,
+              2.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "environment.cabin",
+          "name": "小屋",
+          "render": {
+            "kind": "compound",
+            "preset": "cabin"
+          },
+          "interactionProfiles": [
+            "static",
+            "openable"
+          ],
+          "priority": "P1",
+          "tags": [
+            "小屋",
+            "建筑",
+            "入口"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2,
+              2,
+              2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "environment.wall",
+          "name": "墙体",
+          "render": {
+            "kind": "compound",
+            "preset": "wall"
+          },
+          "interactionProfiles": [
+            "static",
+            "helper"
+          ],
+          "priority": "P0",
+          "tags": [
+            "墙",
+            "建筑",
+            "遮挡"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2,
+              1.5,
+              0.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "environment.fence",
+          "name": "栅栏",
+          "render": {
+            "kind": "compound",
+            "preset": "fence"
+          },
+          "interactionProfiles": [
+            "static",
+            "pushable"
+          ],
+          "priority": "P1",
+          "tags": [
+            "栅栏",
+            "边界",
+            "建筑"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.5,
+              0.8,
+              0.15
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "environment.gate",
+          "name": "大门",
+          "render": {
+            "kind": "compound",
+            "preset": "gate"
+          },
+          "interactionProfiles": [
+            "static",
+            "openable",
+            "switchable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "大门",
+            "机关",
+            "开合"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.8,
+              2,
+              0.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "environment.bridge",
+          "name": "桥",
+          "render": {
+            "kind": "compound",
+            "preset": "bridge"
+          },
+          "interactionProfiles": [
+            "static",
+            "triggerable"
+          ],
+          "priority": "P1",
+          "tags": [
+            "桥",
+            "通道",
+            "路径"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2,
+              0.4,
+              3
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "environment.stairs",
+          "name": "台阶",
+          "render": {
+            "kind": "compound",
+            "preset": "stairs"
+          },
+          "interactionProfiles": [
+            "static",
+            "helper"
+          ],
+          "priority": "P1",
+          "tags": [
+            "台阶",
+            "地形",
+            "通道"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.5,
+              0.8,
+              1.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "environment.tree",
+          "name": "树",
+          "render": {
+            "kind": "compound",
+            "preset": "tree"
+          },
+          "interactionProfiles": [
+            "static",
+            "tap_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "树",
+            "自然",
+            "环境"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.5,
+              2.5,
+              1.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "environment.shrub",
+          "name": "灌木",
+          "render": {
+            "kind": "compound",
+            "preset": "shrub"
+          },
+          "interactionProfiles": [
+            "static"
+          ],
+          "priority": "P1",
+          "tags": [
+            "灌木",
+            "自然",
+            "装饰"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.9,
+              0.7,
+              0.9
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "environment.flower",
+          "name": "花丛",
+          "render": {
+            "kind": "compound",
+            "preset": "flower"
+          },
+          "interactionProfiles": [
+            "static",
+            "tap_feedback"
+          ],
+          "priority": "P1",
+          "tags": [
+            "花",
+            "自然",
+            "装饰"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.8,
+              0.5,
+              0.8
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "environment.rock",
+          "name": "岩石",
+          "render": {
+            "kind": "compound",
+            "preset": "rock"
+          },
+          "interactionProfiles": [
+            "static",
+            "pushable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "岩石",
+            "自然",
+            "障碍"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "sphere",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1,
+              0.8,
+              1
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "environment.boulder",
+          "name": "巨石",
+          "render": {
+            "kind": "compound",
+            "preset": "boulder"
+          },
+          "interactionProfiles": [
+            "static",
+            "pushable"
+          ],
+          "priority": "P1",
+          "tags": [
+            "巨石",
+            "自然",
+            "障碍"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "sphere",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.8,
+              1.5,
+              1.8
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "environment.signpost",
+          "name": "路牌",
+          "render": {
+            "kind": "compound",
+            "preset": "signpost"
+          },
+          "interactionProfiles": [
+            "static",
+            "display",
+            "tap_feedback"
+          ],
+          "priority": "P1",
+          "tags": [
+            "路牌",
+            "指引",
+            "文字"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.6,
+              1.2,
+              0.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "environment.lamp_post",
+          "name": "路灯",
+          "render": {
+            "kind": "compound",
+            "preset": "lamp_post"
+          },
+          "interactionProfiles": [
+            "static",
+            "switchable"
+          ],
+          "priority": "P1",
+          "tags": [
+            "路灯",
+            "灯光",
+            "环境"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.5,
+              2,
+              0.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "environment.well",
+          "name": "井",
+          "render": {
+            "kind": "compound",
+            "preset": "well"
+          },
+          "interactionProfiles": [
+            "static",
+            "openable",
+            "triggerable"
+          ],
+          "priority": "P2",
+          "tags": [
+            "水井",
+            "建筑",
+            "探索"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "cylinder",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.1,
+              0.8,
+              1.1
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        }
+      ]
+    },
+    {
+      "id": "volume",
+      "name": "材质与空间效果",
+      "description": "水、冰、石块等材质/体积型元素；视觉上可实体化，也可作为范围效果。",
+      "items": [
+        {
+          "id": "volume.water_surface",
+          "name": "水面",
+          "render": {
+            "kind": "effect",
+            "preset": "water_surface"
+          },
+          "interactionProfiles": [
+            "static",
+            "volume_effect",
+            "tap_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "水",
+            "水面",
+            "反射"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2,
+              0.05,
+              2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "volume.stream",
+          "name": "溪流",
+          "render": {
+            "kind": "effect",
+            "preset": "stream"
+          },
+          "interactionProfiles": [
+            "static",
+            "volume_effect",
+            "triggerable"
+          ],
+          "priority": "P1",
+          "tags": [
+            "水",
+            "溪流",
+            "流动"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              3,
+              0.05,
+              0.8
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "volume.pool",
+          "name": "水池",
+          "render": {
+            "kind": "effect",
+            "preset": "pool"
+          },
+          "interactionProfiles": [
+            "static",
+            "volume_effect",
+            "triggerable"
+          ],
+          "priority": "P1",
+          "tags": [
+            "水",
+            "水池",
+            "区域"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2.5,
+              0.25,
+              2.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "volume.ice_patch",
+          "name": "冰面",
+          "render": {
+            "kind": "compound",
+            "preset": "ice_patch"
+          },
+          "interactionProfiles": [
+            "static",
+            "physics",
+            "tap_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "冰",
+            "冰面",
+            "滑动"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2,
+              0.04,
+              2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "volume.ice_wall",
+          "name": "冰墙",
+          "render": {
+            "kind": "compound",
+            "preset": "ice_wall"
+          },
+          "interactionProfiles": [
+            "static",
+            "pushable"
+          ],
+          "priority": "P1",
+          "tags": [
+            "冰",
+            "墙",
+            "障碍"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.5,
+              1.5,
+              0.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "volume.stone_block",
+          "name": "石块",
+          "render": {
+            "kind": "compound",
+            "preset": "stone_block"
+          },
+          "interactionProfiles": [
+            "static",
+            "pushable",
+            "pickup_throw"
+          ],
+          "priority": "P0",
+          "tags": [
+            "石块",
+            "石头",
+            "基础"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.8,
+              0.8,
+              0.8
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "volume.sand_patch",
+          "name": "沙地",
+          "render": {
+            "kind": "effect",
+            "preset": "sand_patch"
+          },
+          "interactionProfiles": [
+            "static",
+            "volume_effect"
+          ],
+          "priority": "P1",
+          "tags": [
+            "沙地",
+            "地面",
+            "材质"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2.5,
+              0.03,
+              2.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "volume.mud_patch",
+          "name": "泥地",
+          "render": {
+            "kind": "effect",
+            "preset": "mud_patch"
+          },
+          "interactionProfiles": [
+            "static",
+            "physics",
+            "volume_effect"
+          ],
+          "priority": "P1",
+          "tags": [
+            "泥地",
+            "地面",
+            "减速"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2.5,
+              0.03,
+              2.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "volume.lava_flow",
+          "name": "熔岩流",
+          "render": {
+            "kind": "effect",
+            "preset": "lava_flow"
+          },
+          "interactionProfiles": [
+            "static",
+            "volume_effect",
+            "damage"
+          ],
+          "priority": "P1",
+          "tags": [
+            "熔岩",
+            "危险",
+            "流动"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2.5,
+              0.08,
+              0.8
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "volume.fog",
+          "name": "雾气体积",
+          "render": {
+            "kind": "effect",
+            "preset": "fog_volume"
+          },
+          "interactionProfiles": [
+            "volume_effect",
+            "atmosphere"
+          ],
+          "priority": "P0",
+          "tags": [
+            "雾",
+            "体积",
+            "氛围"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "volume",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              3,
+              2,
+              3
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "volume.wind",
+          "name": "风场",
+          "render": {
+            "kind": "effect",
+            "preset": "wind_volume"
+          },
+          "interactionProfiles": [
+            "volume_effect",
+            "physics"
+          ],
+          "priority": "P1",
+          "tags": [
+            "风",
+            "体积",
+            "受力"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "volume",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2,
+              1.5,
+              2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "volume.force_field",
+          "name": "力场",
+          "render": {
+            "kind": "effect",
+            "preset": "force_field"
+          },
+          "interactionProfiles": [
+            "volume_effect",
+            "physics",
+            "triggerable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "力场",
+            "范围",
+            "机关"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "volume",
+            "collider": "sphere",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2,
+              2,
+              2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "volume.cloud",
+          "name": "云团",
+          "render": {
+            "kind": "effect",
+            "preset": "cloud_volume"
+          },
+          "interactionProfiles": [
+            "static",
+            "atmosphere",
+            "tap_feedback"
+          ],
+          "priority": "P1",
+          "tags": [
+            "云",
+            "天空",
+            "氛围"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "floating",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2,
+              1,
+              2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "volume.snow_field",
+          "name": "积雪",
+          "render": {
+            "kind": "effect",
+            "preset": "snow_field"
+          },
+          "interactionProfiles": [
+            "static",
+            "volume_effect"
+          ],
+          "priority": "P2",
+          "tags": [
+            "雪",
+            "地面",
+            "季节"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2.5,
+              0.04,
+              2.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "volume.grass_patch",
+          "name": "草地",
+          "render": {
+            "kind": "compound",
+            "preset": "grass_patch"
+          },
+          "interactionProfiles": [
+            "static",
+            "tap_feedback"
+          ],
+          "priority": "P1",
+          "tags": [
+            "草",
+            "地面",
+            "自然"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2,
+              0.2,
+              2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "volume.ripple",
+          "name": "水波",
+          "render": {
+            "kind": "effect",
+            "preset": "ripple_surface"
+          },
+          "interactionProfiles": [
+            "tap_feedback",
+            "volume_effect"
+          ],
+          "priority": "P0",
+          "tags": [
+            "水波",
+            "反馈",
+            "动画"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.5,
+              0.02,
+              1.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        }
+      ]
+    },
+    {
+      "id": "game",
+      "name": "游戏道具与机关",
+      "description": "箱子、收集物、机关和关卡对象；优先保证点击、碰撞、进入和联动可配置。",
+      "items": [
+        {
+          "id": "game.chest",
+          "name": "宝箱",
+          "render": {
+            "kind": "compound",
+            "preset": "chest"
+          },
+          "interactionProfiles": [
+            "static",
+            "openable",
+            "tap_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "宝箱",
+            "开合",
+            "奖励"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.9,
+              0.8,
+              0.9
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.treasure_chest",
+          "name": "大型宝箱",
+          "render": {
+            "kind": "compound",
+            "preset": "treasure_chest"
+          },
+          "interactionProfiles": [
+            "static",
+            "openable",
+            "collectible"
+          ],
+          "priority": "P1",
+          "tags": [
+            "宝箱",
+            "奖励",
+            "关卡"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.3,
+              1,
+              1.3
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.key",
+          "name": "钥匙",
+          "render": {
+            "kind": "compound",
+            "preset": "key"
+          },
+          "interactionProfiles": [
+            "collectible",
+            "tap_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "钥匙",
+            "收集",
+            "道具"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "floating",
+            "collider": "sphere",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.coin",
+          "name": "金币",
+          "render": {
+            "kind": "compound",
+            "preset": "coin"
+          },
+          "interactionProfiles": [
+            "collectible",
+            "tap_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "金币",
+            "收集",
+            "计分"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "floating",
+            "collider": "sphere",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.25,
+              0.25,
+              0.25
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.crystal",
+          "name": "能量晶体",
+          "render": {
+            "kind": "compound",
+            "preset": "crystal"
+          },
+          "interactionProfiles": [
+            "collectible",
+            "tap_feedback",
+            "gaze_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "晶体",
+            "收集",
+            "发光"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "floating",
+            "collider": "sphere",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.4,
+              0.7,
+              0.4
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.health_pack",
+          "name": "补给包",
+          "render": {
+            "kind": "compound",
+            "preset": "health_pack"
+          },
+          "interactionProfiles": [
+            "collectible",
+            "tap_feedback"
+          ],
+          "priority": "P1",
+          "tags": [
+            "补给",
+            "生命",
+            "道具"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.5,
+              0.5,
+              0.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.checkpoint",
+          "name": "检查点",
+          "render": {
+            "kind": "effect",
+            "preset": "checkpoint"
+          },
+          "interactionProfiles": [
+            "triggerable",
+            "tap_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "检查点",
+            "存档",
+            "进度"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "cylinder",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.8,
+              1.5,
+              0.8
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.target",
+          "name": "靶标",
+          "render": {
+            "kind": "compound",
+            "preset": "target"
+          },
+          "interactionProfiles": [
+            "tap_feedback",
+            "physics"
+          ],
+          "priority": "P0",
+          "tags": [
+            "靶标",
+            "射击",
+            "反馈"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.7,
+              0.9,
+              0.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.switch",
+          "name": "拨杆开关",
+          "render": {
+            "kind": "compound",
+            "preset": "switch"
+          },
+          "interactionProfiles": [
+            "switchable",
+            "tap_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "开关",
+            "拨杆",
+            "联动"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.4,
+              0.7,
+              0.3
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.pressure_plate",
+          "name": "压力板",
+          "render": {
+            "kind": "compound",
+            "preset": "pressure_plate"
+          },
+          "interactionProfiles": [
+            "switchable",
+            "physics",
+            "triggerable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "压力板",
+            "机关",
+            "进入"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1,
+              0.08,
+              1
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.button",
+          "name": "按钮",
+          "render": {
+            "kind": "compound",
+            "preset": "button"
+          },
+          "interactionProfiles": [
+            "switchable",
+            "tap_feedback",
+            "hold_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "按钮",
+            "点击",
+            "按住"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.35,
+              0.2,
+              0.35
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.lever",
+          "name": "拉杆",
+          "render": {
+            "kind": "compound",
+            "preset": "lever"
+          },
+          "interactionProfiles": [
+            "switchable",
+            "hold_feedback"
+          ],
+          "priority": "P1",
+          "tags": [
+            "拉杆",
+            "机关",
+            "开关"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.45,
+              0.8,
+              0.3
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.gear",
+          "name": "齿轮",
+          "render": {
+            "kind": "compound",
+            "preset": "gear"
+          },
+          "interactionProfiles": [
+            "moving",
+            "physics",
+            "tap_feedback"
+          ],
+          "priority": "P1",
+          "tags": [
+            "齿轮",
+            "旋转",
+            "机关"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "cylinder",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.8,
+              0.2,
+              0.8
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.door",
+          "name": "机关门",
+          "render": {
+            "kind": "compound",
+            "preset": "door"
+          },
+          "interactionProfiles": [
+            "openable",
+            "switchable",
+            "triggerable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "门",
+            "开合",
+            "机关"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.6,
+              2.2,
+              0.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.moving_platform",
+          "name": "移动平台",
+          "render": {
+            "kind": "compound",
+            "preset": "moving_platform"
+          },
+          "interactionProfiles": [
+            "moving",
+            "physics",
+            "triggerable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "平台",
+            "移动",
+            "承载"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.8,
+              0.2,
+              1.8
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.spring_pad",
+          "name": "弹跳板",
+          "render": {
+            "kind": "compound",
+            "preset": "spring_pad"
+          },
+          "interactionProfiles": [
+            "physics",
+            "tap_feedback",
+            "moving"
+          ],
+          "priority": "P1",
+          "tags": [
+            "弹跳",
+            "平台",
+            "受力"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1,
+              0.12,
+              1
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.launcher",
+          "name": "发射器",
+          "render": {
+            "kind": "compound",
+            "preset": "launcher"
+          },
+          "interactionProfiles": [
+            "switchable",
+            "physics",
+            "triggerable"
+          ],
+          "priority": "P1",
+          "tags": [
+            "发射",
+            "机关",
+            "投射"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.8,
+              0.5,
+              1.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.portal",
+          "name": "传送门",
+          "render": {
+            "kind": "effect",
+            "preset": "portal"
+          },
+          "interactionProfiles": [
+            "triggerable",
+            "tap_feedback",
+            "gaze_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "传送门",
+            "入口",
+            "空间"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.5,
+              2.5,
+              0.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.teleporter",
+          "name": "传送台",
+          "render": {
+            "kind": "effect",
+            "preset": "teleporter"
+          },
+          "interactionProfiles": [
+            "triggerable",
+            "tap_feedback"
+          ],
+          "priority": "P1",
+          "tags": [
+            "传送",
+            "平台",
+            "移动"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "cylinder",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.2,
+              0.15,
+              1.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.mine",
+          "name": "地雷",
+          "render": {
+            "kind": "compound",
+            "preset": "mine"
+          },
+          "interactionProfiles": [
+            "triggerable",
+            "physics",
+            "tap_feedback"
+          ],
+          "priority": "P1",
+          "tags": [
+            "地雷",
+            "危险",
+            "碰撞"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "sphere",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.35,
+              0.3,
+              0.35
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.beacon",
+          "name": "信标",
+          "render": {
+            "kind": "effect",
+            "preset": "beacon"
+          },
+          "interactionProfiles": [
+            "triggerable",
+            "tap_feedback",
+            "gaze_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "信标",
+            "引导",
+            "定位"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "cylinder",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.5,
+              1.5,
+              0.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "game.collectible_card",
+          "name": "收集卡片",
+          "render": {
+            "kind": "quad",
+            "preset": "collectible_card"
+          },
+          "interactionProfiles": [
+            "collectible",
+            "tap_feedback",
+            "display"
+          ],
+          "priority": "P1",
+          "tags": [
+            "卡片",
+            "收集",
+            "信息"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "floating",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.7,
+              1,
+              1
+            ]
+          },
+          "assetPolicy": "optional-external"
+        }
+      ]
+    },
+    {
+      "id": "toy",
+      "name": "载具与玩具",
+      "description": "坦克、玩具、机器人和简单载具；优先支持点击启动、自动巡航和碰撞反馈。",
+      "items": [
+        {
+          "id": "toy.toy_tank",
+          "name": "玩具坦克",
+          "render": {
+            "kind": "compound",
+            "preset": "toy_tank"
+          },
+          "interactionProfiles": [
+            "vehicle",
+            "tap_feedback",
+            "physics"
+          ],
+          "priority": "P0",
+          "tags": [
+            "玩具",
+            "坦克",
+            "载具"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.9,
+              0.5,
+              1
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "toy.tank",
+          "name": "坦克",
+          "render": {
+            "kind": "compound",
+            "preset": "tank"
+          },
+          "interactionProfiles": [
+            "vehicle",
+            "physics",
+            "tap_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "坦克",
+            "载具",
+            "游戏"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.6,
+              0.9,
+              2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "toy.car",
+          "name": "小车",
+          "render": {
+            "kind": "compound",
+            "preset": "car"
+          },
+          "interactionProfiles": [
+            "vehicle",
+            "physics",
+            "tap_feedback"
+          ],
+          "priority": "P1",
+          "tags": [
+            "小车",
+            "载具",
+            "移动"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1,
+              0.6,
+              1.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "toy.drone",
+          "name": "无人机",
+          "render": {
+            "kind": "compound",
+            "preset": "drone"
+          },
+          "interactionProfiles": [
+            "vehicle",
+            "moving",
+            "tap_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "无人机",
+            "飞行",
+            "载具"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "floating",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.8,
+              0.25,
+              0.8
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "toy.robot",
+          "name": "机器人",
+          "render": {
+            "kind": "compound",
+            "preset": "robot"
+          },
+          "interactionProfiles": [
+            "tap_feedback",
+            "moving",
+            "physics"
+          ],
+          "priority": "P1",
+          "tags": [
+            "机器人",
+            "角色",
+            "移动"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.8,
+              1.4,
+              0.6
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "toy.turret",
+          "name": "炮台",
+          "render": {
+            "kind": "compound",
+            "preset": "turret"
+          },
+          "interactionProfiles": [
+            "tap_feedback",
+            "moving",
+            "physics"
+          ],
+          "priority": "P1",
+          "tags": [
+            "炮台",
+            "瞄准",
+            "机关"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.8,
+              0.9,
+              0.8
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "toy.cannon",
+          "name": "火炮",
+          "render": {
+            "kind": "compound",
+            "preset": "cannon"
+          },
+          "interactionProfiles": [
+            "tap_feedback",
+            "physics",
+            "triggerable"
+          ],
+          "priority": "P1",
+          "tags": [
+            "火炮",
+            "发射",
+            "游戏"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.8,
+              0.8,
+              1.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "toy.ball",
+          "name": "球体玩具",
+          "render": {
+            "kind": "compound",
+            "preset": "ball"
+          },
+          "interactionProfiles": [
+            "physics",
+            "pickup_throw",
+            "pushable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "球",
+            "投掷",
+            "物理"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "sphere",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.45,
+              0.45,
+              0.45
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "toy.cube",
+          "name": "彩色方块",
+          "render": {
+            "kind": "compound",
+            "preset": "cube_toy"
+          },
+          "interactionProfiles": [
+            "physics",
+            "pickup_throw",
+            "pushable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "方块",
+            "玩具",
+            "物理"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.6,
+              0.6,
+              0.6
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "toy.windup",
+          "name": "发条玩具",
+          "render": {
+            "kind": "compound",
+            "preset": "windup_toy"
+          },
+          "interactionProfiles": [
+            "moving",
+            "tap_feedback"
+          ],
+          "priority": "P1",
+          "tags": [
+            "发条",
+            "玩具",
+            "自动移动"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.5,
+              0.7,
+              0.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "toy.balloon",
+          "name": "气球",
+          "render": {
+            "kind": "compound",
+            "preset": "balloon"
+          },
+          "interactionProfiles": [
+            "tap_feedback",
+            "moving",
+            "flyby"
+          ],
+          "priority": "P1",
+          "tags": [
+            "气球",
+            "漂浮",
+            "飞行"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "floating",
+            "collider": "sphere",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.5,
+              0.7,
+              0.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "toy.saucer",
+          "name": "飞碟",
+          "render": {
+            "kind": "compound",
+            "preset": "flying_saucer"
+          },
+          "interactionProfiles": [
+            "vehicle",
+            "moving",
+            "flyby"
+          ],
+          "priority": "P1",
+          "tags": [
+            "飞碟",
+            "飞行",
+            "载具"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "floating",
+            "collider": "sphere",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1,
+              0.35,
+              1
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "toy.boat",
+          "name": "小船",
+          "render": {
+            "kind": "compound",
+            "preset": "boat"
+          },
+          "interactionProfiles": [
+            "vehicle",
+            "physics",
+            "moving"
+          ],
+          "priority": "P2",
+          "tags": [
+            "小船",
+            "水面",
+            "载具"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.5,
+              0.5,
+              2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "toy.glider",
+          "name": "滑翔机",
+          "render": {
+            "kind": "compound",
+            "preset": "glider"
+          },
+          "interactionProfiles": [
+            "vehicle",
+            "moving",
+            "flyby"
+          ],
+          "priority": "P2",
+          "tags": [
+            "滑翔机",
+            "飞行",
+            "载具"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "floating",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.5,
+              0.3,
+              1.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        }
+      ]
+    },
+    {
+      "id": "fx",
+      "name": "粒子、氛围与飞掠效果",
+      "description": "粒子发射、萤火虫、飘飞和环境效果；用于制造明显的游戏反馈和空间生命感。",
+      "items": [
+        {
+          "id": "fx.particle_emitter",
+          "name": "粒子发射器",
+          "render": {
+            "kind": "effect",
+            "preset": "particle_emitter"
+          },
+          "interactionProfiles": [
+            "particle_emitter",
+            "triggerable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "粒子",
+            "发射器",
+            "可配置"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "point",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1,
+              1,
+              1
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "fx.spark_burst",
+          "name": "火花爆发",
+          "render": {
+            "kind": "effect",
+            "preset": "spark_burst"
+          },
+          "interactionProfiles": [
+            "particle_emitter",
+            "tap_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "火花",
+            "爆发",
+            "反馈"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "point",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              0.8,
+              0.8,
+              0.8
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "fx.firefly_swarm",
+          "name": "萤火虫群",
+          "render": {
+            "kind": "effect",
+            "preset": "firefly_swarm"
+          },
+          "interactionProfiles": [
+            "particle_emitter",
+            "atmosphere",
+            "flyby"
+          ],
+          "priority": "P0",
+          "tags": [
+            "萤火虫",
+            "粒子",
+            "氛围"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "volume",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2,
+              1.5,
+              2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "fx.flyby_motes",
+          "name": "飘飞光点",
+          "render": {
+            "kind": "effect",
+            "preset": "flyby_motes"
+          },
+          "interactionProfiles": [
+            "particle_emitter",
+            "flyby",
+            "atmosphere"
+          ],
+          "priority": "P0",
+          "tags": [
+            "飘飞",
+            "光点",
+            "经过"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "volume",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              3,
+              2,
+              3
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "fx.bird_flock",
+          "name": "飞鸟群",
+          "render": {
+            "kind": "effect",
+            "preset": "bird_flock"
+          },
+          "interactionProfiles": [
+            "flyby",
+            "atmosphere"
+          ],
+          "priority": "P1",
+          "tags": [
+            "飞鸟",
+            "群体",
+            "飞掠"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "volume",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              4,
+              2,
+              4
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "fx.falling_leaves",
+          "name": "落叶",
+          "render": {
+            "kind": "effect",
+            "preset": "falling_leaves"
+          },
+          "interactionProfiles": [
+            "particle_emitter",
+            "flyby",
+            "atmosphere"
+          ],
+          "priority": "P1",
+          "tags": [
+            "落叶",
+            "粒子",
+            "季节"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "volume",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              3,
+              2.5,
+              3
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "fx.petals",
+          "name": "花瓣飘落",
+          "render": {
+            "kind": "effect",
+            "preset": "petals"
+          },
+          "interactionProfiles": [
+            "particle_emitter",
+            "flyby",
+            "atmosphere"
+          ],
+          "priority": "P1",
+          "tags": [
+            "花瓣",
+            "飘落",
+            "氛围"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "volume",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              3,
+              2,
+              3
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "fx.snow_particles",
+          "name": "雪花",
+          "render": {
+            "kind": "effect",
+            "preset": "snow_particles"
+          },
+          "interactionProfiles": [
+            "particle_emitter",
+            "atmosphere"
+          ],
+          "priority": "P2",
+          "tags": [
+            "雪花",
+            "粒子",
+            "天气"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "volume",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              4,
+              3,
+              4
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "fx.rain",
+          "name": "雨幕",
+          "render": {
+            "kind": "effect",
+            "preset": "rain"
+          },
+          "interactionProfiles": [
+            "particle_emitter",
+            "atmosphere",
+            "volume_effect"
+          ],
+          "priority": "P2",
+          "tags": [
+            "雨",
+            "天气",
+            "粒子"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "volume",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              4,
+              3,
+              4
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "fx.dust",
+          "name": "尘埃",
+          "render": {
+            "kind": "effect",
+            "preset": "dust"
+          },
+          "interactionProfiles": [
+            "particle_emitter",
+            "atmosphere"
+          ],
+          "priority": "P0",
+          "tags": [
+            "尘埃",
+            "氛围",
+            "粒子"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "volume",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2,
+              1.5,
+              2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "fx.smoke",
+          "name": "烟雾",
+          "render": {
+            "kind": "effect",
+            "preset": "smoke"
+          },
+          "interactionProfiles": [
+            "particle_emitter",
+            "atmosphere",
+            "volume_effect"
+          ],
+          "priority": "P0",
+          "tags": [
+            "烟雾",
+            "体积",
+            "氛围"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "point",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "fx.steam",
+          "name": "蒸汽",
+          "render": {
+            "kind": "effect",
+            "preset": "steam"
+          },
+          "interactionProfiles": [
+            "particle_emitter",
+            "atmosphere",
+            "volume_effect"
+          ],
+          "priority": "P1",
+          "tags": [
+            "蒸汽",
+            "体积",
+            "反馈"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "point",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1,
+              2,
+              1
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "fx.fire",
+          "name": "火焰",
+          "render": {
+            "kind": "effect",
+            "preset": "fire"
+          },
+          "interactionProfiles": [
+            "particle_emitter",
+            "atmosphere",
+            "tap_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "火焰",
+            "危险",
+            "粒子"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "point",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1,
+              1.5,
+              1
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "fx.magic_trail",
+          "name": "能量轨迹",
+          "render": {
+            "kind": "effect",
+            "preset": "magic_trail"
+          },
+          "interactionProfiles": [
+            "particle_emitter",
+            "flyby",
+            "tap_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "轨迹",
+            "能量",
+            "移动"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "path",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2,
+              1,
+              2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "fx.vortex",
+          "name": "旋涡",
+          "render": {
+            "kind": "effect",
+            "preset": "vortex"
+          },
+          "interactionProfiles": [
+            "particle_emitter",
+            "volume_effect",
+            "tap_feedback"
+          ],
+          "priority": "P1",
+          "tags": [
+            "旋涡",
+            "空间",
+            "动画"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "point",
+            "collider": "sphere",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "fx.floating_orbs",
+          "name": "漂浮光球",
+          "render": {
+            "kind": "effect",
+            "preset": "floating_orbs"
+          },
+          "interactionProfiles": [
+            "particle_emitter",
+            "flyby",
+            "gaze_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "光球",
+            "漂浮",
+            "注视"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "volume",
+            "collider": "sphere",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2,
+              2,
+              2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "fx.shockwave",
+          "name": "冲击波",
+          "render": {
+            "kind": "effect",
+            "preset": "shockwave"
+          },
+          "interactionProfiles": [
+            "particle_emitter",
+            "tap_feedback",
+            "physics"
+          ],
+          "priority": "P0",
+          "tags": [
+            "冲击波",
+            "点击",
+            "反馈"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1,
+              0.1,
+              1
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "fx.confetti",
+          "name": "彩纸喷射",
+          "render": {
+            "kind": "effect",
+            "preset": "confetti"
+          },
+          "interactionProfiles": [
+            "particle_emitter",
+            "tap_feedback"
+          ],
+          "priority": "P1",
+          "tags": [
+            "彩纸",
+            "庆祝",
+            "粒子"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "point",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              2,
+              2,
+              2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        }
+      ]
+    },
+    {
+      "id": "interactive",
+      "name": "交互装置与控制器",
+      "description": "不只是装饰的可选装置；用于直接搭建触发、拾取、展示、声音和路径逻辑。",
+      "items": [
+        {
+          "id": "interactive.tap_target",
+          "name": "点击目标",
+          "render": {
+            "kind": "helper",
+            "preset": "tap_target"
+          },
+          "interactionProfiles": [
+            "tap_feedback",
+            "triggerable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "点击",
+            "目标",
+            "触发"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              0.8,
+              0.8,
+              0.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "interactive.gaze_target",
+          "name": "注视目标",
+          "render": {
+            "kind": "helper",
+            "preset": "gaze_target"
+          },
+          "interactionProfiles": [
+            "gaze_feedback",
+            "triggerable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "注视",
+            "目标",
+            "触发"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "floating",
+            "collider": "sphere",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              0.8,
+              0.8,
+              0.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "interactive.hold_target",
+          "name": "长按目标",
+          "render": {
+            "kind": "helper",
+            "preset": "hold_target"
+          },
+          "interactionProfiles": [
+            "hold_feedback",
+            "triggerable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "长按",
+            "目标",
+            "触发"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              0.8,
+              0.8,
+              0.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "interactive.drag_handle",
+          "name": "拖拽把手",
+          "render": {
+            "kind": "helper",
+            "preset": "drag_handle"
+          },
+          "interactionProfiles": [
+            "pickup_throw",
+            "triggerable"
+          ],
+          "priority": "P1",
+          "tags": [
+            "拖拽",
+            "控制",
+            "交互"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "floating",
+            "collider": "sphere",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              0.4,
+              0.4,
+              0.4
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "interactive.pickup_object",
+          "name": "拾取点",
+          "render": {
+            "kind": "helper",
+            "preset": "pickup_object"
+          },
+          "interactionProfiles": [
+            "pickup_throw",
+            "triggerable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "拾取",
+            "抓取",
+            "交互"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "floating",
+            "collider": "sphere",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              0.4,
+              0.4,
+              0.4
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "interactive.throwable",
+          "name": "投掷物",
+          "render": {
+            "kind": "helper",
+            "preset": "throwable"
+          },
+          "interactionProfiles": [
+            "pickup_throw",
+            "physics"
+          ],
+          "priority": "P0",
+          "tags": [
+            "投掷",
+            "物理",
+            "交互"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "sphere",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              0.5,
+              0.5,
+              0.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "interactive.link_beam",
+          "name": "联动光束",
+          "render": {
+            "kind": "effect",
+            "preset": "link_beam"
+          },
+          "interactionProfiles": [
+            "triggerable",
+            "tap_feedback"
+          ],
+          "priority": "P1",
+          "tags": [
+            "光束",
+            "联动",
+            "连接"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "between",
+            "collider": "none",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1,
+              1,
+              1
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "interactive.sound_source",
+          "name": "空间音源",
+          "render": {
+            "kind": "helper",
+            "preset": "sound_source"
+          },
+          "interactionProfiles": [
+            "audio",
+            "triggerable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "声音",
+            "音效",
+            "空间"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "point",
+            "collider": "sphere",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              0.2,
+              0.2,
+              0.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "interactive.display_panel",
+          "name": "信息面板",
+          "render": {
+            "kind": "quad",
+            "preset": "display_panel"
+          },
+          "interactionProfiles": [
+            "display",
+            "tap_feedback",
+            "gaze_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "面板",
+            "文字",
+            "展示"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1.4,
+              0.8,
+              1
+            ]
+          },
+          "assetPolicy": "optional-external"
+        },
+        {
+          "id": "interactive.timer",
+          "name": "倒计时器",
+          "render": {
+            "kind": "quad",
+            "preset": "timer"
+          },
+          "interactionProfiles": [
+            "display",
+            "triggerable"
+          ],
+          "priority": "P1",
+          "tags": [
+            "倒计时",
+            "游戏",
+            "UI"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "floating",
+            "collider": "box",
+            "visibleInRuntime": true,
+            "sizeMeters": [
+              1,
+              0.5,
+              1
+            ]
+          },
+          "assetPolicy": "optional-external"
+        },
+        {
+          "id": "interactive.trigger_zone",
+          "name": "触发区域",
+          "render": {
+            "kind": "helper",
+            "preset": "trigger_zone"
+          },
+          "interactionProfiles": [
+            "triggerable",
+            "volume_effect"
+          ],
+          "priority": "P0",
+          "tags": [
+            "区域",
+            "进入",
+            "触发"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "volume",
+            "collider": "none",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              2,
+              1.5,
+              2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "interactive.spawn_point",
+          "name": "生成点",
+          "render": {
+            "kind": "helper",
+            "preset": "spawn_point"
+          },
+          "interactionProfiles": [
+            "triggerable",
+            "helper"
+          ],
+          "priority": "P0",
+          "tags": [
+            "生成",
+            "出生点",
+            "关卡"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "none",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "interactive.camera_rig",
+          "name": "镜头轨道",
+          "render": {
+            "kind": "helper",
+            "preset": "camera_rig"
+          },
+          "interactionProfiles": [
+            "camera",
+            "path"
+          ],
+          "priority": "P1",
+          "tags": [
+            "镜头",
+            "轨道",
+            "相机"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "path",
+            "collider": "none",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              1,
+              1,
+              1
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "interactive.spline_path",
+          "name": "移动路径",
+          "render": {
+            "kind": "helper",
+            "preset": "spline_path"
+          },
+          "interactionProfiles": [
+            "path",
+            "helper"
+          ],
+          "priority": "P1",
+          "tags": [
+            "路径",
+            "巡航",
+            "轨迹"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "path",
+            "collider": "none",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              1,
+              0.1,
+              1
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "interactive.animation_driver",
+          "name": "动画控制器",
+          "render": {
+            "kind": "helper",
+            "preset": "animation_driver"
+          },
+          "interactionProfiles": [
+            "triggerable",
+            "moving"
+          ],
+          "priority": "P1",
+          "tags": [
+            "动画",
+            "控制器",
+            "状态"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "point",
+            "collider": "none",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        }
+      ]
+    },
+    {
+      "id": "helper",
+      "name": "空间辅助与调试",
+      "description": "不一定出现在游客画面中的编辑辅助元素；用于定位、边界、导航、遮挡和重置。",
+      "items": [
+        {
+          "id": "helper.ground_marker",
+          "name": "地面标记",
+          "render": {
+            "kind": "helper",
+            "preset": "ground_marker"
+          },
+          "interactionProfiles": [
+            "helper",
+            "tap_feedback"
+          ],
+          "priority": "P0",
+          "tags": [
+            "地面",
+            "标记",
+            "定位"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "none",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              0.5,
+              0.02,
+              0.5
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "helper.wall_anchor",
+          "name": "墙面锚点",
+          "render": {
+            "kind": "helper",
+            "preset": "wall_anchor"
+          },
+          "interactionProfiles": [
+            "helper"
+          ],
+          "priority": "P0",
+          "tags": [
+            "墙面",
+            "锚点",
+            "定位"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "none",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              0.2,
+              0.2,
+              0.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "helper.snap_point",
+          "name": "吸附点",
+          "render": {
+            "kind": "helper",
+            "preset": "snap_point"
+          },
+          "interactionProfiles": [
+            "helper"
+          ],
+          "priority": "P0",
+          "tags": [
+            "吸附",
+            "定位",
+            "编辑"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "point",
+            "collider": "none",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              0.15,
+              0.15,
+              0.15
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "helper.waypoint",
+          "name": "路径点",
+          "render": {
+            "kind": "helper",
+            "preset": "waypoint"
+          },
+          "interactionProfiles": [
+            "path",
+            "helper"
+          ],
+          "priority": "P0",
+          "tags": [
+            "路径点",
+            "导航",
+            "巡航"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "point",
+            "collider": "none",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              0.2,
+              0.2,
+              0.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "helper.checkpoint_marker",
+          "name": "检查点标记",
+          "render": {
+            "kind": "helper",
+            "preset": "checkpoint_marker"
+          },
+          "interactionProfiles": [
+            "helper",
+            "triggerable"
+          ],
+          "priority": "P0",
+          "tags": [
+            "检查点",
+            "标记",
+            "进度"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "none",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              0.4,
+              0.8,
+              0.4
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "helper.boundary_volume",
+          "name": "边界体",
+          "render": {
+            "kind": "helper",
+            "preset": "boundary_volume"
+          },
+          "interactionProfiles": [
+            "helper",
+            "volume_effect"
+          ],
+          "priority": "P0",
+          "tags": [
+            "边界",
+            "限制",
+            "区域"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "volume",
+            "collider": "none",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              3,
+              2,
+              3
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "helper.nav_surface",
+          "name": "导航面",
+          "render": {
+            "kind": "helper",
+            "preset": "nav_surface"
+          },
+          "interactionProfiles": [
+            "helper",
+            "path"
+          ],
+          "priority": "P1",
+          "tags": [
+            "导航",
+            "地面",
+            "路径"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "none",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              3,
+              0.03,
+              3
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "helper.occluder",
+          "name": "遮挡体",
+          "render": {
+            "kind": "helper",
+            "preset": "occluder"
+          },
+          "interactionProfiles": [
+            "helper"
+          ],
+          "priority": "P1",
+          "tags": [
+            "遮挡",
+            "优化",
+            "性能"
+          ],
+          "default": {
+            "pivot": "bottom-center",
+            "placement": "surface",
+            "collider": "box",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              2,
+              2,
+              0.1
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "helper.light_probe",
+          "name": "光照探针",
+          "render": {
+            "kind": "helper",
+            "preset": "light_probe"
+          },
+          "interactionProfiles": [
+            "helper"
+          ],
+          "priority": "P1",
+          "tags": [
+            "光照",
+            "探针",
+            "调试"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "point",
+            "collider": "none",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              0.2,
+              0.2,
+              0.2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "helper.measurement_ruler",
+          "name": "测量尺",
+          "render": {
+            "kind": "helper",
+            "preset": "measurement_ruler"
+          },
+          "interactionProfiles": [
+            "helper"
+          ],
+          "priority": "P1",
+          "tags": [
+            "测量",
+            "尺寸",
+            "调试"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "between",
+            "collider": "none",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              1,
+              0.05,
+              0.05
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "helper.camera_spawn",
+          "name": "相机出生点",
+          "render": {
+            "kind": "helper",
+            "preset": "camera_spawn"
+          },
+          "interactionProfiles": [
+            "camera",
+            "helper"
+          ],
+          "priority": "P0",
+          "tags": [
+            "相机",
+            "出生点",
+            "预览"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "point",
+            "collider": "none",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              0.3,
+              0.3,
+              0.3
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        },
+        {
+          "id": "helper.reset_zone",
+          "name": "重置区域",
+          "render": {
+            "kind": "helper",
+            "preset": "reset_zone"
+          },
+          "interactionProfiles": [
+            "triggerable",
+            "helper"
+          ],
+          "priority": "P1",
+          "tags": [
+            "重置",
+            "区域",
+            "失败处理"
+          ],
+          "default": {
+            "pivot": "center",
+            "placement": "volume",
+            "collider": "none",
+            "visibleInRuntime": false,
+            "sizeMeters": [
+              2,
+              1,
+              2
+            ]
+          },
+          "assetPolicy": "builtin-procedural"
+        }
+      ]
+    }
+  ],
+  "assetPolicyMeaning": {
+    "builtin-procedural": "规划优先使用程序化几何/效果，不表示现有代码已经实现该 preset。",
+    "optional-external": "优先程序化或占位；外部 GLB/图片是可选增强，发布时必须检查资源。"
+  },
+  "fieldNotes": {
+    "default.sizeMeters": "设计尺寸（宽、高、深，米），不是 transform.s；实例默认 transform.s 为 [1,1,1]。",
+    "render.kind": "目录分类，effect/helper 尚不是当前 OBJECT_TYPES；开发时需要映射至真实支持的运行时类型。",
+    "interactionProfiles": "规划中的行为声明，当前仅少数通用触发/粒子预览能力已存在。",
+    "priority": "P0 首批应交付可用实例；P1/P2 不得呈现为已经可用。"
+  }
+}

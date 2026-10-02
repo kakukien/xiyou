@@ -6,17 +6,19 @@ UI 风格：UE5 深色编辑器主题（CSS 变量在 style.css 已定义，直�
 ## 场景数据（唯一数据源，对齐 PRD §5.2）
 ```js
 scene = {
-  base: { sog_url: '', collider_url: null, transform: { s: 1, R: [1,0,0,0,1,0,0,0,1], t: [0,0,0], scale_source: 'manual' } },
-  objects: [ { id, name, type: 'splat_segment'|'quad'|'video_quad'|'glb'|'light',
+  schemaVersion: '2.0.0', projectId: '', siteId: '',
+  base: { sog_url: '', collider_url: null, collider: { type: 'box', size: [20,2,20], center: [0,1,0], visible: false }, chunks: [], lod: { enabled: false, levels: ['high','medium','low'], current: 'high', urls: {}, thresholds: { near: 12, far: 30 } }, transform: { s: 1, R: [1,0,0,0,1,0,0,0,1], t: [0,0,0], scale_source: 'manual' } },
+  objects: [ { id, name, zone_id: '', type: 'splat_segment'|'quad'|'video_quad'|'glb'|'light',
                transform: { p:[x,y,z], r:[x,y,z](deg euler), s:[x,y,z] },
                asset: '', material: {}, hitbox: { type:'auto'|'box'|'sphere'|'none', size:[x,y,z], center:[x,y,z] },
                visible: true, node_id: '', comments: [] } ],
   sequences: [ { id, name, duration, tracks: [ { target: objectId, kind: 'transform'|'opacity'|'clip'|'video'|'audio'|'event', keys: [ { t, v, ease } ] } ] } ],
-  triggers:  [ { id, name, target: objectId, when: 'tap'|'gaze'|'hold'|'enter'|'seq_event'|'node_done',
+  triggers:  [ { id, name, target: objectId|zoneId, when: 'tap'|'gaze'|'hold'|'enter'|'seq_event'|'node_done',
                  params: {}, do: [ { action: 'play_seq'|'show'|'hide'|'highlight'|'card'|'reward'|'goto_node', args: {} } ] } ],
   story: { chapters: [ { id, title, nodes: [ { id, title, anchor, on_enter, next, text, checklist: { copy:false, placed:false, trigger:false, located:false } } ] } ] },
   anchors: [ { id, type: 'vps'|'image', image_url: null, pose: {} } ],
-  meta: { name: '未命名场景', assets: [] }   // assets: [{id,name,type,size,url}]
+  zones: [ { id, name, kind: 'editable'|'trigger'|'forbidden', transform: { p, r, s }, color, visible, locked, description } ],
+  meta: { name: '未命名场景', assets: [], releases: [] }   // assets: [{id,name,type,size,url}]
 }
 ```
 
@@ -24,12 +26,16 @@ scene = {
 
 ### src/core/store.js —— `export const store`
 - `store.scene` 当前场景文档（普通 JSON 对象）
+- `store.selectMany(ids)` / `store.validate()`
 - `store.selection: Set<string>`；`store.select(id|null, {add=false})`；`store.selected(): string[]`
 - CRUD：`store.addObject(type, props={}) -> obj`（自动补默认值）；`store.getObject(id)`；`store.updateObject(id, patch, {transient=false})`（深合并 patch；transient=true 不记 undo，用于拖动中）；`store.removeObject(id)`
 - `store.addSequence(props)->seq / updateSequence(id,patch,opts) / removeSequence(id)`
 - `store.addTrigger(props)->tr / updateTrigger / removeTrigger`
 - `store.addChapter(title)->ch / store.addNode(chapterId, props)->node / store.updateNode(chapterId,nodeId,patch) / store.removeNode(chapterId,nodeId)`
 - `store.setBase(patch)`
+- `store.addZone(props)` / `store.getZone(id)` / `store.updateZone(id, patch, opts)` / `store.removeZone(id)`
+- `store.updateAsset(id, patch)` / `store.replaceAsset(id, file, url)` / `store.createRelease()` / `store.releaseDiff(leftId, rightId)` / `store.restoreRelease(id)`
+- `store.batch(fn)` —— 将多次场景变更合并为单次 change/undo
 - undo：`store.undo()/redo()/canUndo/canRedo`（整文档 JSON 快照栈，上限 100）
 - 持久化：`store.save()`（localStorage 'xiyou.scene' + meta.dirty=false）；`store.load()`；`store.newScene(template?)`；`store.exportJSON() -> string`；`store.importJSON(jsonString)`
 - 事件：`store.on(evt, fn)` / `store.off(evt, fn)`；evt ∈ `'change'`（场景数据变了，参数 {transient}）、`'selection'`、`'mode'`（edit|play）、`'assets'`（素材库变了）。所有 CRUD 触发 'change'；select 触发 'selection'。
@@ -72,8 +78,10 @@ scene = {
 - `viewport.init(container: HTMLElement)` —— renderer(antialias)、PerspectiveCamera、OrbitControls（右键旋转/中键平移/滚轮缩放）、TransformControls（挂到 camera+renderer.domElement，拖动时写回 store.updateObject transient=true，dragging-changed 结束提交一次非 transient）
 - `viewport.setGizmo('translate'|'rotate'|'scale')`、`viewport.setSnap({t,r,s})`、`viewport.setGroundLock(bool)`
 - `viewport.sync()` —— 按 store.scene.objects 增量同步（按 id diff，避免整树重建）
-- `viewport.focus(id)` —— 相机飞到对象
-- `viewport.setBase(scene.base)` —— 无 sog_url 时：GridHelper(20m) + 3 面「现场照片墙」占位 quad；有 url 时 TODO（留注释 stub）
+- `viewport.focus(id)` —— 相机飞到对象/空间区域
+- `viewport.colliderContainsPoint(point)` —— 判断点是否落在已加载 Collider 内（GLB/GLTF 使用缓存三角形检测，Box Collider 回退）
+- `viewport.setBase(scene.base)`
+- `viewport.syncZones()` —— 渲染空间区域、区域边界和辅助层；区域可被拾取和 Gizmo 编辑
 - 拾取：pointerdown+click 无拖动时 raycast 非 helper 对象 → `store.select(userData.id)`；play 模式下命中 → `triggers.fire('tap', id)`（playback 模块）
 - `viewport.node(id) -> Object3D`；`viewport.tick(dt)`（在 rAF 循环里被 main 调）
 - play 模式：隐藏 grid/helper/gizmo，`viewport.helpersVisible(false)`
@@ -99,3 +107,7 @@ bootstrap：import 全部 → store.load()||store.newScene(demoScene()) → view
 - 任何 import 只允许：'three'、'three/addons/...'、同项目相对路径
 - 不引入新依赖；DOM 操作原生 API；样式用 style.css 的 class（`.panel .btn .field .row .tab .tree-item` 等）
 - 生成代码必须是完整文件，无占位省略
+
+### 游客 Runtime 与 GPU Worker
+- `runtime.html`：独立游客端入口，不挂载编辑器 UI；支持 scene/release/room/localize 参数。
+- `tools/gpu-worker.mjs`：Node CLI/HTTP 队列，提供 analyze、convert-alpha、prepare-reconstruction。真实 GPU 重建通过 `XIYOU_RECONSTRUCTOR_BIN` 外部命令注入。

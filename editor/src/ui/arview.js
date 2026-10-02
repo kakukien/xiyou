@@ -39,7 +39,7 @@ export function openAR() {
 
   const hud = document.createElement('div')
   hud.className = 'ar-hud'
-  hud.innerHTML = '<div class="ar-title">西游·虚境 · 游客视角</div><div class="ar-hint">转动手机或拖动画面查看 · 点击发光物触发剧情</div><div class="ar-geo"></div>'
+  hud.innerHTML = '<div class="ar-title">造梦 · 故事空间 · 游客视角</div><div class="ar-hint">转动手机或拖动画面查看 · 点击发光物触发剧情</div><div class="ar-geo"></div>'
 
   const card = document.createElement('div')
   card.className = 'ar-card'

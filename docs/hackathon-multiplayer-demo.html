@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="西游·虚境黑客松现场多人协作、手机游客 Runtime 与发布生效演示手册">
+  <title>黑客松现场演示手册 · 西游·虚境</title>
+  <style>
+    :root {
+      --canvas: #f3f5f7;
+      --surface: #ffffff;
+      --surface-soft: #f7f9fa;
+      --surface-sunken: #eef2f5;
+      --ink: #25313c;
+      --muted: #667482;
+      --faint: #97a4b0;
+      --line: #d9e1e8;
+      --line-soft: #e7ecf0;
+      --orange: #f97316;
+      --orange-dark: #c2410c;
+      --orange-soft: #fff7ed;
+      --blue: #2563eb;
+      --blue-soft: #eff6ff;
+      --green: #16a34a;
+      --green-soft: #f0fdf4;
+      --amber: #d97706;
+      --amber-soft: #fffbeb;
+      --red: #dc2626;
+      --red-soft: #fef2f2;
+      --navy: #162433;
+      --shadow-1: 0 2px 8px rgba(30, 50, 70, .06);
+      --shadow-2: 0 12px 32px rgba(30, 50, 70, .10);
+      --shadow-3: 0 24px 70px rgba(30, 50, 70, .16);
+      --r-sm: 4px;
+      --r-md: 8px;
+      --r-lg: 12px;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, .mono { font-family: var(--mono); }
+    ::selection { color: #fff; background: var(--orange); }
+
+    .shell { display: grid; grid-template-columns: 264px minmax(0, 1fr); min-height: 100vh; }
+    .sidebar {
+      position: sticky; top: 0; height: 100vh; overflow: auto;
+      background: #fbfcfd; border-right: 1px solid var(--line);
+      padding: 28px 18px 24px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 0 10px 26px; }
+    .brand-mark {
+      width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center;
+      color: #fff; font-weight: 800; background: linear-gradient(135deg, #fb923c, var(--orange-dark));
+      box-shadow: 0 5px 14px rgba(249, 115, 22, .25);
+    }
+    .brand strong { display: block; font-size: 14px; letter-spacing: -.02em; }
+    .brand small { display: block; color: var(--faint); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+    .nav-kicker { margin: 10px 10px 8px; color: var(--faint); font: 10px var(--mono); letter-spacing: .13em; text-transform: uppercase; }
+    .side-nav { display: grid; gap: 3px; }
+    .side-nav a {
+      display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 7px;
+      color: var(--muted); font-size: 12px; transition: .16s ease;
+    }
+    .side-nav a:hover { color: var(--ink); background: var(--surface-sunken); text-decoration: none; }
+    .side-nav a.active { color: var(--orange-dark); background: var(--orange-soft); font-weight: 650; }
+    .nav-no { width: 20px; color: var(--faint); font: 11px var(--mono); }
+    .side-nav a.active .nav-no { color: var(--orange); }
+    .sidebar-foot { margin: 28px 10px 0; padding-top: 18px; border-top: 1px solid var(--line-soft); color: var(--faint); font-size: 11px; }
+
+    main { min-width: 0; }
+    .topline {
+      display: flex; justify-content: space-between; gap: 20px; align-items: center;
+      padding: 14px clamp(24px, 5vw, 72px); border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,.78); backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 10;
+    }
+    .topline .crumb { color: var(--muted); font-size: 12px; }
+    .topline .crumb b { color: var(--ink); }
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: var(--surface); font-size: 11px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 34px;
+      padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: var(--surface);
+      font-size: 12px; transition: .16s ease; box-shadow: 0 1px 1px rgba(30,50,70,.02);
+    }
+    .btn:hover { border-color: #b8c5d0; background: var(--surface-soft); transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn.primary { border-color: var(--orange); color: #fff; background: var(--orange); }
+    .btn.primary:hover { border-color: var(--orange-dark); background: var(--orange-dark); }
+    .btn.ghost { border-color: transparent; background: transparent; }
+
+    .content { width: min(1180px, calc(100% - 48px)); margin: 0 auto; padding: 68px 0 100px; }
+    .hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr); gap: 56px; align-items: center; padding: 30px 0 80px; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--orange-dark); font: 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+    .eyebrow::before { content: ""; width: 24px; height: 2px; background: var(--orange); }
+    h1 { margin: 17px 0 18px; max-width: 720px; font-size: clamp(38px, 5.2vw, 68px); line-height: 1.08; letter-spacing: -.065em; font-weight: 780; }
+    .hero-lede { max-width: 620px; margin: 0; color: var(--muted); font-size: 18px; line-height: 1.7; }
+    .hero-note { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+    .tag { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; font-size: 11px; }
+    .tag strong { color: var(--ink); font-weight: 650; }
+    .hero-art { position: relative; min-height: 330px; border: 1px solid #cad6df; border-radius: 18px; overflow: hidden; background: linear-gradient(145deg, #dce8f1, #c4d5e0 55%, #b9cbd8); box-shadow: var(--shadow-3); }
+    .hero-art::before { content: ""; position: absolute; inset: 0; opacity: .28; background-image: linear-gradient(rgba(255,255,255,.45) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.45) 1px, transparent 1px); background-size: 28px 28px; }
+    .art-plate { position: absolute; left: 28px; top: 28px; width: 64%; height: 230px; border: 1px solid rgba(255,255,255,.65); border-radius: 13px; transform: perspective(500px) rotateX(52deg) rotateZ(-9deg); transform-origin: center; background: linear-gradient(135deg, rgba(28,70,95,.22), rgba(255,255,255,.22)); box-shadow: 0 28px 35px rgba(38,72,93,.22); }
+    .art-plate::before, .art-plate::after { content: ""; position: absolute; border-radius: 50%; background: rgba(255,255,255,.78); box-shadow: 44px 22px 0 rgba(255,255,255,.58), 102px -7px 0 rgba(255,255,255,.7), 153px 31px 0 rgba(255,255,255,.5), 208px 2px 0 rgba(255,255,255,.65), 249px 38px 0 rgba(255,255,255,.4); }
+    .art-plate::before { width: 11px; height: 11px; left: 62px; top: 65px; }
+    .art-plate::after { width: 7px; height: 7px; left: 143px; top: 105px; }
+    .art-window { position: absolute; right: 24px; bottom: 22px; width: 210px; padding: 12px; border: 1px solid rgba(255,255,255,.7); border-radius: 10px; background: rgba(255,255,255,.76); box-shadow: 0 10px 28px rgba(42,72,90,.16); backdrop-filter: blur(10px); }
+    .art-window-head { display: flex; justify-content: space-between; margin-bottom: 10px; color: var(--muted); font: 10px var(--mono); }
+    .art-users { display: flex; gap: 6px; }
+    .avatar { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: #fff; font-size: 10px; font-weight: 750; box-shadow: 0 0 0 2px #fff; }
+    .avatar.orange { background: var(--orange); } .avatar.blue { background: var(--blue); } .avatar.green { background: var(--green); }
+    .art-cursor { position: absolute; z-index: 2; color: #fff; font-size: 22px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.2)); }
+    .art-cursor.one { right: 33%; top: 37%; } .art-cursor.two { left: 18%; bottom: 26%; }
+    .art-label { position: absolute; padding: 3px 6px; color: #fff; border-radius: 4px; font: 10px var(--mono); box-shadow: 0 3px 8px rgba(0,0,0,.13); }
+    .art-label.one { right: 22%; top: 45%; background: var(--blue); } .art-label.two { left: 15%; bottom: 19%; background: var(--orange); }
+
+    .section { scroll-margin-top: 80px; padding: 84px 0 0; }
+    .section-head { display: flex; justify-content: space-between; gap: 24px; align-items: end; margin-bottom: 26px; }
+    .section-kicker { color: var(--faint); font: 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+    h2 { margin: 5px 0 0; font-size: clamp(25px, 3vw, 38px); line-height: 1.15; letter-spacing: -.045em; }
+    h3 { margin: 0 0 10px; font-size: 18px; letter-spacing: -.025em; }
+    h4 { margin: 0 0 5px; font-size: 14px; }
+    .section-intro { max-width: 650px; margin: 0 0 28px; color: var(--muted); font-size: 15px; }
+    .rule { height: 1px; background: var(--line); margin: 34px 0; }
+
+    .callout { display: grid; grid-template-columns: 5px minmax(0,1fr); overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow-1); }
+    .callout-bar { background: var(--orange); }
+    .callout-body { padding: 18px 20px; }
+    .callout-body p:last-child { margin-bottom: 0; }
+    .callout.info .callout-bar { background: var(--blue); } .callout.warn .callout-bar { background: var(--amber); }
+    .callout code { color: var(--orange-dark); }
+
+    .architecture { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; align-items: center; margin: 24px 0; }
+    .arch-node { min-height: 112px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 7px; padding: 14px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); text-align: center; box-shadow: var(--shadow-1); }
+    .arch-node b { font-size: 12px; } .arch-node span { color: var(--muted); font-size: 11px; line-height: 1.4; }
+    .arch-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; color: #fff; font: 12px var(--mono); background: var(--navy); }
+    .arch-arrow { color: var(--orange); font-size: 22px; text-align: center; }
+    .arch-node.accent .arch-icon { background: var(--orange); } .arch-node.blue .arch-icon { background: var(--blue); } .arch-node.green .arch-icon { background: var(--green); }
+
+    .steps { display: grid; gap: 12px; counter-reset: step; }
+    .step { display: grid; grid-template-columns: 48px minmax(0,1fr) auto; gap: 16px; align-items: start; padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow-1); }
+    .step-no { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: var(--orange-dark); background: var(--orange-soft); font: 700 12px var(--mono); }
+    .step p { margin: 4px 0 0; color: var(--muted); }
+    .step-code { align-self: center; color: var(--muted); font: 11px var(--mono); white-space: nowrap; }
+    .step.done { border-color: #b9e2c2; background: #fbfffc; } .step.done .step-no { color: #fff; background: var(--green); }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .card { padding: 20px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow-1); }
+    .card p { color: var(--muted); }
+    .card ul, .card ol { margin: 10px 0 0; padding-left: 20px; color: var(--muted); }
+    .card li + li { margin-top: 6px; }
+    .card .micro { margin-top: 15px; color: var(--faint); font: 10px var(--mono); letter-spacing: .04em; }
+    .role-card { position: relative; overflow: hidden; }
+    .role-card::after { content: ""; position: absolute; right: -22px; top: -22px; width: 78px; height: 78px; border-radius: 50%; opacity: .1; background: var(--role); }
+    .role-card .role-line { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+    .role-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--role); box-shadow: 0 0 0 4px color-mix(in srgb, var(--role) 15%, transparent); }
+
+    .codebox { position: relative; margin: 14px 0; padding: 17px 18px; overflow: auto; border: 1px solid #30465b; border-radius: 8px; background: #172635; color: #e9f0f5; box-shadow: var(--shadow-1); font: 12px/1.7 var(--mono); }
+    .codebox .comment { color: #8fa7ba; } .codebox .accent-code { color: #ffbd83; } .codebox .green-code { color: #a9e4b8; } .codebox .blue-code { color: #9fc1ff; }
+    .codebox .copy-code { position: absolute; right: 10px; top: 10px; min-height: 26px; padding: 0 8px; border-color: #486175; color: #b9cbd8; background: transparent; font-size: 10px; }
+
+    .simulator-shell { padding: 0; border: 1px solid #c7d4de; border-radius: 16px; overflow: hidden; background: #eaf0f4; box-shadow: var(--shadow-2); }
+    .sim-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px 16px; background: #fafdff; border-bottom: 1px solid #d6e0e7; }
+    .sim-title { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 13px; }
+    .sim-title i { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; color: #fff; background: var(--orange); font-style: normal; font: 11px var(--mono); }
+    .sim-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .sim-toolbar label { color: var(--muted); font-size: 11px; }
+    .field { height: 32px; padding: 0 9px; border: 1px solid var(--line); border-radius: 5px; color: var(--ink); background: #fff; outline: none; font-size: 11px; }
+    .field:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(249,115,22,.13); }
+    .sim-url { display: flex; gap: 8px; align-items: center; padding: 10px 16px; border-bottom: 1px solid #d6e0e7; background: #f5f9fb; }
+    .sim-url .field { flex: 1; min-width: 0; font-family: var(--mono); color: var(--muted); }
+    .sim-body { display: grid; grid-template-columns: 218px minmax(0, 1fr) 222px; min-height: 460px; }
+    .sim-side { background: #fff; padding: 14px 12px; }
+    .sim-side.left { border-right: 1px solid #d6e0e7; } .sim-side.right { border-left: 1px solid #d6e0e7; }
+    .sim-label { margin: 2px 5px 9px; color: var(--faint); font: 10px var(--mono); letter-spacing: .11em; text-transform: uppercase; }
+    .participant { display: flex; align-items: center; gap: 9px; padding: 9px 8px; border: 1px solid transparent; border-radius: 7px; cursor: pointer; }
+    .participant:hover { background: var(--surface-soft); } .participant.active { border-color: var(--line); background: var(--surface-soft); }
+    .participant .avatar { flex: 0 0 auto; width: 26px; height: 26px; font-size: 9px; }
+    .participant-main { min-width: 0; flex: 1; }
+    .participant-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 11px var(--mono); }
+    .participant-role { color: var(--muted); font-size: 10px; }
+    .online-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+    .scene-list { display: grid; gap: 4px; }
+    .scene-object { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px; border-radius: 6px; color: var(--muted); font-size: 11px; cursor: pointer; }
+    .scene-object:hover, .scene-object.selected { color: var(--ink); background: var(--orange-soft); }
+    .scene-object .kind { color: var(--faint); font: 9px var(--mono); }
+    .sim-viewport { position: relative; min-width: 0; overflow: hidden; background: #d8e3eb; }
+    .sim-viewport::before { content: ""; position: absolute; inset: 0; opacity: .6; background-image: linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px); background-size: 32px 32px; }
+    .sim-viewport::after { content: "VIEWPORT / COLLABORATIVE SPACE"; position: absolute; left: 18px; top: 14px; color: rgba(37,49,60,.45); font: 10px var(--mono); letter-spacing: .12em; }
+    .sim-ground { position: absolute; left: 8%; right: 8%; bottom: 12%; height: 56%; transform: perspective(460px) rotateX(58deg) rotateZ(-4deg); border: 1px solid rgba(65,101,125,.24); background: linear-gradient(rgba(255,255,255,.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.2) 1px, transparent 1px); background-size: 25px 25px; box-shadow: 0 18px 25px rgba(40,75,95,.13); }
+    .sim-object { position: absolute; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.75); color: #fff; font-size: 11px; font-weight: 750; box-shadow: 0 8px 16px rgba(35,65,80,.16); transition: .3s ease; cursor: pointer; }
+    .sim-object.wukong { left: 44%; top: 30%; width: 72px; height: 110px; border-radius: 37px 37px 12px 12px; background: linear-gradient(150deg, #f6a34c, #a9502d); }
+    .sim-object.symbol { left: 23%; top: 57%; width: 60px; height: 60px; transform: rotate(45deg); background: #7c5cc4; }
+    .sim-object.symbol span { transform: rotate(-45deg); }
+    .sim-object.light { left: 70%; top: 50%; width: 34px; height: 34px; border-radius: 50%; background: #f5c84b; box-shadow: 0 0 0 12px rgba(245,200,75,.15), 0 0 30px rgba(245,200,75,.7); }
+    .sim-object.selected { outline: 2px solid var(--orange); outline-offset: 5px; }
+    .sim-cursor { position: absolute; z-index: 4; pointer-events: none; transition: left .18s ease, top .18s ease; }
+    .sim-cursor .arrow { color: var(--cursor); font-size: 24px; line-height: 1; filter: drop-shadow(0 2px 2px rgba(0,0,0,.2)); }
+    .sim-cursor .cursor-label { display: inline-flex; flex-direction: column; margin: 3px 0 0 14px; padding: 4px 7px; border-radius: 4px; color: #fff; background: var(--cursor); box-shadow: 0 3px 8px rgba(31,50,65,.18); font-size: 10px; line-height: 1.25; white-space: nowrap; }
+    .sim-cursor .cursor-label small { opacity: .8; font-size: 9px; }
+    .sim-overlay-note { position: absolute; right: 14px; top: 14px; z-index: 2; padding: 5px 7px; border: 1px solid rgba(255,255,255,.75); border-radius: 4px; color: #526777; background: rgba(255,255,255,.62); font: 10px var(--mono); backdrop-filter: blur(5px); }
+    .sim-actions { position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 5; display: flex; flex-wrap: wrap; gap: 6px; }
+    .sim-actions .btn { min-height: 28px; padding: 0 8px; border-color: rgba(255,255,255,.8); background: rgba(255,255,255,.84); font-size: 10px; }
+    .sim-log { max-height: 170px; overflow: auto; padding: 9px 8px; border-radius: 7px; background: #172635; color: #bdd0dc; font: 10px/1.6 var(--mono); }
+    .log-line + .log-line { margin-top: 3px; } .log-time { color: #7891a2; } .log-good { color: #a9e4b8; } .log-accent { color: #ffbd83; } .log-warn { color: #f8d38c; }
+    .sim-status { display: flex; align-items: center; gap: 7px; padding: 9px 8px; margin-bottom: 13px; border-radius: 6px; color: var(--green); background: var(--green-soft); font-size: 11px; }
+    .sim-controls-note { margin-top: 12px; color: var(--faint); font-size: 10px; line-height: 1.5; }
+    .sim-footer { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 10px 16px; border-top: 1px solid #d6e0e7; background: #fafdff; color: var(--muted); font-size: 11px; }
+    .sim-footer b { color: var(--ink); }
+
+    .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow-1); }
+    .flow-item { position: relative; min-height: 150px; padding: 20px 18px; border-right: 1px solid var(--line-soft); }
+    .flow-item:last-child { border-right: 0; }
+    .flow-item::after { content: "→"; position: absolute; right: -10px; top: 52px; z-index: 2; color: var(--orange); font-size: 17px; background: var(--surface); }
+    .flow-item:last-child::after { display: none; }
+    .flow-no { color: var(--orange); font: 12px var(--mono); }
+    .flow-item h3 { margin-top: 22px; font-size: 15px; }
+    .flow-item p { margin: 0; color: var(--muted); font-size: 12px; }
+
+    .checklist { display: grid; gap: 7px; }
+    .check-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px; border-radius: 6px; color: var(--muted); background: var(--surface-soft); font-size: 12px; cursor: pointer; }
+    .check-row:hover { background: var(--orange-soft); }
+    .check-row input { flex: 0 0 auto; margin-top: 4px; accent-color: var(--orange); }
+    .check-row.done { color: var(--green); text-decoration: line-through; text-decoration-color: #9bd2a6; }
+    .check-count { color: var(--faint); font: 11px var(--mono); }
+
+    .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow-1); }
+    table { width: 100%; border-collapse: collapse; min-width: 610px; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; font-size: 12px; }
+    th { color: var(--faint); background: var(--surface-soft); font: 10px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+    tr:last-child td { border-bottom: 0; }
+    td { color: var(--muted); } td:first-child { color: var(--ink); font-weight: 650; }
+    .role-badge { display: inline-flex; padding: 3px 7px; border-radius: 999px; font-size: 10px; font-weight: 650; }
+    .role-badge.manager { color: var(--orange-dark); background: var(--orange-soft); } .role-badge.editor { color: #1d4ed8; background: var(--blue-soft); } .role-badge.previewer { color: var(--green); background: var(--green-soft); }
+
+    details { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); box-shadow: var(--shadow-1); }
+    details + details { margin-top: 8px; }
+    summary { display: flex; justify-content: space-between; gap: 12px; padding: 14px 16px; cursor: pointer; list-style: none; font-weight: 650; }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "+"; color: var(--orange); font: 16px var(--mono); }
+    details[open] summary::after { content: "−"; }
+    .details-body { padding: 0 16px 16px; color: var(--muted); }
+    .details-body p { margin: 0 0 10px; }
+
+    .timeline { position: relative; display: grid; grid-template-columns: repeat(10, 1fr); gap: 0; margin: 28px 0 4px; }
+    .timeline::before { content: ""; position: absolute; left: 18px; right: 18px; top: 22px; height: 2px; background: var(--line); }
+    .timeline-node { position: relative; z-index: 1; display: grid; justify-items: center; gap: 10px; text-align: center; }
+    .timeline-node .point { width: 44px; height: 44px; display: grid; place-items: center; border: 4px solid var(--canvas); border-radius: 50%; color: #fff; background: var(--orange); box-shadow: 0 0 0 1px var(--orange); font: 11px var(--mono); }
+    .timeline-node:nth-child(3n+2) .point { background: var(--blue); box-shadow: 0 0 0 1px var(--blue); }
+    .timeline-node:nth-child(3n) .point { background: var(--green); box-shadow: 0 0 0 1px var(--green); }
+    .timeline-node b { font-size: 11px; } .timeline-node span { max-width: 110px; color: var(--muted); font-size: 10px; line-height: 1.4; }
+
+    .footer { margin-top: 90px; padding: 28px 0 0; border-top: 1px solid var(--line); color: var(--faint); font-size: 11px; }
+    .footer strong { color: var(--ink); }
+
+    .toast { position: fixed; right: 24px; bottom: 24px; z-index: 40; padding: 10px 14px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: #fff; box-shadow: var(--shadow-2); font-size: 12px; transform: translateY(12px); opacity: 0; pointer-events: none; transition: .2s ease; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+
+    .runtime-demo-shell {
+      overflow: hidden; border: 1px solid #c7d4de; border-radius: 16px; background: #edf3f6;
+      box-shadow: var(--shadow-2);
+    }
+    .runtime-demo-head, .runtime-demo-footer {
+      display: flex; justify-content: space-between; gap: 16px; align-items: center;
+      padding: 14px 18px; background: #fafdff; border-bottom: 1px solid #d6e0e7;
+    }
+    .runtime-demo-head strong { display: block; font-size: 13px; }
+    .runtime-demo-kicker, .runtime-panel-label { display: block; color: var(--faint); font: 10px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+    .runtime-demo-kicker { margin-bottom: 3px; color: var(--orange-dark); }
+    .runtime-release-badges { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+    .release-badge { display: inline-flex; align-items: center; min-height: 24px; padding: 0 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: #fff; font: 10px var(--mono); }
+    .release-badge.draft { color: var(--blue); border-color: #bfdbfe; background: var(--blue-soft); }
+    .release-badge.live { color: var(--green); border-color: #bbf7d0; background: var(--green-soft); }
+    .runtime-demo-grid { display: grid; grid-template-columns: minmax(0, 1fr) 260px minmax(0, 1fr); gap: 20px; align-items: center; padding: 22px; }
+    .runtime-demo-panel { min-width: 0; padding: 18px; border: 1px solid #d6e0e7; border-radius: 12px; background: rgba(255,255,255,.82); }
+    .runtime-demo-panel h3 { margin: 6px 0 7px; font-size: 16px; }
+    .runtime-demo-panel p { margin: 0 0 14px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .runtime-scene-card { display: flex; align-items: center; gap: 9px; padding: 10px; border: 1px solid #dfe7ec; border-radius: 8px; background: #fff; }
+    .runtime-scene-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 7px; color: #fff; background: #3978d5; font-size: 20px; line-height: 1; }
+    .runtime-scene-card b, .runtime-scene-card small { display: block; }
+    .runtime-scene-card b { font-size: 12px; }
+    .runtime-scene-card small { margin-top: 2px; color: var(--muted); font-size: 10px; }
+    .runtime-scene-state { margin-left: auto; color: var(--green); font: 10px var(--mono); white-space: nowrap; }
+    .runtime-action-stack { display: grid; gap: 7px; margin-top: 13px; }
+    .runtime-action-stack .btn { justify-content: flex-start; min-height: 32px; font-size: 11px; }
+    .runtime-action-stack .btn.ghost { color: var(--muted); justify-content: center; }
+    .runtime-step-list { display: grid; gap: 6px; margin-top: 16px; }
+    .runtime-step { display: grid; grid-template-columns: 26px minmax(0,1fr); column-gap: 8px; padding: 7px 8px; border-radius: 6px; color: var(--muted); background: #f4f7f9; }
+    .runtime-step span { grid-row: span 2; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: var(--faint); background: #e6edf1; font: 10px var(--mono); }
+    .runtime-step b { font-size: 11px; font-weight: 650; }
+    .runtime-step small { font-size: 10px; }
+    .runtime-step.active { color: var(--orange-dark); background: var(--orange-soft); }
+    .runtime-step.active span { color: #fff; background: var(--orange); }
+    .runtime-step.done { color: var(--green); background: var(--green-soft); }
+    .runtime-step.done span { color: #fff; background: var(--green); }
+    .phone-frame { position: relative; width: 240px; padding: 10px; border: 7px solid #162433; border-radius: 30px; background: #162433; box-shadow: 0 18px 35px rgba(22,36,51,.24); justify-self: center; }
+    .phone-speaker { position: absolute; z-index: 2; left: 50%; top: 7px; width: 54px; height: 5px; border-radius: 999px; background: #3e5262; transform: translateX(-50%); }
+    .phone-screen { position: relative; overflow: hidden; aspect-ratio: 9 / 16; border-radius: 20px; background: #0d151d; color: #fff; }
+    .phone-header, .phone-footer { position: absolute; z-index: 5; left: 0; right: 0; display: flex; justify-content: space-between; gap: 8px; padding: 15px 13px 9px; background: linear-gradient(#0b111add, transparent); font-size: 9px; }
+    .phone-header { top: 0; padding-top: 18px; }
+    .phone-header span:last-child, .phone-footer span:last-child { color: #b8efc9; font: 9px var(--mono); }
+    .phone-footer { bottom: 0; align-items: end; padding: 9px 13px 14px; background: linear-gradient(transparent, #0b111add); color: #aab7c4; }
+    .phone-scene { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(circle at 70% 20%, rgba(245,108,22,.24), transparent 32%), linear-gradient(145deg, #31495a, #111b24 80%); }
+    .phone-grid { position: absolute; inset: 0; opacity: .25; background-image: linear-gradient(rgba(255,255,255,.16) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.16) 1px, transparent 1px); background-size: 27px 27px; mask-image: linear-gradient(to bottom, black, transparent 80%); }
+    .phone-marker { position: absolute; left: 17px; top: 78px; padding: 6px 7px; border: 1px solid rgba(255,255,255,.55); border-radius: 5px; color: #fff; background: rgba(10,19,27,.46); font: 10px var(--mono); line-height: 1.2; text-align: center; }
+    .phone-marker small { color: #f7aa78; font-size: 7px; }
+    .phone-block { position: absolute; left: 55%; top: 42%; display: grid; place-items: center; width: 58px; height: 58px; border: 1px solid rgba(255,255,255,.75); border-radius: 9px; color: #fff; background: linear-gradient(145deg, #65a5f5, #2563eb); box-shadow: 0 0 0 8px rgba(37,99,235,.14), 0 12px 20px rgba(0,0,0,.22); transform: translate(-50%,-50%) rotate(8deg); transition: .3s ease; font-size: 10px; font-weight: 700; }
+    .phone-block.updated { background: linear-gradient(145deg, #fb923c, #dc2626); box-shadow: 0 0 0 8px rgba(220,38,38,.14), 0 12px 20px rgba(0,0,0,.22); }
+    .phone-reticle { position: absolute; left: 50%; top: 50%; color: rgba(255,255,255,.78); transform: translate(-50%,-50%); font-size: 20px; text-shadow: 0 1px 4px #000; }
+    .phone-anchor-chip { position: absolute; left: 50%; top: 67%; padding: 4px 7px; border: 1px solid rgba(185,239,201,.6); border-radius: 999px; color: #b8efc9; background: rgba(10,19,27,.58); transform: translateX(-50%); font: 8px var(--mono); white-space: nowrap; }
+    .phone-entry, .phone-update { position: absolute; z-index: 6; left: 10px; right: 10px; bottom: 38px; display: grid; gap: 5px; padding: 12px 11px; border: 1px solid rgba(255,255,255,.22); border-radius: 10px; background: rgba(13,21,29,.88); box-shadow: 0 10px 25px rgba(0,0,0,.25); backdrop-filter: blur(10px); }
+    .phone-entry b, .phone-update b { font-size: 11px; }
+    .phone-entry span, .phone-update span { color: #aab7c4; font-size: 9px; }
+    .phone-entry .btn, .phone-update .btn { min-height: 27px; padding: 0 8px; color: #fff; border-color: #ffffff33; background: #ffffff18; font-size: 9px; }
+    .phone-entry .btn.primary { border-color: var(--orange); background: var(--orange); }
+    .runtime-qr-card { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid #dfe7ec; border-radius: 8px; background: #fff; }
+    .runtime-qr-card b, .runtime-qr-card small { display: block; }
+    .runtime-qr-card b { font-size: 11px; }
+    .runtime-qr-card small { margin-top: 3px; color: var(--muted); font: 9px var(--mono); word-break: break-all; }
+    .fake-qr { display: grid; grid-template-columns: repeat(3, 7px); gap: 2px; width: 25px; height: 25px; padding: 3px; background: #162433; }
+    .fake-qr i { display: block; background: #fff; }
+    .fake-qr i:nth-child(2n) { opacity: .3; }
+    .runtime-log { min-height: 91px; max-height: 128px; overflow: auto; margin-top: 13px; padding: 8px; border-radius: 7px; background: #172635; color: #bdd0dc; font: 9px/1.65 var(--mono); }
+    .runtime-log div + div { margin-top: 3px; }
+    .runtime-log span { color: #7891a2; }
+    .runtime-demo-footer { border-top: 1px solid #d6e0e7; border-bottom: 0; color: var(--muted); font-size: 10px; }
+    .runtime-demo-footer b { color: var(--ink); }
+
+    @media (max-width: 1050px) {
+      .shell { grid-template-columns: 220px minmax(0,1fr); }
+      .hero { grid-template-columns: 1fr; gap: 28px; }
+      .hero-art { min-height: 280px; }
+      .sim-body { grid-template-columns: 190px minmax(0,1fr); }
+      .sim-side.right { display: none; }
+      .architecture { grid-template-columns: repeat(3, 1fr); }
+      .arch-arrow { display: none; }
+    }
+    @media (max-width: 760px) {
+      .shell { display: block; }
+      .sidebar { position: relative; height: auto; padding: 14px 16px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .brand { padding: 0 4px 14px; }
+      .nav-kicker, .sidebar-foot { display: none; }
+      .side-nav { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .side-nav a { padding: 7px 6px; font-size: 10px; }
+      .nav-no { display: none; }
+      .topline { padding: 11px 16px; }
+      .topline .crumb { font-size: 10px; }
+      .status-pill { display: none; }
+      .content { width: min(100% - 32px, 680px); padding-top: 34px; }
+      .hero { padding-bottom: 45px; }
+      h1 { font-size: 40px; }
+      .hero-lede { font-size: 15px; }
+      .section { padding-top: 55px; }
+      .grid-2, .grid-3, .flow { grid-template-columns: 1fr; }
+      .flow-item { min-height: 0; border-right: 0; border-bottom: 1px solid var(--line-soft); }
+      .flow-item:last-child { border-bottom: 0; }
+      .flow-item::after { right: 50%; top: auto; bottom: -12px; transform: rotate(90deg); }
+      .step { grid-template-columns: 38px minmax(0,1fr); }
+      .step-code { grid-column: 2; }
+      .architecture { grid-template-columns: 1fr; }
+      .arch-node { min-height: 84px; }
+      .sim-head, .sim-url { align-items: stretch; flex-direction: column; }
+      .sim-body { display: block; }
+      .sim-side.left { border-right: 0; border-bottom: 1px solid #d6e0e7; }
+      .sim-side.left .participant { display: inline-flex; width: 32%; min-width: 130px; }
+      .sim-side.left .participant-list { display: flex; flex-wrap: wrap; gap: 4px; }
+      .sim-viewport { min-height: 380px; }
+      .sim-footer { flex-direction: column; align-items: flex-start; }
+      .top-actions .btn:first-child { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" aria-label="文档导航">
+      <div class="brand">
+        <div class="brand-mark">西</div>
+        <div><strong>西游·虚境</strong><small>Live collaboration runbook</small></div>
+      </div>
+      <div class="nav-kicker">现场手册</div>
+      <nav class="side-nav">
+        <a href="#overview"><span class="nav-no">01</span>先理解系统</a>
+        <a href="#before"><span class="nav-no">02</span>演示前准备</a>
+        <a href="#runbook"><span class="nav-no">03</span>端到端流程</a>
+        <a href="#mobile-demo"><span class="nav-no">04</span>手机发布演示</a>
+        <a href="#simulator"><span class="nav-no">05</span>协作模拟器</a>
+        <a href="#cursors"><span class="nav-no">06</span>鼠标与角色</a>
+        <a href="#roles"><span class="nav-no">07</span>现场分工</a>
+        <a href="#troubleshoot"><span class="nav-no">08</span>故障排查</a>
+        <a href="#build"><span class="nav-no">09</span>开发清单</a>
+        <a href="#after"><span class="nav-no">10</span>演示结束后</a>
+      </nav>
+      <div class="sidebar-foot">v1.1 · 端到端现场版<br>编辑器 → Release → 手机 Runtime</div>
+    </aside>
+
+    <main>
+      <div class="topline">
+        <div class="crumb"><b>黑客松现场多人协作演示手册</b>　/　西游·虚境</div>
+        <div class="top-actions">
+          <span class="status-pill"><span class="dot"></span>线上演示路径</span>
+          <button class="btn" id="printBtn">打印 / 导出 PDF</button>
+          <button class="btn primary" id="copyQuickLink">复制演示链接</button>
+        </div>
+      </div>
+
+      <div class="content">
+        <section class="hero" id="overview">
+          <div>
+            <div class="eyebrow">HACKATHON LIVE DEMO · v1.1</div>
+            <h1>从多人协作，到手机现场看见发布结果。</h1>
+            <p class="hero-lede">先让主持人和编辑者在同一个线上 Draft 中协作，再把一个新方块发布成稳定 Release，最后让手机扫码进入游客 Runtime，在真实空间中完成定位和互动。</p>
+            <div class="hero-note">
+              <span class="tag"><strong>协作</strong> Draft + Yjs</span>
+              <span class="tag"><strong>交付</strong> Release + QR</span>
+              <span class="tag"><strong>运行</strong> 手机 Runtime</span>
+            </div>
+          </div>
+          <div class="hero-art" aria-label="多人协作预览示意图">
+            <div class="art-plate"></div>
+            <div class="art-cursor one">↖</div><div class="art-label one">A7K2M9 · 编辑者</div>
+            <div class="art-cursor two">↖</div><div class="art-label two">Q8P4DX · 管理者</div>
+            <div class="art-window">
+              <div class="art-window-head"><span>HUA GUO SHAN / LIVE</span><span>4 ONLINE</span></div>
+              <div class="art-users"><span class="avatar orange">Q</span><span class="avatar blue">A</span><span class="avatar green">N</span><span class="avatar" style="background:#8a9baa">+1</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="architecture">
+          <div class="section-head"><div><div class="section-kicker">01 / System model</div><h2>现场的真实链路</h2></div></div>
+          <p class="section-intro">参与者只需要打开线上网址。真正持续在线的是远程服务器上的网站、协作网关和 Yjs WebSocket 服务。</p>
+          <div class="architecture">
+            <div class="arch-node accent"><div class="arch-icon">01</div><b>参与者浏览器</b><span>Chrome / Edge / Safari<br>无需安装项目</span></div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node blue"><div class="arch-icon">02</div><b>线上网站</b><span>HTTPS / 静态前端<br>编辑器入口</span></div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node"><div class="arch-icon">03</div><b>协作网关</b><span>room + key 校验<br>转发 WebSocket</span></div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node green"><div class="arch-icon">04</div><b>Yjs 协作房间</b><span>实时场景、在线状态<br>多人同步</span></div>
+          </div>
+          <div class="callout info"><div class="callout-bar"></div><div class="callout-body"><strong>一句话判断：</strong>现场参与者不需要运行 <code>npm run dev</code>；主持人的电脑也不必充当服务器。编辑器协作走 Draft + Yjs，手机游客不直接读取 Draft，而是通过 Release + Runtime 读取稳定发布版本。</div></div>
+        </section>
+
+        <section class="section" id="before">
+          <div class="section-head"><div><div class="section-kicker">02 / Before the doors open</div><h2>演示前准备</h2></div><span class="check-count" id="serverCount">0 / 10 已完成</span></div>
+          <p class="section-intro">建议在活动前一天完成服务端检查，在开始前一小时完成浏览器、角色和备份检查。点击下方项目可以现场打勾。</p>
+          <div class="grid-2">
+            <div class="card">
+              <h3>服务器检查</h3>
+              <div class="checklist" data-check-group="server">
+                <label class="check-row"><input type="checkbox">线上域名可以访问</label>
+                <label class="check-row"><input type="checkbox">HTTPS 和 WSS 正常</label>
+                <label class="check-row"><input type="checkbox">xiyou-collab 容器正在运行</label>
+                <label class="check-row"><input type="checkbox">Cloudflare Tunnel / 反向代理正常</label>
+                <label class="check-row"><input type="checkbox">准备了现场专用房间</label>
+                <label class="check-row"><input type="checkbox">准备了临时 key</label>
+                <label class="check-row"><input type="checkbox">主持人有 scene.json 备份</label>
+                <label class="check-row"><input type="checkbox">服务器没有临时重启计划</label>
+                <label class="check-row"><input type="checkbox">有备用网络或手机热点</label>
+                <label class="check-row"><input type="checkbox">有备用邀请链接</label>
+              </div>
+            </div>
+            <div class="card">
+              <h3>浏览器和设备检查</h3>
+              <div class="checklist" data-check-group="browser">
+                <label class="check-row"><input type="checkbox">主持人窗口已进入管理者角色</label>
+                <label class="check-row"><input type="checkbox">编辑者 A 使用独立浏览器/设备</label>
+                <label class="check-row"><input type="checkbox">编辑者 B 使用独立浏览器/设备</label>
+                <label class="check-row"><input type="checkbox">预览者使用手机或独立窗口</label>
+                <label class="check-row"><input type="checkbox">每个人的随机名称不同</label>
+                <label class="check-row"><input type="checkbox">所有人看到“已连接”</label>
+                <label class="check-row"><input type="checkbox">在线人数能够增加</label>
+                <label class="check-row"><input type="checkbox">对象移动可以同步</label>
+                <label class="check-row"><input type="checkbox">鼠标 Overlay 不遮挡本地点击</label>
+                <label class="check-row"><input type="checkbox">主持人知道如何恢复备份</label>
+              </div>
+            </div>
+          </div>
+          <div class="codebox" style="margin-top:20px;"><button class="btn copy-code" data-copy="https://agentpay.xx.kg/xiyou/?room=hackathon-demo&key=现场临时令牌">复制</button><span class="comment">// 现场所有人打开同一条完整链接；不要漏掉 key</span><br><span class="blue-code">https://agentpay.xx.kg/xiyou/</span><span class="accent-code">?room=hackathon-demo&amp;key=现场临时令牌</span></div>
+          <div class="callout warn"><div class="callout-bar"></div><div class="callout-body"><strong>安全边界：</strong>现场共享 key 只用于演示。活动结束后更换或撤销它，不要把生产项目的长期 key 投影到大屏或发到公开群。</div></div>
+        </section>
+
+        <section class="section" id="runbook">
+          <div class="section-head"><div><div class="section-kicker">03 / Five-minute script</div><h2>五分钟现场演示流程</h2></div></div>
+          <p class="section-intro">这段流程可以直接照着执行，也可以照着讲。建议提前准备好“花果山觉醒”场景，不要现场从空白项目开始。</p>
+          <div class="timeline">
+            <div class="timeline-node"><div class="point">00:00</div><b>主持人进入</b><span>打开线上完整链接，选择管理者。</span></div>
+            <div class="timeline-node"><div class="point">00:30</div><b>成员加入</b><span>其他人打开同一链接，在线人数增加。</span></div>
+            <div class="timeline-node"><div class="point">01:00</div><b>看见角色</b><span>展示随机名称、头像、角色颜色或鼠标。</span></div>
+            <div class="timeline-node"><div class="point">01:40</div><b>同时编辑</b><span>A 移动悟空，B 添加光源，场景实时同步。</span></div>
+            <div class="timeline-node"><div class="point">02:20</div><b>软锁提示</b><span>展示“某某正在编辑此对象”。</span></div>
+            <div class="timeline-node"><div class="point">02:50</div><b>试玩验证</b><span>预览者切换试玩，观察触发器和时间线。</span></div>
+            <div class="timeline-node"><div class="point">03:40</div><b>发布方块</b><span>主持人发布 v2，生成游客二维码。</span></div>
+            <div class="timeline-node"><div class="point">04:30</div><b>手机扫码</b><span>手机进入 Runtime，校准 QR 锚点。</span></div>
+            <div class="timeline-node"><div class="point">05:30</div><b>发布更新</b><span>编辑者改成 v3，展示新会话与旧会话差异。</span></div>
+            <div class="timeline-node"><div class="point">06:30</div><b>收束</b><span>说明 Draft、Release、Runtime 的边界。</span></div>
+          </div>
+          <div class="steps" style="margin-top:28px;">
+            <article class="step"><div class="step-no">01</div><div><h3>主持人打开线上地址</h3><p>打开 <code>https://agentpay.xx.kg/xiyou/?room=hackathon-demo&amp;key=现场令牌</code>，选择“管理者”，确认状态显示“已连接”。</p></div><div class="step-code">主持人 / 管理者</div></article>
+            <article class="step"><div class="step-no">02</div><div><h3>确认演示场景没有被本地缓存覆盖</h3><p>确认左侧 Outliner、中间 Viewport、底部时间线都出现“花果山觉醒”内容。不要在此时打开 <code>?reset=1</code>。</p></div><div class="step-code">场景准备</div></article>
+            <article class="step"><div class="step-no">03</div><div><h3>其他人打开相同完整链接</h3><p>每个人的 <code>room</code> 和 <code>key</code> 必须相同，只有角色可以不同。建议使用不同设备、不同浏览器或无痕窗口。</p></div><div class="step-code">2～4 人加入</div></article>
+            <article class="step"><div class="step-no">04</div><div><h3>编辑者 A 移动悟空</h3><p>选择悟空模型，使用移动工具把它向左移动。主持人和其他浏览器应看到位置变化，并看到在线状态或软锁提示。</p></div><div class="step-code">Yjs update</div></article>
+            <article class="step"><div class="step-no">05</div><div><h3>编辑者 B 添加一个方块</h3><p>从内容浏览器拖出一个方块或互动对象，放入 Viewport，再修改颜色。先让所有人确认它在 Draft 中实时出现。</p></div><div class="step-code">Draft / 并行编辑</div></article>
+            <article class="step"><div class="step-no">06</div><div><h3>预览者切换试玩</h3><p>预览者切换试玩模式或点击预览，验证点击、注视、按住、进入区域和时间线。强调：这是编辑者验收，不是游客最终界面。</p></div><div class="step-code">Editor Preview</div></article>
+            <article class="step"><div class="step-no">07</div><div><h3>主持人发布 v2 并生成二维码</h3><p>执行发布检查，通过后创建不可变 Release v2；在发布结果中复制游客 Runtime 链接或生成二维码。</p></div><div class="step-code">Release v2</div></article>
+            <article class="step"><div class="step-no">08</div><div><h3>手机扫码进入游客 Runtime</h3><p>手机不要打开编辑器地址，而是扫描游客二维码。点击“开始体验”，授权相机/方向，扫描入口 QR 或使用 VPS 完成空间校准。</p></div><div class="step-code">Mobile Runtime</div></article>
+            <article class="step"><div class="step-no">09</div><div><h3>再改一次并发布 v3</h3><p>把方块改成红色后发布 v3：新扫码用户直接看到 v3；已经打开的手机保持当前会话，并收到“有新版本”的更新提示。</p></div><div class="step-code">新会话 / 旧会话</div></article>
+            <article class="step"><div class="step-no">10</div><div><h3>用一句话收束</h3><p>“Yjs 让团队一起改 Draft，Release 让版本可交付，Runtime 让游客在手机上看到结果。”最后说明当前版本的定位、发布和热更新边界。</p></div><div class="step-code">端到端闭环</div></article>
+          </div>
+        </section>
+
+        <section class="section" id="mobile-demo">
+          <div class="section-head"><div><div class="section-kicker">04 / Draft → Release → Runtime</div><h2>现场新增：让手机真正看到发布结果</h2></div><span class="tag"><strong>推荐演示</strong> 现场手机扫码</span></div>
+          <p class="section-intro">这一段紧接在多人协作之后：先在编辑器里加一个方块并发布，再用手机扫码进入独立的游客 Runtime。用它明确说明“试玩不是游客端”，也说明发布后新旧会话为什么不一定同时强制刷新。</p>
+          <div class="callout info" style="margin-bottom:18px;"><div class="callout-bar"></div><div class="callout-body"><strong>现场讲解词：</strong>“编辑器里的实时协作同步的是 Draft；点击发布后，系统生成稳定的 Release。游客手机不读取半成品 Draft，而是通过二维码加载这个 Release。”</div></div>
+          <div class="runtime-demo-shell">
+            <div class="runtime-demo-head">
+              <div><span class="runtime-demo-kicker">LIVE HANDOFF</span><strong>编辑器发布 → 手机游客 Runtime</strong></div>
+              <div class="runtime-release-badges"><span id="releaseBadge" class="release-badge draft">DRAFT</span><span id="activeReleaseBadge" class="release-badge">暂无 Release</span></div>
+            </div>
+            <div class="runtime-demo-grid">
+              <div class="runtime-demo-panel">
+                <div class="runtime-panel-label">EDITOR / 发布端</div>
+                <h3>1. 在 Draft 中编辑方块</h3>
+                <p>先修改场景，再进行试玩。发布只取通过检查的稳定快照。</p>
+                <div class="runtime-scene-card"><span class="runtime-scene-icon">□</span><div><b>虚境方块</b><small id="editorCubeState">Draft · 蓝色</small></div><span class="runtime-scene-state" id="editorSyncState">已同步</span></div>
+                <div class="runtime-action-stack">
+                  <button class="btn primary" data-mobile-action="publish-v2">① 发布 v2 + 生成二维码</button>
+                  <button class="btn" data-mobile-action="publish-v3">③ 修改为红色并发布 v3</button>
+                </div>
+                <div class="runtime-step-list" id="mobileStepList">
+                  <div class="runtime-step active" data-mobile-step="publish"><span>01</span><b>发布 v2</b><small>生成游客入口</small></div>
+                  <div class="runtime-step" data-mobile-step="scan"><span>02</span><b>手机扫码</b><small>进入 Runtime 并校准</small></div>
+                  <div class="runtime-step" data-mobile-step="update"><span>03</span><b>发布 v3</b><small>旧会话收到提示</small></div>
+                </div>
+              </div>
+              <div class="phone-frame" aria-label="手机游客 Runtime 模拟器">
+                <div class="phone-speaker"></div>
+                <div class="phone-screen">
+                  <div class="phone-header"><span>故事空间</span><span id="phoneRelease">未进入</span></div>
+                  <div class="phone-scene">
+                    <div class="phone-grid"></div>
+                    <div class="phone-marker">QR<br><small>GATE-01</small></div>
+                    <div class="phone-block" id="phoneBlock"><span>方块</span></div>
+                    <div class="phone-reticle">＋</div>
+                    <div class="phone-anchor-chip" id="phoneAnchor">等待定位</div>
+                  </div>
+                  <div class="phone-entry" id="phoneEntry"><b>扫描二维码打开体验</b><span>游客端不是编辑器试玩</span><button class="btn primary" data-mobile-action="scan">模拟手机扫码</button></div>
+                  <div class="phone-update" id="phoneUpdate" hidden><b>场景有新版本 v3</b><span>当前会话仍在 v2</span><button class="btn" data-mobile-action="apply">确认更新</button></div>
+                  <div class="phone-footer"><span>Mobile Runtime</span><span id="phoneMode">未定位</span></div>
+                </div>
+              </div>
+              <div class="runtime-demo-panel runtime-runtime-panel">
+                <div class="runtime-panel-label">RUNTIME / 游客端</div>
+                <h3 id="runtimeStateTitle">2. 等待手机扫码</h3>
+                <p id="runtimeStateCopy">新会话读取 active Release；已打开的会话不会直接读取 Draft。</p>
+                <div class="runtime-qr-card"><div class="fake-qr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div><b>游客体验入口</b><small id="runtimeEntryUrl">/e/huaguoshan?release=v2</small></div></div>
+                <div class="runtime-log" id="mobileRuntimeLog"><div><span>--:--:--</span> 等待发布版本…</div></div>
+                <div class="runtime-action-stack">
+                  <button class="btn" data-mobile-action="notify">④ 给已打开手机发送更新提示</button>
+                  <button class="btn" data-mobile-action="apply">⑤ 手机确认更新到 v3</button>
+                  <button class="btn ghost" data-mobile-action="reset">重置这段手机演示</button>
+                </div>
+              </div>
+            </div>
+            <div class="runtime-demo-footer"><span><b>版本语义：</b>新会话立即生效；旧会话默认提示更新，不强行打断游客。</span><span><b>定位：</b>QR / 图像锚点优先，GPS 只做粗定位。</span></div>
+          </div>
+          <div class="grid-3" style="margin-top:16px;">
+            <div class="card"><h3>入口</h3><p>二维码、短链接或 NFC 只负责打开体验，不携带整份场景 JSON。正式环境建议使用短码解析 Experience。</p><div class="micro">QR / LINK / NFC → Experience Resolver</div></div>
+            <div class="card"><h3>定位</h3><p>扫码后仍要完成空间校准。QR/图像锚点适合 MVP，VPS 适合后续自然化的景区体验。</p><div class="micro">GPS = 粗定位 · VPS = 精定位</div></div>
+            <div class="card"><h3>触发</h3><p>进入区域后自动触发必须建立在 Runtime 已打开且定位完成的前提上，不能承诺浏览器后台自动拉起。</p><div class="micro">tap / gaze / hold / enter</div></div>
+          </div>
+        </section>
+
+        <section class="section" id="simulator">
+          <div class="section-head"><div><div class="section-kicker">05 / Concrete walkthrough</div><h2>在线演示模拟器</h2></div><span class="tag"><strong>可点击操作</strong> 看同步发生</span></div>
+          <p class="section-intro">这是一个离线的页面内模拟器，用来具象化现场演示：左侧是在线参与者，中间是预览区，右侧是同步日志。它不会真的连接线上服务器，但可以先用来排练讲解和操作顺序。</p>
+          <div class="simulator-shell">
+            <div class="sim-head">
+              <div class="sim-title"><i>LIVE</i><span>西游·虚境 / hackathon-demo</span></div>
+              <div class="sim-toolbar">
+                <label for="roomInput">房间</label><input class="field" id="roomInput" value="hackathon-demo" aria-label="模拟房间名">
+                <button class="btn" id="joinAll">让所有人进入</button>
+                <button class="btn primary" id="resetSim">重置模拟</button>
+              </div>
+            </div>
+            <div class="sim-url"><input class="field" id="simUrl" readonly value="https://agentpay.xx.kg/xiyou/?room=hackathon-demo&key=现场临时令牌"><button class="btn" id="copySimUrl">复制完整链接</button></div>
+            <div class="sim-body">
+              <aside class="sim-side left">
+                <div class="sim-label">Participants / 在线参与者</div>
+                <div class="sim-status"><span class="dot"></span><span id="simStatusText">4 人在线 · 已连接</span></div>
+                <div class="participant-list" id="participantList"></div>
+                <div class="sim-label" style="margin-top:20px;">Scene / 场景对象</div>
+                <div class="scene-list" id="sceneList"></div>
+                <div class="sim-controls-note">点击参与者切换当前操作身份；点击下方动作按钮，观察中间场景和右侧日志变化。</div>
+              </aside>
+              <div class="sim-viewport" id="simViewport">
+                <div class="sim-ground"></div>
+                <div class="sim-overlay-note">4 ONLINE · YJS SYNC</div>
+                <div class="sim-object wukong selected" data-object="wukong">悟空</div>
+                <div class="sim-object symbol" data-object="symbol"><span>结界</span></div>
+                <div class="sim-object light" data-object="light" title="点光源"></div>
+                <div class="sim-cursor" data-cursor="manager" style="--cursor:#F97316; left:19%; top:23%;"><div class="arrow">↖</div><div class="cursor-label">Q8P4DX<small>管理者</small></div></div>
+                <div class="sim-cursor" data-cursor="editor" style="--cursor:#2563EB; left:55%; top:39%;"><div class="arrow">↖</div><div class="cursor-label">A7K2M9<small>编辑者</small></div></div>
+                <div class="sim-cursor" data-cursor="previewer" style="--cursor:#16A34A; left:73%; top:66%;"><div class="arrow">↖</div><div class="cursor-label">N3W7F2K<small>预览者</small></div></div>
+                <div class="sim-actions"><button class="btn" data-action="move">编辑者 A：移动悟空</button><button class="btn" data-action="add">编辑者 B：添加光源</button><button class="btn" data-action="preview">预览者：开始试玩</button><button class="btn" data-action="cursor">移动协作者鼠标</button></div>
+              </div>
+              <aside class="sim-side right">
+                <div class="sim-label">Activity / 实时日志</div>
+                <div class="sim-log" id="simLog"></div>
+                <div class="sim-label" style="margin-top:20px;">What is synced / 同步内容</div>
+                <div class="checklist">
+                  <label class="check-row"><input type="checkbox" checked disabled>场景对象</label>
+                  <label class="check-row"><input type="checkbox" checked disabled>触发器 / 时间线</label>
+                  <label class="check-row"><input type="checkbox" checked disabled>在线头像</label>
+                  <label class="check-row"><input type="checkbox" checked disabled>鼠标相对坐标</label>
+                </div>
+              </aside>
+            </div>
+            <div class="sim-footer"><span>当前身份：<b id="activeIdentity">Q8P4DX · 管理者</b></span><span>演示提示：<b>先让所有人进入，再做并行编辑</b></span></div>
+          </div>
+        </section>
+
+        <section class="section" id="cursors">
+          <div class="section-head"><div><div class="section-kicker">06 / Awareness design</div><h2>鼠标、用户名和角色颜色</h2></div></div>
+          <p class="section-intro">鼠标位置和在线身份属于临时状态，不应该写入场景文档。推荐通过 Yjs Awareness 广播，场景编辑内容继续走 Yjs 文档。</p>
+          <div class="grid-3">
+            <div class="card role-card" style="--role:#F97316"><div class="role-line"><span class="role-dot"></span><h3 style="margin:0">管理者</h3></div><p>橙色。负责介绍项目、观察成员和发布检查。</p><div class="micro">role: manager · #F97316</div></div>
+            <div class="card role-card" style="--role:#2563EB"><div class="role-line"><span class="role-dot"></span><h3 style="margin:0">编辑者</h3></div><p>蓝色。负责移动对象、添加素材和修改场景。</p><div class="micro">role: editor · #2563EB</div></div>
+            <div class="card role-card" style="--role:#16A34A"><div class="role-line"><span class="role-dot"></span><h3 style="margin:0">预览者</h3></div><p>绿色。负责观察场景、切换试玩和反馈效果。</p><div class="micro">role: previewer · #16A34A</div></div>
+          </div>
+          <div class="grid-2" style="margin-top:16px;">
+            <div class="card">
+              <h3>随机访客名</h3>
+              <p>每个浏览器首次进入时生成 6～8 位大写字母数字名称，避开容易混淆的 <code>I / O / 0 / 1</code>。名称可以保存在 <code>localStorage</code>，刷新后保持不变。</p>
+              <div class="codebox"><button class="btn copy-code" data-copy="const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'">复制</button><span class="blue-code">const chars</span> = <span class="accent-code">'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'</span><br><span class="blue-code">const bytes</span> = crypto.getRandomValues(<span class="green-code">new Uint8Array(6)</span>)<br><span class="blue-code">const name</span> = Array.from(bytes, b =&gt; chars[b % chars.length]).join('')</div>
+              <p class="micro">示例：A7K2M9 · Q8P4DX · N3W7F2K</p>
+            </div>
+            <div class="card">
+              <h3>Awareness 数据</h3>
+              <div class="codebox"><span class="accent-code">{</span><br>&nbsp;&nbsp;<span class="blue-code">name</span>: <span class="green-code">'A7K2M9'</span>,<br>&nbsp;&nbsp;<span class="blue-code">role</span>: <span class="green-code">'editor'</span>,<br>&nbsp;&nbsp;<span class="blue-code">color</span>: <span class="green-code">'#2563EB'</span>,<br>&nbsp;&nbsp;<span class="blue-code">cursor</span>: { <span class="blue-code">x</span>: <span class="accent-code">0.42</span>, <span class="blue-code">y</span>: <span class="accent-code">0.58</span>, <span class="blue-code">visible</span>: <span class="accent-code">true</span> },<br>&nbsp;&nbsp;<span class="blue-code">sel</span>: [<span class="green-code">'glb_wukong'</span>]<br><span class="accent-code">}</span></div>
+              <p class="micro">x / y 使用 0～1 相对坐标，不同步屏幕像素。</p>
+            </div>
+          </div>
+          <div class="callout" style="margin-top:16px;"><div class="callout-bar"></div><div class="callout-body"><strong>为什么不用像素坐标？</strong> 每个人的浏览器窗口大小不同。把鼠标位置记录成 Viewport 的相对比例，其他设备才能正确渲染。建议鼠标移动事件节流到每秒 20～30 次。</div></div>
+        </section>
+
+        <section class="section" id="roles">
+          <div class="section-head"><div><div class="section-kicker">Role map</div><h2>现场分工与讲解重点</h2></div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>角色</th><th>设备建议</th><th>现场操作</th><th>主持人讲解</th></tr></thead>
+              <tbody>
+                <tr><td><span class="role-badge manager">管理者</span></td><td>主持人主电脑</td><td>介绍项目、观察在线人数、打开发布检查</td><td>“这是同一个线上工作空间，不是多份本地文件。”</td></tr>
+                <tr><td><span class="role-badge editor">编辑者 A</span></td><td>笔记本 1</td><td>移动悟空模型、修改位置和节点</td><td>“A 的修改会实时广播给其他窗口。”</td></tr>
+                <tr><td><span class="role-badge editor">编辑者 B</span></td><td>笔记本 2</td><td>添加点光源、修改材质颜色</td><td>“B 可以同时修改另一部分场景。”</td></tr>
+                <tr><td><span class="role-badge previewer">预览者 / 游客</span></td><td>手机 / 平板</td><td>先切换试玩，再扫码进入 Runtime，完成定位并触发方块</td><td>“试玩是编辑器验收；Runtime 才是游客看到的界面。”</td></tr>
+                <tr><td>技术保障</td><td>备用设备</td><td>观察服务器日志、准备热点和备份</td><td>不参与主操作，只负责恢复和排障。</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section" id="troubleshoot">
+          <div class="section-head"><div><div class="section-kicker">08 / Recovery</div><h2>故障排查</h2></div></div>
+          <p class="section-intro">现场不要反复刷新所有设备。先判断是 HTTP 网站问题、WebSocket 连接问题、房间参数问题，还是本地缓存覆盖问题。</p>
+          <details open><summary>网页能打开，但显示“未连接”</summary><div class="details-body"><p>先检查完整链接是否包含正确的 <code>room</code> 和 <code>key</code>，再检查浏览器 Network 面板中的 WebSocket 是否使用 <code>wss://agentpay.xx.kg/xiyou-yjs</code>。如果 HTTP 正常而 WSS 不通，通常是代理 Upgrade、Cloudflare Tunnel 或现场网络问题。</p><div class="codebox"><span class="comment">排查顺序</span><br>1. room / key　→　2. wss 地址　→　3. 协作容器　→　4. 反向代理　→　5. 现场网络</div></div></details>
+          <details><summary>在线人数增加，但场景不一致</summary><div class="details-body"><p>先确认所有浏览器使用完全相同的房间名；然后检查是否有人打开了 <code>?reset=1</code>，以及旧的 <code>localStorage</code> 是否覆盖了云端场景。暂停操作后，由主持人导入备份 <code>scene.json</code>，再让其他人刷新。</p></div></details>
+          <details><summary>鼠标能显示，但挡住了本地点击</summary><div class="details-body"><p>光标层和每个协作者鼠标都必须使用 <code>pointer-events: none</code>。它们是视觉 Overlay，不能参与交互命中。</p><div class="codebox">.collab-cursors, .collab-cursor { <span class="accent-code">pointer-events: none;</span> }</div></div></details>
+          <details><summary>所有人显示同一个随机名称</summary><div class="details-body"><p>通常是多个标签页共用了同一个浏览器的 <code>localStorage</code>。改用不同浏览器、无痕窗口或不同设备；也可以清除 <code>xiyou.guest.name</code> 后重新进入。</p></div></details>
+          <details><summary>服务器重启后场景丢失</summary><div class="details-body"><p>这通常意味着当前 Yjs 服务只在内存中保存文档，或者持久化未正确配置。现场不要主动重启容器；使用主持人的 JSON 备份恢复。正式版本必须补充 Yjs 持久化和场景快照。</p></div></details>
+          <details><summary>手机扫码后看不到刚发布的方块</summary><div class="details-body"><p>先确认扫的是“游客 Runtime”二维码，而不是编辑器协作链接；再确认发布成功、手机加载的是 <code>release=v2</code> 或当前 active release，而不是本机 <code>localStorage</code>。如果仍是旧版本，检查 CDN 缓存和 Release API，不要直接把手机接入 Yjs Draft。</p><div class="codebox"><span class="comment">正确语义</span><br>编辑器 Draft → 发布 v2 → 手机新会话加载 v2<br><span class="comment">不是</span><br>编辑器 Draft → 另一台手机直接读取本机 localStorage</div></div></details>
+          <details><summary>手机打开了 Runtime，但方块没有和真实空间对齐</summary><div class="details-body"><p>不要只依赖 GPS 做精确 AR 对齐。GPS 只判断“到了景区/区域”；请让用户扫描入口 QR/图像锚点，或接入 VPS 返回 site-local 坐标。确认锚点物理尺寸、坐标系、朝向和编辑器底座版本一致。</p></div></details>
+          <details><summary>发布 v3 后已经打开的手机没有自动变化</summary><div class="details-body"><p>这是默认的安全语义：新会话直接加载 v3，旧会话继续使用当前 Session 的 v2。演示时点击“更新提示”，再由手机用户确认刷新。只有文案、显隐和简单动画等白名单内容适合后续做热更新；底座、锚点、Collider 和剧情结构变更应提示刷新。</p></div></details>
+        </section>
+
+        <section class="section" id="build">
+          <div class="section-head"><div><div class="section-kicker">09 / Build next</div><h2>从当前版本继续开发</h2></div></div>
+          <p class="section-intro">黑客松现场先证明一条端到端链路：多人一起编辑 Draft，发布成 Release，手机通过二维码进入 Runtime。账号、VPS 和热更新可以在这条链路稳定后继续补齐。</p>
+          <div class="grid-2">
+            <div class="card"><h3>现在就做：现场端到端版</h3><ol><li>修复复制协作链接，让邀请链接包含正确的 <code>room + key</code>。</li><li>稳定多人 Draft、角色、Awareness 和协作者鼠标。</li><li>用真实“方块”作为发布演示对象，补齐发布检查和 QR 入口。</li><li>增加独立游客 Runtime 链接，不让手机读取本机 <code>localStorage</code>。</li><li>先支持 QR/图像锚点校准，GPS 仅做粗定位兜底。</li><li>现场明确演示：新会话加载新 Release，旧会话提示更新。</li></ol></div>
+            <div class="card"><h3>后续再做：商用版</h3><ol><li>账号登录和 <code>/auth/me</code>。</li><li>工作空间、项目和成员角色。</li><li>邀请链接和申请加入审批。</li><li>短期协作 Ticket 替换长期 key。</li><li>WebSocket 服务端按用户和项目鉴权。</li><li>Yjs 持久化、场景快照、发布版本和回滚。</li><li>对象存储替换本地 Blob URL。</li></ol></div>
+          </div>
+          <div class="rule"></div>
+          <div class="callout warn"><div class="callout-bar"></div><div class="callout-body"><strong>不要混淆演示角色和正式权限：</strong>通过 URL 的 <code>?role=manager</code> 只适合现场标识颜色，用户可以自行修改它。正式权限必须由“账号 → 项目成员关系 → 服务端鉴权 → 短期协作 Ticket”完成。</div></div>
+          <div class="grid-3" style="margin-top:16px;">
+            <div class="card"><h3>实时层</h3><p>Yjs 文档和 Awareness。负责在线同步对象、触发器、时间线、头像和鼠标。</p><div class="micro">Yjs = real-time collaboration</div></div>
+            <div class="card"><h3>持久层</h3><p>PostgreSQL、Yjs 持久化和场景快照。负责服务重启、跨设备恢复和版本管理。</p><div class="micro">Snapshot = durable data</div></div>
+            <div class="card"><h3>发布层</h3><p>发布检查、不可变 Release 和回滚。负责让预览或游客端拿到稳定版本。</p><div class="micro">Release ≠ draft</div></div>
+          </div>
+        </section>
+
+        <section class="section" id="after">
+          <div class="section-head"><div><div class="section-kicker">10 / After the demo</div><h2>演示结束后</h2></div></div>
+          <div class="grid-2">
+            <div class="card"><h3>立即处理</h3><ul><li>导出演示房间最终场景。</li><li>确认没有误改正式项目。</li><li>保存截图和现场日志。</li><li>记录现场使用的房间和 key。</li></ul></div>
+            <div class="card"><h3>活动结束后</h3><ul><li>撤销或更换 <code>hackathon-demo</code> 的 key。</li><li>清理临时邀请链接和访客房间。</li><li>检查服务器磁盘空间。</li><li>将有价值的场景复制到正式项目。</li><li>不要长期复用现场共享 key。</li></ul></div>
+          </div>
+        </section>
+
+        <footer class="footer"><strong>西游·虚境 / 黑客松现场端到端演示手册</strong><br>现场要展示的不只是“多人同时编辑”，还要展示“发布版本如何被手机游客加载”：Draft 用于协作，Release 用于交付，Runtime 用于运行。</footer>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const qs = (selector, root = document) => root.querySelector(selector)
+    const qsa = (selector, root = document) => [...root.querySelectorAll(selector)]
+    const toast = (message) => {
+      const el = qs('#toast')
+      el.textContent = message
+      el.classList.add('show')
+      clearTimeout(window.__toastTimer)
+      window.__toastTimer = setTimeout(() => el.classList.remove('show'), 1800)
+    }
+
+    function copyText(value, message = '已复制') {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(value).then(() => toast(message)).catch(() => fallbackCopy(value, message))
+      } else fallbackCopy(value, message)
+    }
+    function fallbackCopy(value, message) {
+      const input = document.createElement('textarea')
+      input.value = value
+      input.style.position = 'fixed'
+      input.style.opacity = '0'
+      document.body.appendChild(input)
+      input.select()
+      try { document.execCommand('copy'); toast(message) } catch { window.prompt('复制以下内容', value) }
+      input.remove()
+    }
+
+    qs('#printBtn').addEventListener('click', () => window.print())
+    qs('#copyQuickLink').addEventListener('click', () => copyText('https://agentpay.xx.kg/xiyou/?room=hackathon-demo&key=现场临时令牌', '演示链接已复制'))
+    qsa('[data-copy]').forEach(button => button.addEventListener('click', () => copyText(button.dataset.copy, '代码已复制')))
+
+    qsa('.checklist input[type="checkbox"]').forEach(input => {
+      input.addEventListener('change', () => {
+        input.closest('.check-row').classList.toggle('done', input.checked)
+        updateCounts()
+      })
+    })
+    function updateCounts() {
+      const all = qsa('[data-check-group="server"] input, [data-check-group="browser"] input')
+      const done = all.filter(input => input.checked).length
+      qs('#serverCount').textContent = `${done} / ${all.length} 已完成`
+    }
+    updateCounts()
+
+    const navLinks = qsa('.side-nav a')
+    const sections = navLinks.map(link => qs(link.getAttribute('href'))).filter(Boolean)
+    const observer = new IntersectionObserver(entries => {
+      const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
+      if (!visible) return
+      navLinks.forEach(link => link.classList.toggle('active', link.getAttribute('href') === `#${visible.target.id}`))
+    }, { rootMargin: '-18% 0px -68% 0px', threshold: [0, .15, .35] })
+    sections.forEach(section => observer.observe(section))
+
+
+    const mobileState = {
+      release: '',
+      phoneRelease: '',
+      notified: false,
+      applied: false,
+      step: 'publish'
+    }
+    const mobileLog = qs('#mobileRuntimeLog')
+    const mobileTimestamp = () => new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    function mobileAddLog(text, tone = '') {
+      if (!mobileLog) return
+      const line = document.createElement('div')
+      line.innerHTML = `<span>${mobileTimestamp()}</span> ${text}`
+      if (tone === 'good') line.style.color = '#a9e4b8'
+      if (tone === 'accent') line.style.color = '#ffbd83'
+      if (tone === 'warn') line.style.color = '#f8d38c'
+      mobileLog.prepend(line)
+    }
+    function mobileSetStep(step) {
+      mobileState.step = step
+      qsa('[data-mobile-step]').forEach(item => {
+        const itemStep = item.dataset.mobileStep
+        const done = (step === 'scan' && itemStep === 'publish') || (step === 'update' && ['publish', 'scan'].includes(itemStep)) || (step === 'applied')
+        item.classList.toggle('active', itemStep === step)
+        item.classList.toggle('done', done)
+      })
+    }
+    function mobileRender() {
+      const releaseBadge = qs('#releaseBadge')
+      const activeBadge = qs('#activeReleaseBadge')
+      const phoneRelease = qs('#phoneRelease')
+      const phoneMode = qs('#phoneMode')
+      const phoneAnchor = qs('#phoneAnchor')
+      const editorCubeState = qs('#editorCubeState')
+      const editorSyncState = qs('#editorSyncState')
+      const phoneBlock = qs('#phoneBlock')
+      const entry = qs('#phoneEntry')
+      const update = qs('#phoneUpdate')
+      const title = qs('#runtimeStateTitle')
+      const copy = qs('#runtimeStateCopy')
+      const url = qs('#runtimeEntryUrl')
+      if (!releaseBadge) return
+      releaseBadge.textContent = mobileState.release ? `DRAFT · ${mobileState.release}` : 'DRAFT'
+      releaseBadge.className = `release-badge ${mobileState.release ? 'live' : 'draft'}`
+      activeBadge.textContent = mobileState.release ? `ACTIVE RELEASE · ${mobileState.release}` : '暂无 Release'
+      activeBadge.className = `release-badge ${mobileState.release ? 'live' : ''}`
+      phoneRelease.textContent = mobileState.phoneRelease || '未进入'
+      phoneMode.textContent = mobileState.phoneRelease ? (mobileState.applied ? '已更新' : '已定位') : '未定位'
+      phoneAnchor.textContent = mobileState.phoneRelease ? 'QR 已校准 · GATE-01' : '等待定位'
+      editorCubeState.textContent = mobileState.release === 'v3' ? 'Release v3 · 红色' : mobileState.release === 'v2' ? 'Release v2 · 蓝色' : 'Draft · 蓝色'
+      editorSyncState.textContent = mobileState.release ? '已发布' : '已同步'
+      phoneBlock.classList.toggle('updated', mobileState.phoneRelease === 'v3')
+      entry.hidden = Boolean(mobileState.phoneRelease)
+      update.hidden = !mobileState.notified || mobileState.applied
+      if (mobileState.phoneRelease === 'v3') {
+        title.textContent = '5. 手机已更新到 v3'
+        copy.textContent = '当前会话已确认更新，红色方块来自新的发布版本。'
+      } else if (mobileState.phoneRelease === 'v2') {
+        title.textContent = mobileState.notified ? '4. 旧会话收到更新提示' : '3. 手机 Runtime 已加载 v2'
+        copy.textContent = mobileState.notified ? '安全语义：手机仍在 v2，用户确认后才切换 v3。' : '手机通过游客二维码加载 v2，并使用 QR 锚点完成校准。'
+      } else if (mobileState.release) {
+        title.textContent = '2. 等待手机扫码'
+        copy.textContent = 'v2 已发布。请点击手机中的“模拟手机扫码”，演示跨设备加载。'
+      } else {
+        title.textContent = '2. 等待发布版本'
+        copy.textContent = '先在左侧点击“发布 v2 + 生成二维码”，再让手机扫码。'
+      }
+      url.textContent = `/e/huaguoshan?release=${mobileState.release || 'v2'}`
+    }
+    function mobileAction(action) {
+      if (action === 'publish-v2') {
+        mobileState.release = 'v2'; mobileState.phoneRelease = ''; mobileState.notified = false; mobileState.applied = false
+        mobileSetStep('scan'); mobileAddLog('编辑器创建 Release v2 · 方块已进入发布包', 'good'); mobileAddLog('游客二维码已生成 · /e/huaguoshan?release=v2', 'accent')
+        toast('已发布 v2，并生成游客入口')
+      }
+      if (action === 'scan') {
+        if (!mobileState.release) { mobileState.release = 'v2'; mobileAddLog('模拟补齐 Release v2 · 实际现场应先点击发布', 'warn') }
+        mobileState.phoneRelease = mobileState.release; mobileState.notified = false; mobileState.applied = false
+        mobileSetStep('update'); mobileAddLog(`手机新建 Session · 加载 ${mobileState.phoneRelease}`, 'good'); mobileAddLog('QR / GATE-01 校准完成 · 坐标进入 site-local', 'accent')
+        toast(`手机已进入游客 Runtime · ${mobileState.phoneRelease}`)
+      }
+      if (action === 'publish-v3') {
+        mobileState.release = 'v3'; mobileState.applied = false
+        mobileSetStep('update'); mobileAddLog('编辑器修改方块颜色 · 发布 Release v3', 'good'); mobileAddLog('新会话将直接加载 v3；当前手机仍保持 v2', 'warn')
+        toast('已发布 v3 · 旧会话不会被强制打断')
+      }
+      if (action === 'notify') {
+        if (!mobileState.release) { toast('请先发布 v2，再模拟手机扫码'); return }
+        if (!mobileState.phoneRelease) { toast('请先模拟手机扫码进入 Runtime'); return }
+        mobileState.notified = true; mobileState.applied = false; mobileSetStep('update'); mobileAddLog('Runtime 收到 release_changed · 提示用户更新到 v3', 'warn'); toast('已向当前手机显示新版本提示')
+      }
+      if (action === 'apply') {
+        if (!mobileState.notified && mobileState.release !== 'v3') { toast('请先发布 v3，并向手机发送更新提示'); return }
+        mobileState.release = 'v3'; mobileState.phoneRelease = 'v3'; mobileState.notified = true; mobileState.applied = true; mobileSetStep('applied'); mobileAddLog('游客确认更新 · Session 从 v2 切换到 v3', 'good'); toast('手机已更新到 v3')
+      }
+      if (action === 'reset') {
+        mobileState.release = ''; mobileState.phoneRelease = ''; mobileState.notified = false; mobileState.applied = false; mobileSetStep('publish'); mobileLog.innerHTML = '<div><span>--:--:--</span> 等待发布版本…</div>'; toast('手机发布演示已重置')
+      }
+      mobileRender()
+    }
+    qsa('[data-mobile-action]').forEach(button => button.addEventListener('click', () => mobileAction(button.dataset.mobileAction)))
+    mobileRender()
+
+    const participants = [
+      { id: 'manager', name: 'Q8P4DX', role: 'manager', label: '管理者', color: '#F97316', initial: 'Q', active: true },
+      { id: 'editor', name: 'A7K2M9', role: 'editor', label: '编辑者', color: '#2563EB', initial: 'A', active: true },
+      { id: 'editor2', name: 'K4R9TZ', role: 'editor', label: '编辑者', color: '#5B6FE8', initial: 'K', active: true },
+      { id: 'previewer', name: 'N3W7F2K', role: 'previewer', label: '预览者', color: '#16A34A', initial: 'N', active: true }
+    ]
+    const objects = [
+      { id: 'wukong', name: '悟空模型', kind: 'GLB', selected: true },
+      { id: 'symbol', name: '结界符', kind: 'QUAD', selected: false },
+      { id: 'light', name: '点光源', kind: 'LIGHT', selected: false }
+    ]
+    let activeParticipant = participants[0]
+    let simStep = 0
+    const participantList = qs('#participantList')
+    const sceneList = qs('#sceneList')
+    const simLog = qs('#simLog')
+    const simViewport = qs('#simViewport')
+
+    function timeText() { return new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) }
+    function addLog(text, tone = 'good') {
+      const line = document.createElement('div')
+      line.className = 'log-line'
+      line.innerHTML = `<span class="log-time">${timeText()}</span> <span class="log-${tone}">${text}</span>`
+      simLog.prepend(line)
+    }
+    function renderParticipants() {
+      participantList.innerHTML = participants.map(peer => `
+        <div class="participant ${peer === activeParticipant ? 'active' : ''}" data-peer="${peer.id}">
+          <span class="avatar" style="background:${peer.color}">${peer.initial}</span>
+          <span class="participant-main"><span class="participant-name">${peer.name}</span><span class="participant-role">${peer.label}</span></span>
+          <span class="online-dot"></span>
+        </div>`).join('')
+      qsa('.participant', participantList).forEach(row => row.addEventListener('click', () => {
+        activeParticipant = participants.find(peer => peer.id === row.dataset.peer) || activeParticipant
+        qs('#activeIdentity').textContent = `${activeParticipant.name} · ${activeParticipant.label}`
+        renderParticipants()
+        addLog(`${activeParticipant.name} 切换为当前演示身份`, 'accent')
+      }))
+      qs('#simStatusText').textContent = `${participants.filter(peer => peer.active).length} 人在线 · 已连接`
+    }
+    function renderObjects() {
+      sceneList.innerHTML = objects.map(object => `<div class="scene-object ${object.selected ? 'selected' : ''}" data-object-row="${object.id}"><span>${object.name}</span><span class="kind">${object.kind}</span></div>`).join('')
+      qsa('.scene-object', sceneList).forEach(row => row.addEventListener('click', () => {
+        objects.forEach(object => { object.selected = object.id === row.dataset.objectRow })
+        qsa('.sim-object').forEach(node => node.classList.toggle('selected', node.dataset.object === row.dataset.objectRow))
+        renderObjects()
+        addLog(`${activeParticipant.name} 选中了 ${objects.find(object => object.id === row.dataset.objectRow).name}`, 'accent')
+      }))
+    }
+    function setCursor(peerId, left, top) {
+      const cursor = qs(`[data-cursor="${peerId}"]`)
+      if (!cursor) return
+      cursor.style.left = `${left}%`
+      cursor.style.top = `${top}%`
+    }
+    function triggerAction(action) {
+      simStep += 1
+      if (action === 'move') {
+        const node = qs('[data-object="wukong"]')
+        node.style.left = node.style.left === '44%' ? '32%' : '44%'
+        objects.forEach(object => object.selected = object.id === 'wukong')
+        renderObjects()
+        setCursor('editor', 33 + Math.random() * 28, 25 + Math.random() * 24)
+        addLog('A7K2M9 移动了「悟空模型」 · Yjs update 已广播')
+      }
+      if (action === 'add') {
+        const node = qs('[data-object="light"]')
+        node.style.left = node.style.left === '70%' ? '61%' : '70%'
+        node.style.top = node.style.top === '50%' ? '39%' : '50%'
+        objects.forEach(object => object.selected = object.id === 'light')
+        renderObjects()
+        setCursor('editor2', 56 + Math.random() * 18, 36 + Math.random() * 22)
+        addLog('K4R9TZ 添加了「点光源」 · 其他窗口已同步')
+      }
+      if (action === 'preview') {
+        setCursor('previewer', 63 + Math.random() * 17, 48 + Math.random() * 24)
+        addLog('N3W7F2K 进入试玩模式 · 当前草稿可预览', 'accent')
+      }
+      if (action === 'cursor') {
+        participants.filter(peer => peer.id !== 'manager').forEach(peer => setCursor(peer.id, 15 + Math.random() * 72, 18 + Math.random() * 65))
+        addLog('协作者鼠标位置通过 Awareness 更新', 'good')
+      }
+      qs('#activeIdentity').textContent = `${activeParticipant.name} · ${activeParticipant.label}`
+    }
+    qsa('[data-action]').forEach(button => button.addEventListener('click', () => triggerAction(button.dataset.action)))
+    qsa('.sim-object').forEach(node => node.addEventListener('click', () => {
+      objects.forEach(object => object.selected = object.id === node.dataset.object)
+      renderObjects()
+      addLog(`${activeParticipant.name} 选中了「${objects.find(object => object.id === node.dataset.object).name}」`, 'accent')
+    }))
+    qs('#simViewport').addEventListener('pointermove', event => {
+      const rect = simViewport.getBoundingClientRect()
+      const x = Math.round((event.clientX - rect.left) / rect.width * 100)
+      const y = Math.round((event.clientY - rect.top) / rect.height * 100)
+      if (activeParticipant.id !== 'manager') setCursor(activeParticipant.id === 'editor2' ? 'editor' : activeParticipant.id, x, y)
+    })
+    qs('#joinAll').addEventListener('click', () => {
+      participants.forEach(peer => peer.active = true)
+      renderParticipants()
+      addLog('4 个演示身份已进入 hackathon-demo', 'good')
+    })
+    qs('#resetSim').addEventListener('click', () => {
+      window.location.reload()
+    })
+    qs('#roomInput').addEventListener('input', event => {
+      const room = encodeURIComponent(event.target.value.trim() || 'hackathon-demo')
+      qs('#simUrl').value = `https://agentpay.xx.kg/xiyou/?room=${room}&key=现场临时令牌`
+    })
+    qs('#copySimUrl').addEventListener('click', () => copyText(qs('#simUrl').value, '模拟演示链接已复制'))
+    renderParticipants()
+    renderObjects()
+    addLog('主持人 Q8P4DX 已连接 hackathon-demo', 'good')
+    addLog('等待其他协作者进入房间…', 'warn')
+  </script>
+</body>
+</html>

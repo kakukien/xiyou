@@ -1,13 +1,18 @@
-import { defaults, newObject, newSequence, newTrigger, newNode, newChapter, newAnchor } from './schema.js'
+import { defaults, newObject, newSequence, newTrigger, newNode, newChapter, newAnchor, newZone, validate as validateScene } from './schema.js'
 
-const EVENTS = ['change', 'selection', 'mode', 'assets', 'log']
+const EVENTS = ['change', 'selection', 'mode', 'editor-mode', 'assets', 'log']
 
 const listeners = new Map(EVENTS.map(evt => [evt, new Set()]))
 
 let scene = defaults()
 let selection = new Set()
 let mode = 'edit'
+let editorMode = 'scene'
 let storageKey = 'xiyou.scene'
+let batchDepth = 0
+let batchDirty = false
+let batchSnapshot = null
+let committedSnapshot = JSON.stringify(scene)
 const undoStack = []
 const redoStack = []
 const HISTORY_LIMIT = 100
@@ -69,22 +74,51 @@ function normalizeScene(input) {
   const base = isObject(source.base) ? source.base : {}
   const baseTransform = isObject(base.transform) ? base.transform : {}
 
+  source.schemaVersion = typeof source.schemaVersion === 'string' ? source.schemaVersion : '2.0.0'
+  source.projectId = typeof source.projectId === 'string' ? source.projectId : ''
+  source.siteId = typeof source.siteId === 'string' ? source.siteId : ''
+
+  const capture = isObject(base.capture) ? base.capture : null
+  const coordinateSystem = isObject(base.coordinate_system) ? base.coordinate_system : {}
+  const editing = isObject(base.editing) ? base.editing : {}
   source.base = {
     sog_url: typeof base.sog_url === 'string' ? base.sog_url : '',
     collider_url: base.collider_url ?? null,
+    collider: isObject(base.collider) ? base.collider : { type: 'box', size: [20, 2, 20], center: [0, 1, 0], visible: false },
+    lod: isObject(base.lod) ? { enabled: Boolean(base.lod.enabled), levels: Array.isArray(base.lod.levels) ? base.lod.levels : ['high', 'medium', 'low'], current: base.lod.current || 'high', urls: isObject(base.lod.urls) ? base.lod.urls : { high: '', medium: '', low: '' }, thresholds: isObject(base.lod.thresholds) ? base.lod.thresholds : { near: 12, far: 30 } } : { enabled: false, levels: ['high', 'medium', 'low'], current: 'high', urls: { high: '', medium: '', low: '' }, thresholds: { near: 12, far: 30 } },
+    chunks: Array.isArray(base.chunks) ? base.chunks : [],
     env: isObject(base.env) ? base.env : {},
     transform: {
       s: Number.isFinite(baseTransform.s) ? baseTransform.s : 1,
       R: Array.isArray(baseTransform.R) ? baseTransform.R : [1, 0, 0, 0, 1, 0, 0, 0, 1],
       t: Array.isArray(baseTransform.t) ? baseTransform.t : [0, 0, 0],
       scale_source: baseTransform.scale_source || 'manual'
-    }
+    },
+    capture_id: typeof base.capture_id === 'string' ? base.capture_id : '',
+    capture,
+    coordinate_system: {
+      up: coordinateSystem.up || 'Y',
+      forward: coordinateSystem.forward || '-Z',
+      handedness: coordinateSystem.handedness || 'right',
+      units: coordinateSystem.units || 'meters',
+      origin: coordinateSystem.origin || 'capture'
+    },
+    artifacts: isObject(base.artifacts) ? base.artifacts : {},
+    editing: {
+      revision: Number(editing.revision) || 0,
+      transform: isObject(editing.transform) ? editing.transform : null,
+      crop: isObject(editing.crop) ? editing.crop : null,
+      deletion_mask: editing.deletion_mask ?? null
+    },
+    quality: isObject(base.quality) ? base.quality : null,
+    splat_editor: isObject(base.splat_editor) ? base.splat_editor : null
   }
 
   source.objects = Array.isArray(source.objects) ? source.objects : []
   source.sequences = Array.isArray(source.sequences) ? source.sequences : []
   source.triggers = Array.isArray(source.triggers) ? source.triggers : []
   source.anchors = Array.isArray(source.anchors) ? source.anchors : []
+  source.zones = Array.isArray(source.zones) ? source.zones : []
 
   if (!isObject(source.story)) source.story = {}
   source.story.chapters = Array.isArray(source.story.chapters)
@@ -97,6 +131,9 @@ function normalizeScene(input) {
     : '未命名场景'
   source.meta.assets = Array.isArray(source.meta.assets)
     ? source.meta.assets
+    : []
+  source.meta.releases = Array.isArray(source.meta.releases)
+    ? source.meta.releases
     : []
 
   return source
@@ -145,25 +182,36 @@ function emit(evt, payload) {
 }
 
 function markChanged(transient = false, record = true) {
-  if (record && !transient) {
-    undoStack.push(JSON.stringify(scene))
-    if (undoStack.length > HISTORY_LIMIT) undoStack.shift()
-    redoStack.length = 0
-  }
-
   if (!isObject(scene.meta)) scene.meta = {}
   scene.meta.dirty = true
+
+  if (batchDepth > 0) {
+    if (record && !transient) {
+      if (!batchSnapshot) batchSnapshot = committedSnapshot
+      batchDirty = true
+    }
+    return
+  }
+
+  if (record && !transient) {
+    undoStack.push(committedSnapshot)
+    if (undoStack.length > HISTORY_LIMIT) undoStack.shift()
+    redoStack.length = 0
+    committedSnapshot = JSON.stringify(scene)
+  }
+
   emit('change', { transient })
 }
 
 function replaceScene(nextScene, { record = true, transient = false } = {}) {
   if (record && !transient) {
-    undoStack.push(JSON.stringify(scene))
+    undoStack.push(committedSnapshot)
     if (undoStack.length > HISTORY_LIMIT) undoStack.shift()
     redoStack.length = 0
   }
 
   scene = normalizeScene(nextScene)
+  committedSnapshot = JSON.stringify(scene)
   scene.meta.dirty = true
 
   const hadSelection = selection.size > 0
@@ -175,6 +223,48 @@ function replaceScene(nextScene, { record = true, transient = false } = {}) {
 
 function findById(list, id) {
   return list.find(item => item && item.id === id)
+}
+
+
+function assetMatches(value, assetId, assetUrl) {
+  return Boolean(value) && (value === assetId || (assetUrl && value === assetUrl))
+}
+
+function assetReferencesFor(assetId) {
+  const asset = scene.meta?.assets?.find(item => item?.id === assetId)
+  if (!asset) return { objects: [], base: [], total: 0 }
+
+  const assetUrl = asset.url || ''
+  const objects = scene.objects
+    .filter(object => assetMatches(object?.asset, asset.id, assetUrl))
+    .map(object => ({
+      kind: 'object',
+      id: object.id,
+      name: object.name || object.id,
+      type: object.type || 'object'
+    }))
+
+  const base = []
+  const addBaseReference = (field, label, value, extra = {}) => {
+    if (!assetMatches(value, asset.id, assetUrl)) return
+    base.push({ kind: 'base', id: extra.id || field, name: label, field, ...extra })
+  }
+
+  const baseData = scene.base || {}
+  addBaseReference('sog_url', '空间底座', baseData.sog_url)
+  addBaseReference('collider_url', '底座 Collider', baseData.collider_url)
+  Object.entries(baseData.lod?.urls || {}).forEach(([level, value]) => {
+    addBaseReference(`lod.urls.${level}`, `${level} LOD 底座`, value, { level })
+  })
+  ;(baseData.chunks || []).forEach(chunk => {
+    addBaseReference(`chunks.${chunk.id}.url`, chunk.name || chunk.id || '底座分块', chunk.url, { id: chunk.id, chunkId: chunk.id })
+    Object.entries(chunk.lod || {}).forEach(([level, value]) => {
+      addBaseReference(`chunks.${chunk.id}.lod.${level}`, `${chunk.name || chunk.id || '底座分块'} · ${level} LOD`, value, { id: `${chunk.id}:${level}`, chunkId: chunk.id, level })
+    })
+  })
+  addBaseReference('env.sky.image', '天空图', baseData.env?.sky?.image)
+
+  return { objects, base, total: objects.length + base.length }
 }
 
 export const store = {
@@ -192,6 +282,10 @@ export const store = {
 
   get mode() {
     return mode
+  },
+
+  get editorMode() {
+    return editorMode
   },
 
   get canUndo() {
@@ -236,6 +330,14 @@ export const store = {
 
   selected() {
     return [...selection]
+  },
+
+  selectMany(ids = []) {
+    const before = [...selection]
+    selection.clear()
+    ids.filter(Boolean).forEach(id => selection.add(id))
+    const changed = before.length !== selection.size || before.some(item => !selection.has(item))
+    if (changed) emit('selection', [...selection])
   },
 
   history(target) {
@@ -398,6 +500,44 @@ export const store = {
     return true
   },
 
+  addZone(props = {}) {
+    const zone = newZone(props)
+    scene.zones.push(zone)
+    addHistory(zone.id, `新增区域「${zone.name || zone.id}」`)
+    markChanged(false)
+    return zone
+  },
+
+  getZone(id) {
+    return findById(scene.zones, id)
+  },
+
+  updateZone(id, patch, { transient = false } = {}) {
+    const zone = this.getZone(id)
+    if (!zone || !isObject(patch)) return null
+    const safePatch = clone(patch)
+    delete safePatch.id
+    const updated = deepMerge(zone, safePatch)
+    updated.id = zone.id
+    Object.assign(zone, updated)
+    if (!transient) addHistory(id, `更新了区域「${zone.name || id}」`)
+    markChanged(transient, true)
+    return zone
+  },
+
+  removeZone(id) {
+    const index = scene.zones.findIndex(zone => zone?.id === id)
+    if (index < 0) return false
+    scene.zones.splice(index, 1)
+    const affected = scene.objects.filter(object => object?.zone_id === id)
+    affected.forEach(object => { object.zone_id = '' })
+    const hadSelection = selection.delete(id)
+    addHistory(id, `删除了区域并解绑 ${affected.length} 个对象`)
+    markChanged(false)
+    if (hadSelection) emit('selection', [...selection])
+    return true
+  },
+
   addChapter(title) {
     const chapter = newChapter(title)
     scene.story.chapters.push(chapter)
@@ -500,12 +640,13 @@ export const store = {
   undo() {
     if (!undoStack.length) return false
 
-    redoStack.push(JSON.stringify(scene))
+    redoStack.push(committedSnapshot)
     const snapshot = undoStack.pop()
 
     try {
       scene = normalizeScene(JSON.parse(snapshot))
       scene.meta.dirty = true
+      committedSnapshot = JSON.stringify(scene)
     } catch {
       return false
     }
@@ -521,12 +662,13 @@ export const store = {
   redo() {
     if (!redoStack.length) return false
 
-    undoStack.push(JSON.stringify(scene))
+    undoStack.push(committedSnapshot)
     const snapshot = redoStack.pop()
 
     try {
       scene = normalizeScene(JSON.parse(snapshot))
       scene.meta.dirty = true
+      committedSnapshot = JSON.stringify(scene)
     } catch {
       return false
     }
@@ -567,6 +709,7 @@ export const store = {
 
       scene = normalizeScene(parsed)
       scene.meta.dirty = false
+      committedSnapshot = JSON.stringify(scene)
 
       const hadSelection = selection.size > 0
       selection.clear()
@@ -618,6 +761,76 @@ export const store = {
     }
   },
 
+  batch(fn) {
+    batchDepth += 1
+    try {
+      return fn?.()
+    } finally {
+      batchDepth -= 1
+      if (batchDepth === 0 && batchDirty) {
+        undoStack.push(batchSnapshot || committedSnapshot)
+        if (undoStack.length > HISTORY_LIMIT) undoStack.shift()
+        redoStack.length = 0
+        committedSnapshot = JSON.stringify(scene)
+        batchSnapshot = null
+        batchDirty = false
+        emit('change', { transient: false })
+      } else if (batchDepth === 0) {
+        batchSnapshot = null
+      }
+    }
+  },
+
+  releaseDiff(leftId, rightId) {
+    const left = (scene.meta.releases || []).find(item => item.id === leftId)
+    const right = (scene.meta.releases || []).find(item => item.id === rightId)
+    if (!left || !right) return null
+    const parseSnapshot = release => { try { return JSON.parse(release.snapshot || '{}') } catch { return {} } }
+    const a = parseSnapshot(left)
+    const b = parseSnapshot(right)
+    const ids = (value, key) => new Set((value[key] || []).map(item => item?.id).filter(Boolean))
+    const diff = (key) => {
+      const aItems = key === 'assets' ? (a.meta?.assets || []) : (a[key] || [])
+      const bItems = key === 'assets' ? (b.meta?.assets || []) : (b[key] || [])
+      const aIds = new Set(aItems.map(item => item?.id).filter(Boolean))
+      const bIds = new Set(bItems.map(item => item?.id).filter(Boolean))
+      return {
+        added: [...bIds].filter(id => !aIds.has(id)),
+        removed: [...aIds].filter(id => !bIds.has(id)),
+        changed: [...bIds].filter(id => aIds.has(id) && JSON.stringify(bItems.find(item => item.id === id)) !== JSON.stringify(aItems.find(item => item.id === id)))
+      }
+    }
+    return { left, right, objects: diff('objects'), zones: diff('zones'), assets: diff('assets'), baseChanged: JSON.stringify(a.base || {}) !== JSON.stringify(b.base || {}) }
+  },
+
+  restoreRelease(id) {
+    const release = (scene.meta.releases || []).find(item => item.id === id)
+    if (!release?.snapshot) return false
+    try {
+      const parsed = JSON.parse(release.snapshot)
+      parsed.meta = { ...(parsed.meta || {}), releases: clone(scene.meta.releases || []) }
+      replaceScene(parsed, { record: true, transient: false })
+      addHistory(release.id, `恢复发布版本 v${release.version}`)
+      emit('release-restored', release)
+      return true
+    } catch (error) {
+      emit('log', { message: `恢复发布版本失败：${error?.message || String(error)}`, level: 'error' })
+      return false
+    }
+  },
+
+  validate() {
+    return validateScene(scene)
+  },
+
+  setEditorMode(nextMode) {
+    if (nextMode !== 'scene' && nextMode !== 'splat-studio') return false
+    if (editorMode === nextMode) return true
+    editorMode = nextMode
+    emit('editor-mode', editorMode)
+    return true
+  },
+
   setMode(nextMode) {
     if (nextMode !== 'edit' && nextMode !== 'play') return false
     if (mode === nextMode) return true
@@ -630,12 +843,23 @@ export const store = {
   addAsset(props = {}) {
     if (!isObject(props)) return null
 
+    const bytes = Number.isFinite(props.bytes) ? props.bytes : (Number.isFinite(props.size) ? props.size : 0)
     const asset = {
       id: props.id || randomId('asset'),
+      kind: props.kind || props.type || 'unknown',
+      subtype: props.subtype || props.type || 'unknown',
       name: typeof props.name === 'string' ? props.name : '未命名素材',
-      type: props.type || 'unknown',
-      size: Number.isFinite(props.size) ? props.size : 0,
-      url: typeof props.url === 'string' ? props.url : ''
+      type: props.type || props.kind || 'unknown',
+      size: bytes,
+      bytes,
+      mime: typeof props.mime === 'string' ? props.mime : '',
+      url: typeof props.url === 'string' ? props.url : '',
+      source: props.source || 'upload',
+      variants: isObject(props.variants) ? clone(props.variants) : {},
+      metadata: isObject(props.metadata) ? clone(props.metadata) : {},
+      tags: Array.isArray(props.tags) ? clone(props.tags) : [],
+      license: props.license || 'project',
+      version: props.version || '1.0.0'
     }
 
     scene.meta.assets.push(asset)
@@ -644,11 +868,98 @@ export const store = {
     return asset
   },
 
+  assetReferences(id) {
+    return assetReferencesFor(id)
+  },
+
+  replaceAsset(id, file, url = '') {
+    const asset = scene.meta.assets.find(item => item?.id === id)
+    if (!asset || !file) return null
+
+    const oldUrl = asset.url || ''
+    const nextUrl = url || oldUrl
+    const replaceUrl = value => assetMatches(value, asset.id, oldUrl) ? nextUrl : value
+    const nextBase = clone(scene.base)
+
+    nextBase.sog_url = replaceUrl(nextBase.sog_url)
+    nextBase.collider_url = replaceUrl(nextBase.collider_url)
+    if (nextBase.env?.sky) nextBase.env.sky.image = replaceUrl(nextBase.env.sky.image)
+    if (nextBase.lod?.urls) {
+      Object.keys(nextBase.lod.urls).forEach(level => {
+        nextBase.lod.urls[level] = replaceUrl(nextBase.lod.urls[level])
+      })
+    }
+    ;(nextBase.chunks || []).forEach(chunk => {
+      chunk.url = replaceUrl(chunk.url)
+      if (chunk.lod) Object.keys(chunk.lod).forEach(level => { chunk.lod[level] = replaceUrl(chunk.lod[level]) })
+    })
+    scene.objects.forEach(object => {
+      if (object?.asset === asset.id) object.asset = asset.id
+      else if (object?.asset === oldUrl) object.asset = nextUrl
+    })
+
+    const nextVersion = Number.parseInt(String(asset.version || '1.0.0').split('.')[0], 10) + 1
+    Object.assign(asset, {
+      url: nextUrl,
+      bytes: Number(file.size) || 0,
+      size: Number(file.size) || 0,
+      mime: file.type || asset.mime || '',
+      version: `${nextVersion}.0.0`,
+      source: 'upload'
+    })
+    scene.base = nextBase
+    addHistory(id, `替换素材「${asset.name || id}」为 v${asset.version}`)
+    markChanged(false)
+    emit('assets', scene.meta.assets)
+    return asset
+  },
+
+  updateAsset(id, patch = {}) {
+    const asset = scene.meta.assets.find(item => item?.id === id)
+    if (!asset || !isObject(patch)) return null
+    const safePatch = clone(patch)
+    delete safePatch.id
+    Object.assign(asset, safePatch)
+    addHistory(id, `更新素材「${asset.name || id}」`)
+    markChanged(false)
+    emit('assets', scene.meta.assets)
+    return asset
+  },
+
+  createRelease() {
+    if (!isObject(scene.meta)) scene.meta = {}
+    if (!Array.isArray(scene.meta.releases)) scene.meta.releases = []
+    const previous = scene.meta.releases[scene.meta.releases.length - 1]
+    const previousVersion = Number(previous?.version) || 0
+    const snapshot = clone(scene)
+    snapshot.meta = { ...(snapshot.meta || {}), releases: [] }
+    const release = {
+      id: randomId('release'),
+      version: previousVersion + 1,
+      name: `${scene.meta.name || '未命名场景'} v${previousVersion + 1}`,
+      createdAt: new Date().toISOString(),
+      schemaVersion: scene.schemaVersion || '2.0.0',
+      baseUrl: scene.base?.sog_url || '',
+      objects: scene.objects.length,
+      zones: scene.zones.length,
+      assets: scene.meta.assets.length,
+      snapshot: JSON.stringify(snapshot)
+    }
+    scene.meta.releases.push(release)
+    addHistory(release.id, `创建发布版本 v${release.version}`)
+    markChanged(false)
+    emit('published', release)
+    return release
+  },
+
   removeAsset(id) {
     const index = scene.meta.assets.findIndex(asset => asset?.id === id)
     if (index < 0) return false
 
     scene.meta.assets.splice(index, 1)
+    const affected = scene.objects.filter(object => object?.asset === id)
+    affected.forEach(object => { object.asset = '' })
+    addHistory(id, `删除素材并解绑 ${affected.length} 个对象`)
     markChanged(false)
     emit('assets', scene.meta.assets)
     return true

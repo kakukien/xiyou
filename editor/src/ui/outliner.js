@@ -1,6 +1,7 @@
 import { store } from '../core/store.js';
 import { OBJECT_TYPES } from '../core/schema.js';
 import { viewport } from '../core/viewport.js';
+import { iconMarkup } from './components/icon.js';
 
 const typeLabels = {
   splat_segment: '点云片段',
@@ -151,9 +152,9 @@ function renderNode(scene, node, chapter, worldOnly = false) {
   if (worldOnly) {
     return `
       <div class="tree-item node-card${selected ? ' active' : ''}" data-node-id="${esc(node.id)}">
-        <div class="node-thumb">${esc((node.title || '节').slice(0, 1))}</div>
+        <div class="node-thumb"><span class="node-thumb-glyph">${esc((node.title || '节').slice(0, 1))}</span><span class="node-thumb-index">${String((chapter.nodes || []).findIndex(item => item.id === node.id) + 1).padStart(2, '0')}</span></div>
         <div class="node-meta">
-          <div class="t">${isStart ? '<span class="node-start">▶</span>' : ''}${esc(node.title || '未命名节点')}</div>
+          <div class="t">${isStart ? `<span class="node-start">${iconMarkup('play-mini-fill', '起始节点')}</span>` : ''}${esc(node.title || '未命名节点')}</div>
           <div class="s">${esc(node.text || '暂无节点描述')}</div>
         </div>
       </div>
@@ -162,14 +163,14 @@ function renderNode(scene, node, chapter, worldOnly = false) {
 
   return `
     <div class="tree-item node-card${selected ? ' active' : ''}" data-node-id="${esc(node.id)}">
-      <div class="node-thumb">${esc((node.title || '节').slice(0, 1))}</div>
+      <div class="node-thumb"><span class="node-thumb-glyph">${esc((node.title || '节').slice(0, 1))}</span><span class="node-thumb-index">${String((chapter.nodes || []).findIndex(item => item.id === node.id) + 1).padStart(2, '0')}</span></div>
       <div class="node-meta">
-        <div class="t">${isStart ? '<span class="node-start">▶</span>' : ''}${esc(node.title || '未命名节点')}</div>
+        <div class="t">${isStart ? `<span class="node-start">${iconMarkup('play-mini-fill', '起始节点')}</span>` : ''}${esc(node.title || '未命名节点')}</div>
         <div class="s">${esc(node.text || '暂无节点描述')}</div>
       </div>
       <div class="node-checks">
         ${checks.map(([label, done, tip]) => `<span class="${done ? 'done' : ''}" title="${tip}">${label}</span>`).join('')}
-        ${isPlayMode() ? '' : `<button class="obj-delete node-del" type="button" data-delete-node="${esc(node.id)}" data-chapter="${esc(chapter.id)}" title="删除节点">×</button>`}
+        ${isPlayMode() ? '' : `<button class="obj-delete node-del icon-btn" type="button" data-delete-node="${esc(node.id)}" data-chapter="${esc(chapter.id)}" title="删除节点" aria-label="删除节点">${iconMarkup('delete-bin-6-line')}</button>`}
       </div>
     </div>
   `;
@@ -189,10 +190,10 @@ function renderChapter(scene, chapter, query, worldOnly = false) {
   return `
     <div class="ol-chapter" data-chapter-id="${esc(chapter.id)}">
       <div class="ch-row${selected ? ' active' : ''}" data-chapter-toggle="${esc(chapter.id)}" title="双击重命名章节">
-        <span class="ch-arrow">${collapsed ? '▸' : '▾'}</span>
+        <span class="ch-arrow">${iconMarkup(collapsed ? 'arrow-right-s-line' : 'arrow-down-s-line')}</span>
         <span class="ch-name">${esc(chapter.title || '未命名章节')}</span>
         <span class="ch-count">${visibleNodes.length === nodes.length ? nodes.length : `${visibleNodes.length}/${nodes.length}`}</span>
-        ${isPlayMode() ? '' : `<button class="obj-delete ch-del" type="button" data-delete-chapter="${esc(chapter.id)}" title="删除章节">×</button>`}
+        ${isPlayMode() ? '' : `<button class="obj-delete ch-del icon-btn" type="button" data-delete-chapter="${esc(chapter.id)}" title="删除章节" aria-label="删除章节">${iconMarkup('delete-bin-6-line')}</button>`}
       </div>
       <div class="ch-nodes">${nodeHtml}</div>
     </div>
@@ -221,12 +222,12 @@ function renderObjects(scene, query, readOnly) {
         const lock = lockedBy(object.id);
         return `
           <div class="tree-item obj-row${selected ? ' active' : ''}" data-object-id="${esc(object.id)}" title="${esc(object.name || object.id)}">
-            <span class="obj-icon">${esc(OBJECT_TYPES?.[type]?.icon || '◆')}</span>
+            <span class="obj-icon">${objectIcon(type)}</span>
             <span class="obj-name">${esc(object.name || '未命名对象')}</span>
             <span class="obj-actions">
               ${lock ? `<span class="obj-lock" title="${esc(lock)}"><i></i>${esc(initials(lock))}</span>` : ''}
-              ${object.visible === false ? '<span class="obj-hidden">○</span>' : ''}
-              ${readOnly ? '' : `<button class="obj-delete" type="button" data-delete-object="${esc(object.id)}">×</button>`}
+              ${object.visible === false ? `<span class="obj-hidden">${iconMarkup('eye-off-line', '已隐藏')}</span>` : ''}
+              ${readOnly ? '' : `<button class="obj-delete icon-btn" type="button" data-delete-object="${esc(object.id)}" title="删除对象" aria-label="删除对象">${iconMarkup('delete-bin-6-line')}</button>`}
             </span>
           </div>
         `;
@@ -237,13 +238,38 @@ function renderObjects(scene, query, readOnly) {
   return `
     <div class="ol-section-title">
       <span>场景对象</span>
-      ${readOnly ? '' : '<button class="ol-inline-add" type="button" data-action="add-object">＋添加</button>'}
+      ${readOnly ? '' : `<button class="ol-inline-add" type="button" data-action="add-object">${iconMarkup('add-line')} 添加</button>`}
     </div>
     <div class="ol-object-groups">${groupsHtml || '<div class="ol-empty">暂无场景对象</div>'}</div>
   `;
 }
 
-const ANCHOR_KIND = { vps: '📍', poster: '🖼' };
+const ANCHOR_KIND = { vps: 'map-pin-2-line', poster: 'image-line', image: 'image-line' };
+
+function objectIcon(type) {
+  return iconMarkup(OBJECT_TYPES?.[type]?.icon || 'box-3-line');
+}
+
+function anchorIcon(kind) {
+  return iconMarkup(ANCHOR_KIND[kind] || 'map-pin-line');
+}
+
+function renderZones(scene, query, readOnly) {
+  const zones = (scene.zones || []).filter(zone => {
+    if (!query) return true
+    return [zone.name, zone.id, zone.kind, zone.description].join(' ').toLowerCase().includes(query)
+  })
+  const rows = zones.map(zone => {
+    const selected = selectedId() === zone.id
+    return `<div class="tree-item obj-row${selected ? ' active' : ''}" data-zone-id="${esc(zone.id)}" title="${esc(zone.description || zone.name || zone.id)}">
+      <span class="obj-icon">${iconMarkup(zone.kind === 'forbidden' ? 'forbid-2-line' : zone.kind === 'trigger' ? 'radar-line' : 'aspect-ratio-line')}</span>
+      <span class="obj-name">${esc(zone.name || '未命名区域')}</span>
+      <span class="zone-kind">${zone.kind === 'forbidden' ? '禁布' : zone.kind === 'trigger' ? '触发' : '可编辑'}</span>
+      ${readOnly ? '' : `<button class="obj-delete icon-btn" type="button" data-delete-zone="${esc(zone.id)}" title="删除区域" aria-label="删除区域">${iconMarkup('delete-bin-6-line')}</button>`}
+    </div>`
+  }).join('')
+  return `<div class="ol-section-title"><span>空间区域</span>${readOnly ? '' : `<button class="ol-inline-add" type="button" data-action="add-zone">${iconMarkup('add-line')} 添加</button>`}</div><div class="ol-object-groups">${rows || '<div class="ol-empty">暂无区域</div>'}</div>`
+}
 
 function renderAnchors(scene, query, readOnly) {
   const anchors = (scene.anchors || []).filter(anchor => {
@@ -256,10 +282,10 @@ function renderAnchors(scene, query, readOnly) {
     const pos = (anchor.pose?.t || []).map(v => Number(v).toFixed(1)).join(', ');
     return `
       <div class="tree-item obj-row${selected ? ' active' : ''}" data-anchor-id="${esc(anchor.id)}" title="${esc(anchor.name || anchor.id)} · (${pos})">
-        <span class="obj-icon">${ANCHOR_KIND[anchor.kind] || '⚓'}</span>
+        <span class="obj-icon">${anchorIcon(anchor.kind)}</span>
         <span class="obj-name">${esc(anchor.name || '未命名锚点')}</span>
         <span class="obj-actions">
-          ${readOnly ? '' : `<button class="obj-delete" type="button" data-delete-anchor="${esc(anchor.id)}" title="删除锚点">×</button>`}
+          ${readOnly ? '' : `<button class="obj-delete icon-btn" type="button" data-delete-anchor="${esc(anchor.id)}" title="删除锚点" aria-label="删除锚点">${iconMarkup('delete-bin-6-line')}</button>`}
         </span>
       </div>
     `;
@@ -294,8 +320,8 @@ export function mount(el) {
       </div>
       <div class="ol-addrow">
         ${readOnly ? '' : `
-          <button class="btn" type="button" data-action="add-chapter">＋章节</button>
-          <button class="btn" type="button" data-action="add-node">＋节点</button>
+          <button class="btn btn-secondary btn-sm" type="button" data-action="add-chapter">${iconMarkup('folder-add-line')} 章节</button>
+          <button class="btn btn-secondary btn-sm" type="button" data-action="add-node">${iconMarkup('node-tree')} 节点</button>
         `}
       </div>
       <div class="ol-tree">
@@ -303,8 +329,8 @@ export function mount(el) {
         <div class="ol-chapters">
           ${visibleChapters.map(chapter => renderChapter(scene, chapter, query, worldOnly)).join('') || '<div class="ol-empty">暂无匹配内容</div>'}
         </div>
-        ${worldOnly ? renderAnchors(scene, query, readOnly) : renderObjects(scene, query, readOnly)}
-        ${worldOnly ? '' : renderAnchors(scene, query, readOnly)}
+        ${worldOnly ? renderZones(scene, query, readOnly) : renderObjects(scene, query, readOnly)}
+        ${worldOnly ? renderAnchors(scene, query, readOnly) : `${renderZones(scene, query, readOnly)}${renderAnchors(scene, query, readOnly)}`}
       </div>
     `;
 
@@ -370,6 +396,26 @@ export function mount(el) {
         toast(`已删除节点「${node?.title || '未命名节点'}」· Ctrl+Z 撤销`);
       });
     });
+
+    el.querySelectorAll('[data-zone-id]').forEach(row => {
+      row.addEventListener('click', event => {
+        if (event.target.closest('[data-delete-zone]')) return
+        store.select(row.dataset.zoneId)
+      })
+    })
+
+    el.querySelectorAll('[data-delete-zone]').forEach(button => {
+      button.addEventListener('click', event => {
+        event.stopPropagation()
+        if (!isPlayMode()) store.removeZone?.(button.dataset.deleteZone)
+      })
+    })
+
+    el.querySelector('[data-action="add-zone"]')?.addEventListener('click', () => {
+      if (isPlayMode()) return
+      const zone = store.addZone?.({ name: '新空间区域' })
+      if (zone) store.select(zone.id)
+    })
 
     el.querySelectorAll('[data-anchor-id]').forEach(row => {
       row.addEventListener('click', event => {
@@ -472,7 +518,7 @@ export function mount(el) {
     menu.className = 'ol-type-menu';
     menu.innerHTML = Object.keys(OBJECT_TYPES || typeLabels).map(type => `
       <button type="button" data-create-type="${esc(type)}">
-        <span>${esc(OBJECT_TYPES?.[type]?.icon || '◆')}</span>${esc(typeLabel(type))}
+        <span class="obj-icon">${objectIcon(type)}</span><span>${esc(typeLabel(type))}</span>
       </button>
     `).join('');
 

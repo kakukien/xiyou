@@ -470,6 +470,12 @@ export function demoScene() {
     { id: 'anchor_入口', name: '入口定位点', kind: 'vps' },
     { id: 'anchor_殿门', name: '殿门定位点', kind: 'poster' }
   ];
+  scene.zones = [
+    { id: 'zone_入口', name: '入口互动区', kind: 'trigger', shape: 'box', transform: { p: [0, 1, -2], r: [0, 0, 0], s: [3, 2, 3] }, color: '#f97316', visible: true, locked: false, description: '入口进入后可触发互动内容' },
+    { id: 'zone_舞台', name: '舞台可编辑区', kind: 'editable', shape: 'box', transform: { p: [0, 1, -3], r: [0, 0, 0], s: [8, 2, 6] }, color: '#2563eb', visible: true, locked: false, description: '可布置角色、视频和灯光' },
+    { id: 'zone_禁布', name: '设备禁布区', kind: 'forbidden', shape: 'box', transform: { p: [4, 1, -2], r: [0, 0, 0], s: [2, 2, 2] }, color: '#dc2626', visible: true, locked: true, description: '禁止放置遮挡现场设备的内容' }
+  ];
+
   scene.meta = {
     name: '花果山觉醒',
     assets: [
@@ -584,4 +590,28 @@ export function cardToSequence(cardId, targetId, base) {
         T(1, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'linear')
       ]);
   }
+}
+
+export const INTERACTION_TEMPLATES = [
+  { id: 'tap-highlight', label: '点击高亮', description: '点击对象时高亮反馈。', icon: 'cursor-line', when: 'tap', action: 'highlight' },
+  { id: 'gaze-card', label: '注视提示', description: '注视对象后弹出提示卡片。', icon: 'eye-line', when: 'gaze', action: 'card', text: '发现了新的线索。' },
+  { id: 'hold-reward', label: '按住奖励', description: '按住对象完成后发放奖励提示。', icon: 'hand-coin-line', when: 'hold', action: 'reward', text: '获得新的虚境线索。' },
+  { id: 'enter-sequence', label: '进入显形', description: '进入区域后播放显形动画。', icon: 'door-open-line', when: 'enter', action: 'sequence' }
+]
+
+export function interactionTemplate(id, targetId, base = {}) {
+  const template = INTERACTION_TEMPLATES.find(item => item.id === id)
+  if (!template || !targetId) return null
+  const targetName = base.name || targetId
+  const result = { name: `${template.label}：${targetName}`, trigger: { target: targetId, when: template.when, params: template.when === 'enter' ? { radius: 2 } : template.when === 'gaze' || template.when === 'hold' ? { secs: 1 } : {}, do: [] }, sequence: null }
+  if (template.action === 'highlight') result.trigger.do.push({ action: 'highlight', args: {} })
+  else if (template.action === 'card') result.trigger.do.push({ action: 'card', args: { text: template.text } })
+  else if (template.action === 'reward') result.trigger.do.push({ action: 'reward', args: { text: template.text } })
+  else if (template.action === 'sequence') {
+    const sequence = cardToSequence('blink', targetId, base.transform)
+    sequence.name = `${targetName}显形`
+    result.sequence = sequence
+    result.trigger.do.push({ action: 'play_seq', args: { seqId: sequence.id } }, { action: 'card', args: { text: '进入区域，空间开始显形。' } })
+  }
+  return result
 }

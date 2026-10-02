@@ -1,34 +1,16 @@
 import { store } from '../core/store.js';
 import { collab } from '../core/collab.js';
+import { iconMarkup } from './components/icon.js';
 
 export function mount(el) {
   const root = document.createElement('div');
   root.className = 'presence-bar';
-  root.style.cssText = [
-    'display:flex',
-    'align-items:center',
-    'gap:8px',
-    'height:100%',
-    'margin-left:auto',
-    'font-size:12px',
-    'color:var(--fg-dim,#6b7686)',
-    'white-space:nowrap'
-  ].join(';');
 
   const status = document.createElement('span');
   status.className = 'presence-status';
-  status.style.cssText = 'display:flex;align-items:center;gap:5px';
 
   const statusDot = document.createElement('span');
   statusDot.className = 'presence-status-dot';
-  statusDot.style.cssText = [
-    'width:8px',
-    'height:8px',
-    'border-radius:50%',
-    'display:inline-block',
-    'background:var(--text-muted,#737b87)'
-  ].join(';');
-
   const statusText = document.createElement('span');
   statusText.className = 'presence-status-text';
 
@@ -39,7 +21,6 @@ export function mount(el) {
   roomInput.type = 'text';
   roomInput.title = '协作房间';
   roomInput.placeholder = '房间名';
-  roomInput.style.cssText = 'width:82px;height:24px;padding:2px 6px';
   roomInput.value = new URLSearchParams(location.search).get('room') || 'demo';
 
   const peersCount = document.createElement('span');
@@ -47,33 +28,17 @@ export function mount(el) {
 
   const avatars = document.createElement('div');
   avatars.className = 'presence-avatars';
-  avatars.style.cssText = 'display:flex;align-items:center;gap:3px';
 
   const lockHint = document.createElement('div');
   lockHint.className = 'presence-lock-hint';
-  lockHint.style.cssText = [
-    'position:absolute',
-    'right:8px',
-    'top:calc(100% + 2px)',
-    'padding:3px 7px',
-    'border:1px solid var(--line2,#c4cad6)',
-    'border-radius:3px',
-    'background:var(--bg1,#faf9f6)',
-    'color:var(--fg-dim,#6b7686)',
-    'font-size:11px',
-    'display:none',
-    'z-index:20'
-  ].join(';');
-
   const wrap = document.createElement('div');
   wrap.className = 'presence-wrap';
-  wrap.style.cssText = 'position:relative;display:flex;align-items:center;gap:8px';
   statusText.addEventListener('click', () => {
     if (connectionState === 'connected') return;
     const url = new URL(location.href);
     url.searchParams.set('room', roomInput?.value?.trim() || new URLSearchParams(location.search).get('room') || 'demo');
     navigator.clipboard?.writeText(url.toString()).then(() => {
-      statusText.textContent = '链接已复制 ✓';
+      statusText.innerHTML = `${iconMarkup('link', '链接')}<span>链接已复制</span>`;
       setTimeout(renderStatus, 1500);
     }).catch(() => window.prompt('复制协作链接', url.toString()));
   });
@@ -153,19 +118,7 @@ export function mount(el) {
       avatar.className = 'presence-avatar';
       avatar.textContent = peerName(peer).charAt(0) || '?';
       avatar.title = peerName(peer);
-      avatar.style.cssText = [
-        'width:26px',
-        'height:26px',
-        'border-radius:50%',
-        'display:inline-flex',
-        'align-items:center',
-        'justify-content:center',
-        'background:' + peerColor(peer),
-        'color:var(--text-bright,#fff)',
-        'font-size:12px',
-        'font-weight:600',
-        'box-sizing:border-box'
-      ].join(';');
+      avatar.style.background = peerColor(peer);
       avatars.append(avatar);
     });
 

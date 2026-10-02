@@ -4,7 +4,7 @@
 
 ## 本轮已落地
 
-UE 式布局的 Web 编辑器（`editor/`，Vite + Three.js，瓷白+橙光主题）：
+UE 式布局的 Web 编辑器（`editor/`，Vite + Three.js，浅色专业空间编辑器主题）：
 
 - 左栏 Outliner：剧情树（章节>节点，含四项交接勾）+ 场景对象树（按节点分组、显隐、改名、右键菜单）
 - 中栏 Viewport：网格底座 + 现场照片墙占位（底座就绪前按 PRD 用占位）、W/E/R 变换手柄、吸附、锁地面、点击拾取、F 聚焦、右键+WASD 飞行
@@ -34,12 +34,47 @@ UE 式布局的 Web 编辑器（`editor/`，Vite + Three.js，瓷白+橙光主�
 - 能力：scene 实体级 CRDT 同步、在线头像/选中态 awareness、软锁提示、Ctrl+Z 走 Y.UndoManager（只撤自己）；四层回退只实现了第 1 层
 - 服务器文件：`/www/wwwroot/xiyou-collab/`（容器源码）、`/www/wwwroot/agentpay/app/xiyou_ws.py`、main.py 挂载块备份在 `agentpay/backups/main.py.pre-xiyou-ws-*`；nginx conf 留了 `/xiyou-yjs/` 反代（公网不走它，留作备用路径）
 
-## 还没做（留给现场/下轮）
+## 本轮剩余目标状态
 
-- 真实 SOG 高斯底座加载（`viewport.setBase` 有 stub）
-- 四层回退的 2–4 层（撤回单条改动/对象历史/快照）+ 评论钉通知
-- 游客端 runtime（8th Wall SLAM + VPS /localize + 海报兜底）—— `runtime/` 空
-- GPU worker：重建、视频透明转换（ffmpeg 命令在 PRD §3.3）
+- 已补齐 Collider 精确网格点内检测缓存：GLB/GLTF 加载后预构建三角形 AABB，拖动对象和相机移动优先走缓存检测；Box Collider 保留回退。
+- 已补齐底座分块/LOD 卸载：分块串行异步加载、单块失败隔离、切换 token 防旧请求污染，切换底座时释放 DropInViewer、排序 worker 与 Three.js 资源。
+- 已补齐资源替换影响范围：对象引用、主底座、Collider、天空图、LOD 变体、分块 URL 都会列出并同步替换。
+- 多人协作客户端已完成正式联调防护：房间/令牌参数、连接状态、重连竞态、远端场景和 zones CRDT 同步均已接入；线上服务器可用性仍需在目标部署环境做最后一次联机验收。
+- 游客 Runtime 与 GPU Worker 已补齐：`editor/runtime.html` 支持发布场景加载、相机/方向、WebXR 能力探测、VPS /localize、QR/Barcode、GPS、手动参考点、tap/gaze/hold/enter 触发；`tools/gpu-worker.mjs` 支持媒体分析、透明视频转换、重建抽帧清单和可接入外部 GPU 重建器。
+
+
+## 游客 Runtime
+
+启动编辑器后打开：
+
+```text
+http://127.0.0.1:5199/xiyou/runtime.html?room=demo
+```
+
+也可以指定发布场景 JSON：
+
+```text
+runtime.html?scene=https://example.com/release.json&release=release_id
+```
+
+定位顺序：`VPS /localize`（传入 `?localize=`）→ WebXR AR 能力探测 → QR/Barcode → GPS 粗定位 → 手动参考点。Runtime 会读取当前房间的 localStorage 场景或 `scene` URL，加载底座、对象、区域和互动触发器。
+
+## GPU Worker
+
+无需额外服务即可执行：
+
+```bash
+node tools/gpu-worker.mjs analyze --input ./input.mp4
+node tools/gpu-worker.mjs convert-alpha --input ./input.mp4 --output ./output.webm
+node tools/gpu-worker.mjs prepare-reconstruction --input ./input.mp4 --output ./reconstruction --fps 2 --max-frames 120
+node tools/gpu-worker.mjs serve --port 8787
+```
+
+Worker HTTP API：`GET /health`、`POST /jobs`、`GET /jobs/:id`、`POST /jobs/:id/cancel`、`POST /jobs/:id/resume`、`GET /jobs/:id/assets` 和资产下载路由。
+
+真实本地重建链路为 `FFmpeg / FFprobe → COLMAP → Brush → final.ply`，不需要远程服务器。设置 `XIYOU_ENGINE_DIR` 指向本地引擎目录，并设置 `XIYOU_ENABLE_BUNDLED_ENGINES=1`（或让 Worker 自动检测到完整引擎）即可启用。也可以设置 `XIYOU_RECONSTRUCTOR_BIN` 接入兼容的自定义重建器。未配置 COLMAP / Brush 时只会生成可复现的 `manifest.json` 和质量报告输入包，不能宣称完成真实 Gaussian 训练。详见 `tools/LOCAL-GAUSSIAN-ENGINES.md`。
+
+完整变更记录与验收项见：`docs/xiyou-editor-change-log.md`。
 
 ## 跑起来
 
@@ -53,3 +88,11 @@ npm run build   # dist/
 ## 工具
 
 `tools/gpt6.mjs` —— sub.88api.ai 的 gpt-6 驱动（`API88_KEY` 环境变量），`tools/CONTRACT.md` 是模块架构契约，`tools/prompts/` 是各模块生成规格。改模块结构先改 CONTRACT.md 再重新生成。
+
+
+## 设计系统
+
+- Design Token：`docs/design-tokens.json`（v3.0.0）
+- 设计规范：`docs/xujing-editor-design-system.md`
+- 视觉方向：参考专业空间编辑器，采用白色工作区、浅灰工具层、冷蓝灰 Viewport 和暖橙语义强调色。
+- 资源卡片和“导入素材”卡片统一为 `100 × 112px`，缩略图统一 `56px` 高。

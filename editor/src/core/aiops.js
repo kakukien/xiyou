@@ -32,6 +32,10 @@ function hasObject(id) {
     store.scene.objects.some(item => item.id === id)
 }
 
+function hasObjectOrZone(id) {
+  return hasObject(id) || hasZone(id)
+}
+
 function hasSequence(id) {
   return !!id && Array.isArray(store.scene?.sequences) &&
     store.scene.sequences.some(item => item.id === id)
@@ -59,6 +63,11 @@ function hasAnchor(id) {
     store.scene.anchors.some(item => item.id === id)
 }
 
+function hasZone(id) {
+  return !!id && Array.isArray(store.scene?.zones) &&
+    store.scene.zones.some(item => item.id === id)
+}
+
 function numberOr(value, fallback) {
   return Number.isFinite(Number(value)) ? Number(value) : fallback
 }
@@ -83,6 +92,7 @@ function normalizeObjectProps(input = {}) {
   props.transform = normalizeTransform(props.transform)
   if (props.name === undefined) props.name = ''
   if (props.node_id === undefined) props.node_id = ''
+  if (props.zone_id === undefined) props.zone_id = ''
   if (props.asset === undefined) props.asset = ''
   if (props.material === undefined) props.material = {}
   return props
@@ -182,6 +192,13 @@ export function sceneSummary() {
     lines.push('触发器|无')
   }
 
+  const zones = Array.isArray(scene.zones) ? scene.zones : []
+  if (zones.length) {
+    lines.push(`区域|${zones.map(zone => `${zone.id || ''}|${zone.name || ''}|${zone.kind || ''}|p(${formatVector(zone.transform?.p)})|s(${formatVector(zone.transform?.s)})`).join(';')}`)
+  } else {
+    lines.push('区域|无')
+  }
+
   const anchors = Array.isArray(scene.anchors) ? scene.anchors : []
   if (anchors.length) {
     lines.push(`锚点|${anchors.map(anchor =>
@@ -194,16 +211,16 @@ export function sceneSummary() {
   return lines.join('\n').slice(0, 2000)
 }
 
-export const SYSTEM_PROMPT = `你是「西游·虚境 AR 空间编辑器」的内置助手，帮助合作伙伴用自然语言编辑三维 AR 场景。
+export const SYSTEM_PROMPT = `你是「造梦 · 故事空间 AR 空间编辑器」的内置助手，帮助合作伙伴用自然语言编辑三维 AR 场景。
 
 你必须只输出一个 JSON 对象，不要输出 Markdown 或代码围栏：
 {"reply":"给用户的中文回复（≤60字）","ops":[]}
 
 允许的 ops 及字段：
-1. {"op":"add_object","type":"quad|video_quad|glb|light|splat_segment|compound","name":"","transform":{"p":[x,y,z],"r":[0,0,0],"s":[1,1,1]},"node_id":"","material":{},"asset":"","parts":[]}
+1. {"op":"add_object","type":"quad|video_quad|glb|light|splat_segment|compound","name":"","transform":{"p":[x,y,z],"r":[0,0,0],"s":[1,1,1]},"node_id":"","zone_id":"","material":{},"asset":"","parts":[]}
 2. {"op":"update_object","id":"","patch":{}}
 3. {"op":"remove_object","id":""}
-4. {"op":"add_trigger","id":"","target":"<objectId>","when":"tap|gaze|hold|enter|seq_event|node_done","params":{},"do":[{"action":"play_seq|show|hide|highlight|card|reward|goto_node","args":{}}]}
+4. {"op":"add_trigger","id":"","target":"<objectId|zoneId>","when":"tap|gaze|hold|enter|seq_event|node_done","params":{},"do":[{"action":"play_seq|show|hide|highlight|card|reward|goto_node","args":{}}]}
 5. {"op":"add_sequence","id":"","name":"","duration":2,"tracks":[{"target":"<objectId>","kind":"transform|opacity","keys":[{"t":0,"v":{},"ease":"out"}]}]}
 6. {"op":"add_node","chapter_id":"","id":"","title":"","text":"≤40字","next":""}
 7. {"op":"update_node","chapter_id":"","id":"","patch":{}}
@@ -211,6 +228,9 @@ export const SYSTEM_PROMPT = `你是「西游·虚境 AR 空间编辑器」的�
 9. {"op":"add_anchor","id":"","name":"","kind":"vps|poster|image","pose":{"t":[x,y,z],"r":[0,0,0]}} // 放置空间定位锚点（vps=空间定位点, poster=海报/图锚点）
 10. {"op":"update_anchor","id":"","patch":{}} // 改锚点（name/pose.t 等）
 11. {"op":"remove_anchor","id":""} // 删锚点
+12. {"op":"add_zone","id":"","name":"","kind":"editable|trigger|forbidden","transform":{"p":[x,y,z],"r":[0,0,0],"s":[x,y,z]},"description":""} // 建空间区域
+13. {"op":"update_zone","id":"","patch":{}} // 改空间区域
+14. {"op":"remove_zone","id":""} // 删空间区域
 
 compound 组装体（实时生成任意 3D）：parts 是数组，每项 {"shape":"box|sphere|cylinder|cone|torus|icosa|octa|tetra|capsule|plane|ring","p":[x,y,z],"r":[deg,deg,deg],"s":[x,y,z],"color":"#hex","opacity":0-1,"emissive":"#hex","metalness":0-1,"roughness":0-1,"blend":"additive","flat":true,"shader":{"kind":""}}。
 例：生成莲花台 = 底部 cylinder 灰座 + 中层 6 个倾斜的 capsule 花瓣(粉色) + 顶部 sphere 莲心(金) + 环绕 ring(additive 金色光晕)。多思考物体的组成部分再动手。
@@ -242,6 +262,7 @@ function validateAddObject(op) {
     name: typeof op.name === 'string' ? op.name : '',
     transform: op.transform,
     node_id: typeof op.node_id === 'string' ? op.node_id : '',
+    zone_id: typeof op.zone_id === 'string' ? op.zone_id : '',
     material: op.material && typeof op.material === 'object' ? op.material : {},
     asset: typeof op.asset === 'string' ? op.asset : '',
     parts: Array.isArray(op.parts) ? clone(op.parts) : undefined
@@ -251,7 +272,7 @@ function validateAddObject(op) {
 }
 
 function validateTrigger(op) {
-  if (!hasObject(op.target)) throw new Error('触发器目标对象不存在')
+  if (!hasObjectOrZone(op.target)) throw new Error('触发器目标对象或空间区域不存在')
   if (!CONDITION_IDS.has(op.when)) throw new Error('触发条件不合法')
   if (!Array.isArray(op.do)) throw new Error('触发动作必须是数组')
 
@@ -392,6 +413,39 @@ function executeOp(op) {
       return store.removeAnchor(op.id)
     }
 
+    case 'add_zone': {
+      const props = {
+        id: cleanId(op.id),
+        name: typeof op.name === 'string' ? op.name : '新空间区域',
+        kind: ['editable', 'trigger', 'forbidden'].includes(op.kind) ? op.kind : 'editable',
+        description: typeof op.description === 'string' ? op.description : '',
+        transform: {
+          p: vector(op.transform?.p, [0, 1, 0]),
+          r: vector(op.transform?.r, [0, 0, 0]),
+          s: vector(op.transform?.s, [2, 2, 2])
+        }
+      }
+      if (!props.id || hasZone(props.id)) delete props.id
+      return store.addZone(props)
+    }
+
+    case 'update_zone': {
+      if (!hasZone(op.id)) throw new Error('空间区域不存在')
+      const patch = clone(op.patch)
+      if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('空间区域 patch 无效')
+      if (patch.transform) patch.transform = {
+        p: vector(patch.transform.p, [0, 1, 0]),
+        r: vector(patch.transform.r, [0, 0, 0]),
+        s: vector(patch.transform.s, [2, 2, 2])
+      }
+      return store.updateZone(op.id, patch)
+    }
+
+    case 'remove_zone': {
+      if (!hasZone(op.id)) throw new Error('空间区域不存在')
+      return store.removeZone(op.id)
+    }
+
     case 'set_sky': {
       const sky = {}
       for (const k of ['top', 'horizon', 'bottom', 'sunColor']) {
@@ -419,6 +473,8 @@ function rewriteRefs(op, aliases) {
   if (cloned.id) cloned.id = fix(cloned.id)
   if (cloned.target) cloned.target = fix(cloned.target)
   if (cloned.node_id) cloned.node_id = fix(cloned.node_id)
+  if (cloned.zone_id) cloned.zone_id = fix(cloned.zone_id)
+  if (cloned.patch?.zone_id) cloned.patch.zone_id = fix(cloned.patch.zone_id)
   if (cloned.chapter_id) cloned.chapter_id = fix(cloned.chapter_id)
   if (cloned.patch && typeof cloned.patch === 'object') {
     if (cloned.patch.node_id) cloned.patch.node_id = fix(cloned.patch.node_id)
@@ -452,9 +508,10 @@ export function applyOps(ops) {
 
   const aliases = new Map()
 
-  for (const rawOp of ops) {
-    const op = rewriteRefs(rawOp, aliases)
-    try {
+  store.batch(() => {
+    for (const rawOp of ops) {
+      const op = rewriteRefs(rawOp, aliases)
+      try {
       const result = executeOp(op)
       done.push(op)
       const newId = result && result.id ? result.id : null
@@ -467,12 +524,13 @@ export function applyOps(ops) {
         }
       }
     } catch (error) {
-      failed.push({
-        op,
-        err: error?.message || String(error)
-      })
+        failed.push({
+          op,
+          err: error?.message || String(error)
+        })
+      }
     }
-  }
+  })
 
   return { done, failed }
 }

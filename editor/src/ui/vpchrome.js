@@ -2,6 +2,7 @@ import { store } from '../core/store.js';
 import { collab } from '../core/collab.js';
 import { player } from '../core/playback.js';
 import * as THREE from 'three';
+import { iconMarkup } from './components/icon.js';
 
 export function mount(wrap, viewport) {
   if (!wrap) return null;
@@ -69,12 +70,16 @@ export function mount(wrap, viewport) {
     if (item) item.classList.add('active');
   };
 
-  const button = (text, className = 'tbtn', title = '') => {
+  const button = (text, className = 'tbtn', title = '', iconName = '') => {
     const el = document.createElement('button');
     el.type = 'button';
     el.className = className;
-    el.textContent = text;
-    if (title) el.title = title;
+    if (iconName) el.innerHTML = `${iconMarkup(iconName, title || text)}<span>${text}</span>`;
+    else el.textContent = text;
+    if (title) {
+      el.title = title;
+      el.setAttribute('aria-label', title);
+    }
     return el;
   };
 
@@ -143,17 +148,27 @@ export function mount(wrap, viewport) {
   });
   toolbar.appendChild(lockButton);
 
+  const navigationButton = button('切换操作', 'navigation-mode-button', '切换操作方式', 'cursor-move-line');
+  navigationButton.addEventListener('click', () => {
+    const next = viewport.navigationStyle === 'blender' ? 'default' : 'blender';
+    viewport.setNavigationStyle?.(next);
+    navigationButton.classList.toggle('is-default', next === 'default');
+    navigationButton.title = next === 'blender' ? '当前：Blender 触控板操作' : '当前：默认操作方式';
+  });
+  navigationButton.classList.toggle('is-default', viewport.navigationStyle === 'default');
+  toolbar.appendChild(navigationButton);
+
   const railItems = [
-    { value: 'none', label: '↖', title: '点选' },
-    { value: 'translate', label: '✥', title: '移动' },
-    { value: 'rotate', label: '⟳', title: '旋转' },
-    { value: 'scale', label: '⤢', title: '缩放' },
-    { value: 'annotate', label: '✎', title: '标注', disabled: true }
+    { value: 'none', label: '', icon: 'cursor-line', title: '点选' },
+    { value: 'translate', label: '', icon: 'drag-move-2-line', title: '移动' },
+    { value: 'rotate', label: '', icon: 'refresh-line', title: '旋转' },
+    { value: 'scale', label: '', icon: 'expand-diagonal-line', title: '缩放' },
+    { value: 'annotate', label: '', icon: 'edit-2-line', title: '标注', disabled: true }
   ];
 
   const railButtons = new Map();
   railItems.forEach((item) => {
-    const el = button(item.label, 'vp-rail-btn', item.title);
+    const el = button(item.label, 'vp-rail-btn', item.title, item.icon);
     if (item.disabled) {
       el.disabled = true;
       el.classList.add('disabled');
@@ -178,16 +193,25 @@ export function mount(wrap, viewport) {
     rail.appendChild(el);
   });
 
-  boxButton.addEventListener('click', () => {
+  boxButton.addEventListener('pointerdown', event => event.stopPropagation());
+  pickButton.addEventListener('pointerdown', event => event.stopPropagation());
+
+  boxButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     state.selectMode = 'box';
     setActive(modeGroup, 'box');
+    railButtons.get('none')?.classList.remove('active');
     const gizmo = getGizmo();
     if (gizmo && typeof gizmo.detach === 'function') gizmo.detach();
   });
 
-  pickButton.addEventListener('click', () => {
+  pickButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     state.selectMode = 'pick';
     setActive(modeGroup, 'pick');
+    railButtons.forEach((entry, value) => entry.classList.toggle('active', value === 'none'));
   });
 
   function setView(view) {
@@ -453,9 +477,12 @@ export function mount(wrap, viewport) {
       if (!node || node.userData?.isHelper) return;
       const pos = objectScreenPosition(node);
       if (!pos) return;
-      if (pos.x >= left && pos.x <= right && pos.y >= top && pos.y <= bottom) {
-        ids.push(id);
-      }
+      if (pos.x >= left && pos.x <= right && pos.y >= top && pos.y <= bottom) ids.push(id);
+    });
+    viewport.zoneNodes?.forEach((node, id) => {
+      if (!node || node.visible === false) return;
+      const pos = objectScreenPosition(node);
+      if (pos && pos.x >= left && pos.x <= right && pos.y >= top && pos.y <= bottom) ids.push(id);
     });
 
     if (ids.length) {
@@ -479,6 +506,7 @@ export function mount(wrap, viewport) {
   }
 
   wrap.addEventListener('pointerdown', (event) => {
+    if (event.target.closest('.vp-toolbar, .vp-rail, .vp-minimap, .vp-hud-play')) return;
     if (state.selectMode !== 'box' || event.button !== 0) return;
     const rect = wrap.getBoundingClientRect();
     state.selecting = true;
@@ -530,18 +558,19 @@ export function mount(wrap, viewport) {
 
     hud.innerHTML = '';
 
-    const previousButton = button('◀ 上一节点', 'tbtn');
+    const previousButton = button('', 'vp-hud-nav', '上一节点', 'arrow-left-line');
     const title = document.createElement('span');
     title.className = 'vp-hud-node';
-    title.textContent = node ? node.title || node.id : '暂无节点';
-    const nextButton = button('下一节点 ▶', 'tbtn');
-    const resetButton = button('重置', 'tbtn');
+    title.innerHTML = `<small>当前节点</small><strong>${node ? node.title || node.id : '尚未选择节点'}</strong>`;
+    const nextButton = button('', 'vp-hud-nav', '下一节点', 'arrow-right-line');
+    const resetButton = button('重置试玩', 'vp-hud-reset', '重置试玩', 'restart-line');
     const progress = document.createElement('span');
     progress.className = 'vp-hud-progress';
-    progress.textContent = node && index >= 0 ? `${index + 1}/${all.length}` : '0/0';
+    progress.innerHTML = `<b>${node && index >= 0 ? index + 1 : 0}</b><span>/ ${all.length}</span>`;
 
     previousButton.disabled = !prev;
     nextButton.disabled = !next;
+    resetButton.disabled = !all.length;
     previousButton.addEventListener('click', () => gotoNode(prev));
     nextButton.addEventListener('click', () => gotoNode(next));
     resetButton.addEventListener('click', () => {

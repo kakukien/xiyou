@@ -3,7 +3,7 @@ import { WebsocketProvider } from 'y-websocket'
 import { store } from './store.js'
 import { log } from '../ui/log.js'
 
-const COLLECTIONS = ['objects', 'sequences', 'triggers', 'chapters', 'anchors']
+const COLLECTIONS = ['objects', 'sequences', 'triggers', 'chapters', 'anchors', 'zones']
 
 const palette = [
   '#e8b93b',
@@ -30,6 +30,8 @@ let syncTimer = null
 let synced = false
 let applying = false
 let activeUser = null
+let activeConnection = null
+let connectionGeneration = 0
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value))
@@ -185,6 +187,10 @@ function publishPeers() {
   store.emit('collab-peers', peers)
 }
 
+function emitStatus(extra = {}) {
+  store.emit('collab-status', { connected: Boolean(provider && activeConnection), connecting: Boolean(activeConnection && !collab.connected), room: activeConnection?.room || '', url: activeConnection?.url || '', ...extra })
+}
+
 function updateLocalAwareness() {
   if (!provider || !provider.awareness || !doc) return
 
@@ -267,9 +273,11 @@ export const collab = {
     if (!url || !room) {
       throw new Error('协作连接地址和房间不能为空')
     }
-
-    this.disconnect()
+    const generation = ++connectionGeneration
+    this.disconnect({ invalidate: false })
     setupStoreListeners()
+    activeConnection = { url, room }
+    emitStatus({ connecting: true })
 
     doc = new Y.Doc()
     entities = doc.getMap('entities')
@@ -299,10 +307,14 @@ export const collab = {
     updateLocalAwareness()
 
     statusHandler = ({ status }) => {
-      this.connected = status === 'connected'
-      store.emit('collab-status', { connected: this.connected })
+      if (generation !== connectionGeneration) return
+      const nextConnected = status === 'connected'
+      const changed = this.connected !== nextConnected
+      this.connected = nextConnected
+      emitStatus({ connecting: false })
 
-      if (this.connected) log('已连接协作房间')
+      if (!changed) return
+      if (this.connected) log(`已连接协作房间：${room}`)
       else log('协作连接已断开', 'warn')
     }
 
@@ -336,11 +348,13 @@ export const collab = {
 
     try {
       await promise
+      if (generation !== connectionGeneration) throw new Error('协作连接已被新的连接请求替换')
       finishInitialSync()
       return true
     } catch (error) {
+      if (generation !== connectionGeneration) throw error
       this.connected = false
-      store.emit('collab-status', { connected: false })
+      emitStatus({ connecting: false })
       log(`协作连接失败：${error.message}`, 'error')
       this.disconnect()
       throw error
@@ -393,7 +407,8 @@ export const collab = {
     return Boolean(undoManager && undoManager.canRedo())
   },
 
-  disconnect() {
+  disconnect({ invalidate = true } = {}) {
+    if (invalidate) connectionGeneration += 1
     if (syncTimer) {
       clearTimeout(syncTimer)
       syncTimer = null
@@ -414,9 +429,10 @@ export const collab = {
     undoManager = null
     synced = false
     activeUser = null
+    activeConnection = null
     this.connected = false
 
-    store.emit('collab-status', { connected: false })
+    emitStatus({ connected: false, connecting: false })
   }
 }
 

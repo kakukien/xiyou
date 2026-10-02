@@ -1,0 +1,568 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "name": "xujing-editor-design-tokens",
+  "version": "3.1.0",
+  "description": "西游·虚境 AR 空间编辑器 Design Token 源文件｜浅色专业空间编辑器 v3.1",
+  "color": {
+    "brand": {
+      "primary": {
+        "value": "#F97316",
+        "type": "color",
+        "description": "主行动色：发布、确认、选中、关键操作"
+      },
+      "primaryHover": {
+        "value": "#EA580C",
+        "type": "color"
+      },
+      "primaryPressed": {
+        "value": "#C2410C",
+        "type": "color"
+      },
+      "primarySoft": {
+        "value": "#FFF7ED",
+        "type": "color"
+      },
+      "primarySubtle": {
+        "value": "#FFEDD5",
+        "type": "color"
+      }
+    },
+    "information": {
+      "default": {
+        "value": "#2563EB",
+        "type": "color"
+      },
+      "hover": {
+        "value": "#1D4ED8",
+        "type": "color"
+      },
+      "soft": {
+        "value": "#EFF6FF",
+        "type": "color"
+      }
+    },
+    "success": {
+      "default": {
+        "value": "#16A34A",
+        "type": "color"
+      },
+      "soft": {
+        "value": "#F0FDF4",
+        "type": "color"
+      }
+    },
+    "warning": {
+      "default": {
+        "value": "#D97706",
+        "type": "color"
+      },
+      "soft": {
+        "value": "#FFFBEB",
+        "type": "color"
+      }
+    },
+    "danger": {
+      "default": {
+        "value": "#DC2626",
+        "type": "color"
+      },
+      "soft": {
+        "value": "#FEF2F2",
+        "type": "color"
+      }
+    },
+    "surface": {
+      "canvas": {
+        "value": "#F3F5F7",
+        "type": "color",
+        "description": "编辑器外部工作区背景"
+      },
+      "panel": {
+        "value": "#FFFFFF",
+        "type": "color"
+      },
+      "panelMuted": {
+        "value": "#F4F6F8",
+        "type": "color"
+      },
+      "panelRaised": {
+        "value": "#FFFFFF",
+        "type": "color"
+      },
+      "overlay": {
+        "value": "#1F2937",
+        "type": "color"
+      },
+      "viewport": {
+        "value": "#DCE6EE",
+        "type": "color"
+      },
+      "chrome": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "顶部应用栏与高层级工具区"
+      },
+      "panelSoft": {
+        "value": "#F7F9FA",
+        "type": "color",
+        "description": "面板次层与工具区"
+      },
+      "panelSunken": {
+        "value": "#EEF2F5",
+        "type": "color",
+        "description": "输入区、时间线轨道底色"
+      }
+    },
+    "text": {
+      "primary": {
+        "value": "#25313C",
+        "type": "color"
+      },
+      "secondary": {
+        "value": "#667482",
+        "type": "color"
+      },
+      "tertiary": {
+        "value": "#97A4B0",
+        "type": "color"
+      },
+      "inverse": {
+        "value": "#FFFFFF",
+        "type": "color"
+      },
+      "disabled": {
+        "value": "#CBD5E1",
+        "type": "color"
+      },
+      "chrome": {
+        "value": "#25313C",
+        "type": "color",
+        "description": "浅色应用栏上的主文字"
+      },
+      "chromeMuted": {
+        "value": "#73808D",
+        "type": "color",
+        "description": "浅色应用栏上的弱文字"
+      }
+    },
+    "border": {
+      "default": {
+        "value": "#D9E1E8",
+        "type": "color"
+      },
+      "strong": {
+        "value": "#C5D0DA",
+        "type": "color"
+      },
+      "subtle": {
+        "value": "#E7ECF0",
+        "type": "color"
+      },
+      "focus": {
+        "value": "#F56C16",
+        "type": "color"
+      },
+      "hairline": {
+        "value": "#E7ECF0",
+        "type": "color",
+        "description": "弱分隔线"
+      },
+      "focusRing": {
+        "value": "rgba(245,108,22,0.20)",
+        "type": "color",
+        "description": "键盘焦点外圈"
+      }
+    },
+    "selection": {
+      "background": {
+        "value": "#FFF1E6",
+        "type": "color"
+      },
+      "border": {
+        "value": "#F97316",
+        "type": "color"
+      },
+      "text": {
+        "value": "#C2410C",
+        "type": "color"
+      }
+    }
+  },
+  "spacing": {
+    "0": {
+      "value": "0px",
+      "type": "dimension"
+    },
+    "1": {
+      "value": "4px",
+      "type": "dimension"
+    },
+    "2": {
+      "value": "8px",
+      "type": "dimension"
+    },
+    "3": {
+      "value": "12px",
+      "type": "dimension"
+    },
+    "4": {
+      "value": "16px",
+      "type": "dimension"
+    },
+    "5": {
+      "value": "20px",
+      "type": "dimension"
+    },
+    "6": {
+      "value": "24px",
+      "type": "dimension"
+    },
+    "8": {
+      "value": "32px",
+      "type": "dimension"
+    },
+    "10": {
+      "value": "40px",
+      "type": "dimension"
+    },
+    "12": {
+      "value": "48px",
+      "type": "dimension"
+    },
+    "16": {
+      "value": "64px",
+      "type": "dimension"
+    }
+  },
+  "radius": {
+    "none": {
+      "value": "0px",
+      "type": "dimension"
+    },
+    "sm": {
+      "value": "6px",
+      "type": "dimension"
+    },
+    "md": {
+      "value": "8px",
+      "type": "dimension"
+    },
+    "lg": {
+      "value": "10px",
+      "type": "dimension"
+    },
+    "xl": {
+      "value": "12px",
+      "type": "dimension"
+    },
+    "pill": {
+      "value": "999px",
+      "type": "dimension"
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "value": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif",
+      "type": "fontFamily"
+    },
+    "fontFamilyMono": {
+      "value": "'SFMono-Regular', Consolas, 'Liberation Mono', monospace",
+      "type": "fontFamily"
+    },
+    "size": {
+      "xs": {
+        "value": "10px",
+        "type": "fontSize"
+      },
+      "sm": {
+        "value": "12px",
+        "type": "fontSize"
+      },
+      "md": {
+        "value": "13px",
+        "type": "fontSize"
+      },
+      "lg": {
+        "value": "14px",
+        "type": "fontSize"
+      },
+      "xl": {
+        "value": "16px",
+        "type": "fontSize"
+      },
+      "2xl": {
+        "value": "18px",
+        "type": "fontSize"
+      },
+      "xxs": {
+        "value": "11px",
+        "type": "fontSize"
+      },
+      "display": {
+        "value": "20px",
+        "type": "fontSize"
+      }
+    },
+    "weight": {
+      "regular": {
+        "value": "400",
+        "type": "fontWeight"
+      },
+      "medium": {
+        "value": "500",
+        "type": "fontWeight"
+      },
+      "semibold": {
+        "value": "600",
+        "type": "fontWeight"
+      },
+      "bold": {
+        "value": "700",
+        "type": "fontWeight"
+      }
+    },
+    "lineHeight": {
+      "tight": {
+        "value": "1.2",
+        "type": "lineHeight"
+      },
+      "normal": {
+        "value": "1.45",
+        "type": "lineHeight"
+      },
+      "relaxed": {
+        "value": "1.6",
+        "type": "lineHeight"
+      }
+    }
+  },
+  "icon": {
+    "xs": {
+      "value": "12px",
+      "type": "dimension"
+    },
+    "sm": {
+      "value": "14px",
+      "type": "dimension"
+    },
+    "md": {
+      "value": "16px",
+      "type": "dimension"
+    },
+    "lg": {
+      "value": "18px",
+      "type": "dimension"
+    },
+    "xl": {
+      "value": "20px",
+      "type": "dimension"
+    },
+    "2xl": {
+      "value": "24px",
+      "type": "dimension"
+    },
+    "button": {
+      "value": "16px",
+      "type": "dimension"
+    },
+    "control": {
+      "value": "18px",
+      "type": "dimension"
+    }
+  },
+  "control": {
+    "heightSm": {
+      "value": "24px",
+      "type": "dimension"
+    },
+    "heightMd": {
+      "value": "30px",
+      "type": "dimension"
+    },
+    "heightLg": {
+      "value": "36px",
+      "type": "dimension"
+    },
+    "panelHeader": {
+      "value": "40px",
+      "type": "dimension"
+    },
+    "topbar": {
+      "value": "52px",
+      "type": "dimension"
+    },
+    "dockMinHeight": {
+      "value": "240px",
+      "type": "dimension"
+    },
+    "toolbar": {
+      "value": "34px",
+      "type": "dimension"
+    },
+    "dockTab": {
+      "value": "42px",
+      "type": "dimension"
+    },
+    "assetCard": {
+      "value": "112px",
+      "type": "dimension"
+    },
+    "assetThumb": {
+      "value": "56px",
+      "type": "dimension"
+    },
+    "outlinerWidth": {
+      "value": "304px",
+      "type": "dimension"
+    },
+    "inspectorWidth": {
+      "value": "368px",
+      "type": "dimension"
+    }
+  },
+  "shadow": {
+    "panel": {
+      "value": "0 1px 8px rgba(35,49,60,0.06)",
+      "type": "shadow"
+    },
+    "raised": {
+      "value": "0 6px 18px rgba(31, 41, 55, 0.12)",
+      "type": "shadow"
+    },
+    "modal": {
+      "value": "0 16px 48px rgba(31, 41, 55, 0.22)",
+      "type": "shadow"
+    },
+    "float": {
+      "value": "0 5px 18px rgba(49,64,78,0.16)",
+      "type": "shadow"
+    },
+    "focus": {
+      "value": "0 0 0 3px rgba(249,115,22,0.22)",
+      "type": "shadow"
+    }
+  },
+  "motion": {
+    "fast": {
+      "value": "120ms",
+      "type": "duration"
+    },
+    "normal": {
+      "value": "180ms",
+      "type": "duration"
+    },
+    "slow": {
+      "value": "260ms",
+      "type": "duration"
+    },
+    "ease": {
+      "value": "cubic-bezier(0.2, 0.8, 0.2, 1)",
+      "type": "cubicBezier"
+    },
+    "micro": {
+      "value": "100ms",
+      "type": "duration"
+    },
+    "enter": {
+      "value": "180ms",
+      "type": "duration"
+    },
+    "exit": {
+      "value": "140ms",
+      "type": "duration"
+    },
+    "easeOut": {
+      "value": "cubic-bezier(0.16,1,0.3,1)",
+      "type": "cubicBezier"
+    }
+  },
+  "zIndex": {
+    "base": {
+      "value": "0",
+      "type": "number"
+    },
+    "viewportChrome": {
+      "value": "20",
+      "type": "number"
+    },
+    "popover": {
+      "value": "50",
+      "type": "number"
+    },
+    "toast": {
+      "value": "80",
+      "type": "number"
+    },
+    "modal": {
+      "value": "100",
+      "type": "number"
+    },
+    "panelChrome": {
+      "value": "10",
+      "type": "number"
+    },
+    "floatingToolbar": {
+      "value": "30",
+      "type": "number"
+    }
+  },
+  "component": {
+    "railButton": {
+      "value": "38px",
+      "type": "dimension"
+    },
+    "axisFieldHeight": {
+      "value": "30px",
+      "type": "dimension"
+    },
+    "toggleWidth": {
+      "value": "38px",
+      "type": "dimension"
+    },
+    "toggleHeight": {
+      "value": "22px",
+      "type": "dimension"
+    },
+    "tabActiveIndicator": {
+      "value": "3px",
+      "type": "dimension"
+    },
+    "baseUploadRowHeight": {
+      "value": "56px",
+      "type": "dimension"
+    }
+  },
+  "interaction": {
+    "assetUpload": {
+      "formats": [
+        "ply",
+        "sog",
+        "spz",
+        "splat",
+        "ksplat",
+        "glb",
+        "gltf",
+        "png",
+        "jpg",
+        "mp4",
+        "mp3"
+      ],
+      "localPreview": "blob-url"
+    },
+    "gaussianSplat": {
+      "acceptedFormats": [
+        "ply",
+        "splat",
+        "ksplat",
+        "sog",
+        "spz"
+      ],
+      "renderer": "@mkkellogg/gaussian-splats-3d",
+      "formatDetection": "file-extension",
+      "colliderFormats": [
+        "glb",
+        "gltf"
+      ]
+    }
+  }
+}

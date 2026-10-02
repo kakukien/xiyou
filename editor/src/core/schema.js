@@ -10,7 +10,7 @@ export const OBJECT_TYPES = {
   splat_segment: {
     id: 'splat_segment',
     label: '点云片段',
-    icon: '✦',
+    icon: 'sparkling-2-line',
     defaultSize: [2, 2, 2],
     canInteract: true,
     hitbox: 'auto'
@@ -18,7 +18,7 @@ export const OBJECT_TYPES = {
   quad: {
     id: 'quad',
     label: '图片平面',
-    icon: '▧',
+    icon: 'image-2-line',
     defaultSize: [1, 1, 0],
     canInteract: true,
     hitbox: 'box'
@@ -26,7 +26,7 @@ export const OBJECT_TYPES = {
   video_quad: {
     id: 'video_quad',
     label: '视频平面',
-    icon: '▣',
+    icon: 'movie-2-line',
     defaultSize: [0.75, 1, 0],
     canInteract: true,
     hitbox: 'box'
@@ -34,7 +34,7 @@ export const OBJECT_TYPES = {
   glb: {
     id: 'glb',
     label: '3D 模型',
-    icon: '◆',
+    icon: 'box-3-line',
     defaultSize: [1, 1, 1],
     canInteract: true,
     hitbox: 'auto'
@@ -42,7 +42,7 @@ export const OBJECT_TYPES = {
   light: {
     id: 'light',
     label: '点光源',
-    icon: '☼',
+    icon: 'lightbulb-flash-line',
     defaultSize: [1, 1, 1],
     canInteract: true,
     hitbox: 'none'
@@ -50,7 +50,7 @@ export const OBJECT_TYPES = {
   compound: {
     id: 'compound',
     label: '组装体',
-    icon: '⬡',
+    icon: 'shapes-line',
     defaultSize: [1, 1, 1],
     canInteract: true,
     hitbox: 'auto'
@@ -123,15 +123,39 @@ function emptyTransform() {
 
 export function defaults() {
   return {
+    schemaVersion: '2.0.0',
+    projectId: '',
+    siteId: '',
     base: {
       sog_url: '',
       collider_url: null,
+      collider: { type: 'box', size: [20, 2, 20], center: [0, 1, 0], visible: false },
+      lod: { enabled: false, levels: ['high', 'medium', 'low'], current: 'high', urls: { high: '', medium: '', low: '' }, thresholds: { near: 12, far: 30 } },
+      chunks: [],
       transform: {
         s: 1,
         R: [1, 0, 0, 0, 1, 0, 0, 0, 1],
         t: [0, 0, 0],
         scale_source: 'manual'
-      }
+      },
+      capture_id: '',
+      capture: null,
+      coordinate_system: {
+        up: 'Y',
+        forward: '-Z',
+        handedness: 'right',
+        units: 'meters',
+        origin: 'capture'
+      },
+      artifacts: {},
+      editing: {
+        revision: 0,
+        transform: null,
+        crop: null,
+        deletion_mask: null
+      },
+      quality: null,
+      splat_editor: null
     },
     objects: [],
     sequences: [],
@@ -140,9 +164,11 @@ export function defaults() {
       chapters: []
     },
     anchors: [],
+    zones: [],
     meta: {
       name: '未命名场景',
-      assets: []
+      assets: [],
+      releases: []
     }
   };
 }
@@ -179,6 +205,7 @@ export function newObject(type, props = {}) {
     hitbox: defaultHitbox,
     visible: true,
     node_id: '',
+    zone_id: '',
     comments: []
   };
 
@@ -256,6 +283,20 @@ export function newAnchor(props = {}) {
   return merged;
 }
 
+export function newZone(props = {}) {
+  return merge({
+    id: makeId('zone'),
+    name: '新空间区域',
+    kind: 'editable',
+    shape: 'box',
+    transform: { p: [0, 1, 0], r: [0, 0, 0], s: [2, 2, 2] },
+    color: '#2563eb',
+    visible: true,
+    locked: false,
+    description: ''
+  }, props)
+}
+
 function objectIds(scene) {
   return new Set((scene.objects || []).map((item) => item && item.id).filter(Boolean));
 }
@@ -270,6 +311,10 @@ function triggerIds(scene) {
 
 function anchorIds(scene) {
   return new Set((scene.anchors || []).map((item) => item && item.id).filter(Boolean));
+}
+
+function zoneIds(scene) {
+  return new Set((scene.zones || []).map((item) => item && item.id).filter(Boolean));
 }
 
 function nodeMap(scene) {
@@ -308,6 +353,7 @@ export function validate(scene) {
   const objects = Array.isArray(data.objects) ? data.objects : [];
   const sequences = Array.isArray(data.sequences) ? data.sequences : [];
   const triggers = Array.isArray(data.triggers) ? data.triggers : [];
+  const zones = Array.isArray(data.zones) ? data.zones : [];
   const chapters = data.story && Array.isArray(data.story.chapters)
     ? data.story.chapters
     : [];
@@ -319,6 +365,19 @@ export function validate(scene) {
   if (!data.meta || typeof data.meta !== 'object') {
     addIssue(result, 'error', '缺少场景元数据', 'meta');
   }
+  if (data.base?.collider && (!checkVector(data.base.collider.size, 3) || !checkVector(data.base.collider.center, 3))) {
+    addIssue(result, 'warn', 'Collider 尺寸或中心数据不完整', 'base.collider');
+  }
+  if (data.base?.lod?.enabled) {
+    const thresholds = data.base.lod.thresholds || {}
+    if (!(Number(thresholds.near) >= 0) || !(Number(thresholds.far) > Number(thresholds.near))) {
+      addIssue(result, 'warn', 'LOD 距离阈值不合理', 'base.lod');
+    }
+  }
+  ;(data.base?.chunks || []).forEach((chunk, index) => {
+    if (!chunk?.id) addIssue(result, 'error', '底座分块缺少 id', `base.chunks[${index}]`)
+    if (!chunk?.url && !chunk?.lod?.high) addIssue(result, 'warn', '底座分块缺少加载地址', chunk?.id || `base.chunks[${index}]`)
+  })
 
   const ids = new Set();
 
@@ -358,6 +417,18 @@ export function validate(scene) {
     if (!obj || !Array.isArray(obj.comments)) {
       addIssue(result, 'warn', '对象 comments 应为数组', target);
     }
+  });
+
+  const knownZoneIds = new Set(zones.map(zone => zone?.id).filter(Boolean));
+  zones.forEach((zone, index) => {
+    const target = zone?.id || `zones[${index}]`;
+    if (!zone?.id) addIssue(result, 'error', '空间区域缺少 id', target);
+    if (!zone?.transform || !checkVector(zone.transform.p, 3) || !checkVector(zone.transform.s, 3)) {
+      addIssue(result, 'error', '空间区域 transform 必须包含 p/s 三维数字', target);
+    }
+  });
+  objects.forEach((obj) => {
+    if (obj?.zone_id && !knownZoneIds.has(obj.zone_id)) addIssue(result, 'warn', `对象所属区域不存在：${obj.zone_id}`, obj.id);
   });
 
   sequences.forEach((sequence, index) => {
@@ -453,6 +524,21 @@ export function validate(scene) {
   return result;
 }
 
+function isTemporaryUrl(value) {
+  return /^(blob:|local:)/i.test(String(value || ''))
+}
+
+function forEachBaseUrl(base, callback) {
+  if (!base || typeof base !== 'object') return
+  callback(base.sog_url, 'base.sog_url')
+  callback(base.collider_url, 'base.collider_url')
+  Object.entries(base.lod?.urls || {}).forEach(([level, value]) => callback(value, `base.lod.urls.${level}`))
+  ;(base.chunks || []).forEach((chunk, index) => {
+    callback(chunk?.url, `base.chunks[${index}].url`)
+    Object.entries(chunk?.lod || {}).forEach(([level, value]) => callback(value, `base.chunks[${index}].lod.${level}`))
+  })
+}
+
 function isRegisteredAsset(scene, value) {
   if (!value) return true;
 
@@ -479,6 +565,7 @@ export function publishCheck(scene) {
     ? data.story.chapters
     : [];
   const anchors = anchorIds(data);
+  const zones = zoneIds(data);
   const objectSet = objectIds(data);
   const sequenceSet = sequenceIds(data);
   const triggerSet = triggerIds(data);
@@ -493,10 +580,31 @@ export function publishCheck(scene) {
     warns.push({ kind, msg, target: target || '' });
   };
 
+  if (data.base?.sog_url && typeof data.base.sog_url !== 'string') {
+    block('base_invalid', '高斯底座地址无效', 'base');
+  }
+  forEachBaseUrl(data.base, (value, target) => {
+    if (isTemporaryUrl(value)) block('temporary_asset', '存在本机临时资产地址，上传到持久化存储后才能发布', target)
+  })
+  ;(data.meta?.assets || []).forEach(asset => {
+    if (isTemporaryUrl(asset?.url)) block('temporary_asset', `素材「${asset.name || asset.id || '未命名'}」仍是本机临时资产，不能直接发布`, asset.id || 'meta.assets')
+  })
+  ;(data.base?.chunks || []).forEach(chunk => {
+    if (!chunk?.id || (!chunk.url && !chunk.lod?.high)) block('base_chunk_invalid', `底座分块无法加载：${chunk?.name || chunk?.id || '未命名分块'}`, chunk?.id || 'base.chunks')
+  });
+  (data.zones || []).forEach(zone => {
+    if (!zone?.id) block('zone_invalid', '空间区域缺少 id', 'zones');
+    const p = zone?.transform?.p;
+    const s = zone?.transform?.s;
+    if (!Array.isArray(p) || p.length !== 3 || !Array.isArray(s) || s.length !== 3) {
+      block('zone_invalid', `空间区域数据不完整：${zone?.name || zone?.id || '未命名区域'}`, zone?.id || 'zones');
+    }
+  });
+
   triggers.forEach((trigger) => {
     if (!trigger) return;
 
-    if (trigger.target && !objectSet.has(trigger.target)) {
+    if (trigger.target && !objectSet.has(trigger.target) && !zones.has(trigger.target)) {
       block('dangling_ref', `触发器目标不存在：${trigger.target}`, trigger.id);
     }
 
@@ -520,6 +628,12 @@ export function publishCheck(scene) {
         );
       }
     });
+  });
+
+  objects.forEach((obj) => {
+    if (obj?.zone_id && !zones.has(obj.zone_id)) {
+      block('dangling_ref', `对象所属区域不存在：${obj.zone_id}`, obj.id);
+    }
   });
 
   sequences.forEach((sequence) => {

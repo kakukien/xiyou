@@ -1,4 +1,4 @@
-import { AnimationMixer } from 'three';
+import { AnimationMixer, Box3, Vector3 } from 'three';
 import { store } from './store.js';
 import { viewport } from './viewport.js';
 import { log } from '../ui/log.js';
@@ -386,6 +386,10 @@ export const player = {
     return true;
   },
 
+  isPreviewing() {
+    return previewSnapshots.size > 0;
+  },
+
   // 供时间线 UI 轮询播放头：返回 {time, duration} 或 null
   progress(seqId) {
     const state = active.find(item => item.seq.id === seqId);
@@ -524,6 +528,11 @@ function tickHighlights(dt) {
   });
 }
 
+function highlightTarget(targetId) {
+  const node = viewport.node(targetId) || viewport.zoneNodes?.get(targetId)
+  if (node) highlight(node)
+}
+
 export const triggers = {
   fire(when, targetId, extra = {}) {
     const triggerList = Array.isArray(store.scene.triggers) ? store.scene.triggers : [];
@@ -548,14 +557,16 @@ export const triggers = {
 
         if (action === 'show' || action === 'hide') {
           const objectId = args.targetId || args.objectId || trigger.target;
-          if (objectId) {
+          if (objectId && store.getObject?.(objectId)) {
             store.updateObject(objectId, { visible: action === 'show' });
+          } else if (objectId && store.getZone?.(objectId)) {
+            store.updateZone(objectId, { visible: action === 'show' });
           }
           return;
         }
 
         if (action === 'highlight') {
-          highlight(viewport.node(args.targetId || args.objectId || trigger.target));
+          highlightTarget(args.targetId || args.objectId || trigger.target);
           return;
         }
 
@@ -591,13 +602,21 @@ function tickEnter() {
   triggerList
     .filter((trigger) => trigger.when === 'enter' && trigger.target)
     .forEach((trigger) => {
+      const zone = store.getZone?.(trigger.target);
       const node = viewport.node(trigger.target);
-      if (!node) return;
+      if (!zone && !node) return;
 
-      const radius = Number(trigger.params?.radius) || 2;
-      const inside = distanceBetween(position, node.getWorldPosition
-        ? node.getWorldPosition({ x: 0, y: 0, z: 0 })
-        : node.position) < radius;
+      let inside = false;
+      if (zone) {
+        const zoneNode = viewport.zoneNodes?.get(zone.id);
+        inside = Boolean(zoneNode && new Box3().setFromObject(zoneNode).containsPoint(position));
+      } else {
+        const radius = Number(trigger.params?.radius) || 2;
+        const worldPosition = node.getWorldPosition
+          ? (() => { const point = new Vector3(); node.getWorldPosition(point); return point; })()
+          : node.position;
+        inside = distanceBetween(position, worldPosition) < radius;
+      }
 
       const wasInside = enterStates.get(trigger.id) === true;
       if (inside && !wasInside) {
