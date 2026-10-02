@@ -504,21 +504,26 @@ export function demoScene() {
 
   scene.meta = {
     name: '花果山觉醒',
+    folders: [
+      { id: 'fld_shared', name: '共享素材', parent: '' },
+      { id: 'fld_我', name: '我的素材', parent: '' }
+    ],
     assets: [
-      { id: 'a_f01', name: '现场_入场.jpg', url: 'site/f01.jpg', bytes: 130049, mime: 'image/jpeg' },
-      { id: 'a_f05', name: '现场_走廊.jpg', url: 'site/f05.jpg', bytes: 100859, mime: 'image/jpeg' },
-      { id: 'a_f09', name: '现场_侧墙.jpg', url: 'site/f09.jpg', bytes: 98031, mime: 'image/jpeg' },
-      { id: 'a_f13', name: '背景板.jpg', url: 'site/f13.jpg', bytes: 88940, mime: 'image/jpeg' },
-      { id: 'a_f17', name: '现场_全景.jpg', url: 'site/f17.jpg', bytes: 100805, mime: 'image/jpeg' },
-      { id: 'a_f21', name: '现场_签到台.jpg', url: 'site/f21.jpg', bytes: 106023, mime: 'image/jpeg' },
-      { id: 'a_f25', name: '现场_出口.jpg', url: 'site/f25.jpg', bytes: 105922, mime: 'image/jpeg' },
-      { id: 'a_floor', name: '舞台地面.png', url: 'site/floor.jpg', bytes: 15671, mime: 'image/jpeg' },
-      { id: 'a_speakers', name: '线阵音箱.png', url: 'site/speakers.jpg', bytes: 90012, mime: 'image/jpeg' },
-      { id: 'a_clip', name: '现场片段.mp4', url: 'site/clip.mp4', bytes: 709560, mime: 'video/mp4' },
-      { id: 'a_world', name: '虚境世界·体素.glb', url: 'assets/xiyou_world.glb', bytes: 1915952, mime: 'model/gltf-binary' },
-      { id: 'a_belltower', name: '西安钟楼·体块.glb', url: 'assets/xiyou_belltower.glb', bytes: 782288, mime: 'model/gltf-binary' },
-      { id: 'a_wukong', name: '孙悟空.glb', url: 'local://孙悟空.glb', bytes: 356515840, mime: 'model/gltf-binary' },
-      { id: 'a_va', name: '视频_A.mp4', url: 'local://视频_A.mp4', bytes: 188743680, mime: 'video/mp4' }
+      { id: 'a_f01', name: '现场_入场.jpg', url: 'site/f01.jpg', kind: 'image', type: 'image', folder: 'fld_shared', bytes: 130049, mime: 'image/jpeg' },
+      { id: 'a_f05', name: '现场_走廊.jpg', url: 'site/f05.jpg', kind: 'image', type: 'image', folder: 'fld_shared', bytes: 100859, mime: 'image/jpeg' },
+      { id: 'a_f09', name: '现场_侧墙.jpg', url: 'site/f09.jpg', kind: 'image', type: 'image', folder: 'fld_shared', bytes: 98031, mime: 'image/jpeg' },
+      { id: 'a_f13', name: '背景板.jpg', url: 'site/f13.jpg', kind: 'image', type: 'image', folder: 'fld_shared', bytes: 88940, mime: 'image/jpeg' },
+      { id: 'a_f17', name: '现场_全景.jpg', url: 'site/f17.jpg', kind: 'image', type: 'image', folder: 'fld_shared', bytes: 100805, mime: 'image/jpeg' },
+      { id: 'a_f21', name: '现场_签到台.jpg', url: 'site/f21.jpg', kind: 'image', type: 'image', folder: 'fld_shared', bytes: 106023, mime: 'image/jpeg' },
+      { id: 'a_f25', name: '现场_出口.jpg', url: 'site/f25.jpg', kind: 'image', type: 'image', folder: 'fld_shared', bytes: 105922, mime: 'image/jpeg' },
+      { id: 'a_floor', name: '舞台地面.png', url: 'site/floor.jpg', kind: 'image', type: 'image', folder: 'fld_shared', bytes: 15671, mime: 'image/jpeg' },
+      { id: 'a_speakers', name: '线阵音箱.png', url: 'site/speakers.jpg', kind: 'image', type: 'image', folder: 'fld_shared', bytes: 90012, mime: 'image/jpeg' },
+      { id: 'a_clip', name: '现场片段.mp4', url: 'site/clip.mp4', kind: 'video', type: 'video', folder: 'fld_shared', bytes: 709560, mime: 'video/mp4' },
+      { id: 'a_world', name: '虚境世界·体素.glb', url: 'assets/xiyou_world.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 1915952, mime: 'model/gltf-binary' },
+      { id: 'a_belltower', name: '西安钟楼·体块.glb', url: 'assets/xiyou_belltower.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 782288, mime: 'model/gltf-binary' },
+      { id: 'a_pointcloud', name: '现场定位点云.ply', url: 'assets/hks204606.compressed.ply', kind: 'splat', type: 'splat', folder: 'fld_我', bytes: 43375147, mime: 'application/octet-stream', metadata: { format: 'ply', role: 'vps-base' } },
+      { id: 'a_wukong', name: '孙悟空.glb', url: 'local://孙悟空.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 356515840, mime: 'model/gltf-binary' },
+      { id: 'a_va', name: '视频_A.mp4', url: 'local://视频_A.mp4', kind: 'video', type: 'video', folder: 'fld_shared', bytes: 188743680, mime: 'video/mp4' }
     ]
   };
 
