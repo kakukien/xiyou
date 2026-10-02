@@ -692,3 +692,16 @@ Yjs Draft：负责团队协作，不直接服务游客
 > **第一阶段做“扫码进入 + QR 校准 + Web Runtime + Release 发布”；第二阶段做“VPS 精定位 + 已打开会话更新提示”；第三阶段再做“受控热更新和 App/小程序后台能力”。**
 
 因此，用户提出的整体方案是可实现的，但当前代码已经完成的是 Runtime 原型和本地发布快照，尚未完成跨设备正式发布。下一步最有价值的工作不是继续增加试玩按钮，而是补齐“发布服务、持久化资产、二维码入口、锚点对齐和版本生效策略”这条端到端链路。
+
+
+## 11. 2026-10-03 状态同步
+
+当前 Runtime 已具备：发布快照/外部 scene URL 加载、相机与方向权限、WebXR 探测、QR/Barcode、GPS/手动定位降级、tap/gaze/hold/enter/leave/collision 近似、Session 状态、收集、分数和游客端临时 AI 添加。
+
+本地开发新增 `tools/release-server.mjs`，用于同一局域网测试：
+
+```text
+Editor 发布/下载 JSON → release-server.mjs → 手机 Runtime ?scene=<LAN URL>
+```
+
+它不替代生产 Release API。生产联调仍需 Release API、对象存储/CDN、二维码入口、缓存策略和真机定位数据。

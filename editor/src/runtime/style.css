@@ -135,3 +135,25 @@ html,body,#runtime { margin:0; width:100%; height:100%; overflow:hidden; backgro
 .runtime-start > * { position:relative; z-index:1; }
 .runtime-start h1,.runtime-start-brand span { text-shadow:0 1px 14px rgba(7,18,30,.34); }
 .runtime-start p,.runtime-start small { text-shadow:0 1px 8px rgba(7,18,30,.28); }
+
+.runtime-ai-fab { position:fixed; z-index:8; right:16px; bottom:58px; width:48px; height:48px; border:0; border-radius:50%; background:#ef6c16; color:#fff; box-shadow:0 8px 22px #0005; cursor:pointer; font-weight:800; }
+.runtime-ai-panel { position:fixed; z-index:9; right:16px; bottom:114px; width:min(360px,calc(100vw - 32px)); height:390px; display:flex; flex-direction:column; overflow:hidden; border:1px solid #ffffff2b; border-radius:12px; background:#111a22f2; color:#f5f7fa; box-shadow:0 16px 48px #0007; backdrop-filter:blur(12px); }
+.runtime-ai-panel[hidden] { display:none; }
+.runtime-ai-panel > header { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid #ffffff1f; }
+.runtime-ai-panel > header button { border:0; background:transparent; color:#cbd5df; cursor:pointer; font-size:20px; }
+.runtime-ai-messages { flex:1; overflow:auto; padding:10px; font-size:12px; line-height:1.5; }
+.runtime-ai-note { margin-bottom:8px; color:#9fb0be; font-size:11px; }
+.runtime-ai-message { max-width:88%; margin:0 0 8px; padding:7px 9px; border-radius:7px; white-space:pre-wrap; word-break:break-word; }
+.runtime-ai-message.user { margin-left:auto; background:#ef6c16; color:#fff; }
+.runtime-ai-message.ai { background:#ffffff16; }
+.runtime-ai-message.error { background:#6b2830; color:#ffd9d9; }
+.runtime-ai-plan { margin:8px 0; padding:8px; border:1px solid #f2a36d88; border-radius:7px; background:#322219; font-size:11px; }
+.runtime-ai-plan ul { margin:5px 0 8px 17px; padding:0; }
+.runtime-ai-plan > div { display:flex; justify-content:flex-end; gap:6px; }
+.runtime-ai-plan button { min-height:26px; padding:0 9px; border:1px solid #ffffff38; border-radius:5px; background:#ffffff12; color:#fff; cursor:pointer; }
+.runtime-ai-plan button[data-runtime-ai-apply] { border-color:#ef6c16; background:#ef6c16; }
+.runtime-ai-input { display:flex; gap:6px; padding:8px; border-top:1px solid #ffffff1f; }
+.runtime-ai-input textarea { flex:1; min-width:0; min-height:34px; max-height:70px; resize:none; border:1px solid #ffffff30; border-radius:6px; background:#0b1118; color:#fff; padding:7px; font:inherit; }
+.runtime-ai-input button { min-width:32px; border:1px solid #ffffff30; border-radius:6px; background:#ffffff12; color:#fff; cursor:pointer; }
+.runtime-ai-input button:last-child { background:#ef6c16; border-color:#ef6c16; padding:0 9px; }
+@media (max-width:560px) { .runtime-ai-panel { right:10px; bottom:114px; } .runtime-ai-fab { right:10px; } }

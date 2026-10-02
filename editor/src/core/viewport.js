@@ -217,6 +217,7 @@ export const viewport = {
   zoneGroup: null,
   zoneNodes: new Map(),
   pointerDown: null,
+  lastPlacementPoint: null,
   keys: new Set(),
   rightMouseDown: false,
   draggingNodeId: null,
@@ -402,6 +403,7 @@ export const viewport = {
       const wasLeft = this.pointerDown.button === 0;
 
       if (wasLeft && distance < 4) {
+        this.lastPlacementPoint = this.placementPoint(event.clientX, event.clientY);
         this._pick(event.clientX, event.clientY, event.ctrlKey);
       }
 
@@ -824,6 +826,25 @@ export const viewport = {
     this.baseLoadState = { total: 0, loaded: 0, failed: 0, progress: 0, lod: this.baseLodLevel || 'high', chunks: [] }
     store.emit('base-load', { ...this.baseLoadState })
     return Promise.resolve()
+  },
+
+  applyBaseTransform(base) {
+    const transform = base?.transform
+    if (!transform || !this.baseGroup) return
+
+    if (Array.isArray(transform.R) && transform.R.length === 9) {
+      const matrix = new THREE.Matrix4().set(
+        transform.R[0], transform.R[1], transform.R[2], 0,
+        transform.R[3], transform.R[4], transform.R[5], 0,
+        transform.R[6], transform.R[7], transform.R[8], 0,
+        0, 0, 0, 1
+      )
+      this.baseGroup.quaternion.setFromRotationMatrix(matrix)
+    }
+
+    const scale = Number(transform.s)
+    this.baseGroup.scale.setScalar(Number.isFinite(scale) && scale > 0 ? scale : 1)
+    if (Array.isArray(transform.t)) this.baseGroup.position.fromArray(transform.t.map(Number))
   },
 
   setBase(base) {

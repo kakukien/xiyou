@@ -1,4 +1,4 @@
-// 西游·虚境 AR 体验端（/xiyou/show.html）
+// 空间互动 AR 体验端（/xiyou/show.html）
 // 模式：poster = MindAR 海报图像追踪定位（iOS/Android 通用）
 //       free   = 陀螺仪/拖拽自由漫游（无海报时的兜底）
 //       vps    = 视觉定位（接 locdb 查询服务，?vps=<url> 时启用）

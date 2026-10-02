@@ -1,8 +1,10 @@
 import './style.css'
 import * as THREE from 'three'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { DropInViewer } from '@mkkellogg/gaussian-splats-3d'
 import { defaults } from '../core/schema.js'
+import { createNode } from '../core/objects.js'
+import { elementVoiceSummary, elementObjectProps } from '../core/elements.js'
+import { requestAi } from '../core/ai-provider.js'
 
 const params = new URLSearchParams(location.search)
 const room = params.get('room') || 'demo'
@@ -22,6 +24,7 @@ const state = {
   gaze: new Map(),
   hold: new Map(),
   enter: new Map(),
+  collision: new Map(),
   stream: null,
   orientation: false,
   yaw: 0,
@@ -30,7 +33,12 @@ const state = {
   last: performance.now(),
   cardTimer: 0,
   anchorMode: '等待定位',
-  started: false
+  started: false,
+  aiHistory: [],
+  aiPending: null,
+  runtimeStates: new Map(),
+  score: 0,
+  cameraShake: null
 }
 
 const esc = value => String(value ?? '')
@@ -46,6 +54,7 @@ function sceneKey() {
 
 function readScene() {
   const parsePublished = scene => {
+    if (scene?.scene && typeof scene.scene === 'object') scene = scene.scene
     const releaseQuery = params.get('release')
     const release = (scene?.meta?.releases || []).find(item => String(item.id) === releaseQuery || String(item.version) === releaseQuery)
     if (!release?.snapshot) return scene
@@ -66,16 +75,23 @@ function ui() {
   root.innerHTML = `
     <div class="runtime-shell">
       <div class="runtime-stage"><video class="runtime-camera" muted autoplay playsinline></video><canvas class="runtime-canvas"></canvas><div class="runtime-reticle">＋</div></div>
-      <header class="runtime-header"><div><strong>造梦 · 故事空间</strong><span class="runtime-project"></span></div><span class="runtime-anchor">定位中</span></header>
+      <header class="runtime-header"><div><strong>空间互动预览</strong><span class="runtime-project"></span></div><span class="runtime-anchor">定位中</span></header>
       <div class="runtime-card" hidden></div>
       <div class="runtime-start"><div class="runtime-start-brand"><img src="/xiyou/xj-logo.svg" alt=""><span>造梦 · 故事空间</span></div><div class="runtime-start-visual" aria-hidden="true"><span class="runtime-start-orbit runtime-start-orbit-a"></span><span class="runtime-start-orbit runtime-start-orbit-b"></span><div class="runtime-start-logo"><img src="/xiyou/xj-logo.svg" alt=""></div><span class="runtime-start-visual-label">XJ · 01</span></div><div class="runtime-start-kicker">SPATIAL ENTRY / AR EXPERIENCE</div><h1>进入虚境</h1><p>允许相机与方向权限，体验发布后的空间互动。</p><div class="runtime-start-actions"><button class="runtime-primary" data-start>开始体验</button><button class="runtime-secondary" data-demo>无相机预览</button></div><small>定位策略：VPS → QR/条码 → GPS → 手动参考点</small></div>
       <footer class="runtime-footer"><button data-reset>重新定位</button><span class="runtime-progress">节点 0/0</span><button data-exit>返回编辑器</button></footer>
+      <button class="runtime-ai-fab" data-ai-toggle type="button" aria-expanded="false">AI</button>
+      <section class="runtime-ai-panel" data-ai-panel hidden aria-label="游客 AI 场景助手">
+        <header><strong>AI 场景助手</strong><button data-ai-close type="button" aria-label="关闭">×</button></header>
+        <div class="runtime-ai-messages" data-ai-messages><div class="runtime-ai-note">这里只修改本次体验中的临时对象，不会改写已发布版本。</div></div>
+        <div class="runtime-ai-input"><textarea data-ai-input rows="1" placeholder="例如：在我面前加一个发光箱子"></textarea><button data-ai-mic type="button" title="语音输入">🎙</button><button data-ai-send type="button">发送</button></div>
+      </section>
       <div class="runtime-error" hidden></div>
     </div>`
   return {
     shell: root.querySelector('.runtime-shell'), stage: root.querySelector('.runtime-stage'), canvas: root.querySelector('.runtime-canvas'), camera: root.querySelector('.runtime-camera'),
     start: root.querySelector('.runtime-start'), startButton: root.querySelector('[data-start]'), demoButton: root.querySelector('[data-demo]'),
-    anchor: root.querySelector('.runtime-anchor'), project: root.querySelector('.runtime-project'), card: root.querySelector('.runtime-card'), progress: root.querySelector('.runtime-progress'), error: root.querySelector('.runtime-error')
+    anchor: root.querySelector('.runtime-anchor'), project: root.querySelector('.runtime-project'), card: root.querySelector('.runtime-card'), progress: root.querySelector('.runtime-progress'), error: root.querySelector('.runtime-error'),
+    aiToggle: root.querySelector('[data-ai-toggle]'), aiPanel: root.querySelector('[data-ai-panel]'), aiClose: root.querySelector('[data-ai-close]'), aiMessages: root.querySelector('[data-ai-messages]'), aiInput: root.querySelector('[data-ai-input]'), aiMic: root.querySelector('[data-ai-mic]'), aiSend: root.querySelector('[data-ai-send]')
   }
 }
 
@@ -86,9 +102,126 @@ elements.project.textContent = room === 'demo' ? '游客体验' : room
 document.querySelector('[data-exit]').addEventListener('click', () => {
   location.href = `./?room=${encodeURIComponent(room)}`
 })
-document.querySelector('[data-reset]').addEventListener('click', () => locate())
+document.querySelector('[data-reset]').addEventListener('click', () => { resetRuntimeState(); locate() })
 elements.startButton.addEventListener('click', () => start(true))
 elements.demoButton.addEventListener('click', () => start(false))
+setupRuntimeAi()
+
+function runtimeAiMessage(role, text) {
+  const item = document.createElement('div')
+  item.className = `runtime-ai-message ${role}`
+  item.textContent = text
+  elements.aiMessages.appendChild(item)
+  elements.aiMessages.scrollTop = elements.aiMessages.scrollHeight
+  return item
+}
+
+function parseRuntimeAi(content) {
+  if (content && typeof content === 'object') return { reply: content.reply || content.message || '', ops: Array.isArray(content.ops) ? content.ops : [] }
+  const text = String(content || '')
+  const start = text.indexOf('{')
+  const end = text.lastIndexOf('}')
+  if (start < 0 || end <= start) return { reply: text, ops: [] }
+  try {
+    const parsed = JSON.parse(text.slice(start, end + 1))
+    return { reply: parsed.reply || parsed.message || '', ops: Array.isArray(parsed.ops) ? parsed.ops : [] }
+  } catch { return { reply: text, ops: [] } }
+}
+
+function runtimeFrontPosition() {
+  const direction = new THREE.Vector3()
+  state.camera.getWorldDirection(direction)
+  return state.camera.position.clone().add(direction.multiplyScalar(2)).setY(Math.max(0, state.camera.position.y - 0.7)).toArray().map(value => Number(value.toFixed(2)))
+}
+
+function runtimePlanLabel(op) {
+  return op?.op === 'add_element' ? `添加${op.name || op.element_id || '固定元素'}` : `添加${op?.name || '临时对象'}`
+}
+
+function appendRuntimePlan(plan) {
+  const box = document.createElement('div')
+  box.className = 'runtime-ai-plan'
+  box.innerHTML = `<strong>待应用到本次体验</strong><ul>${plan.ops.slice(0, 3).map(op => `<li>${esc(runtimePlanLabel(op))}</li>`).join('')}</ul><div><button data-runtime-ai-cancel type="button">取消</button><button data-runtime-ai-apply type="button">应用</button></div>`
+  elements.aiMessages.appendChild(box)
+  elements.aiMessages.scrollTop = elements.aiMessages.scrollHeight
+  box.querySelector('[data-runtime-ai-cancel]').addEventListener('click', () => box.remove())
+  box.querySelector('[data-runtime-ai-apply]').addEventListener('click', () => {
+    box.remove()
+    applyRuntimeAiOps(plan.ops)
+  })
+}
+
+function applyRuntimeAiOps(ops = []) {
+  if (!state.scene || !state.world) return
+  const applied = []
+  for (const op of ops.slice(0, 3)) {
+    try {
+      const id = `runtime_${Math.random().toString(36).slice(2, 9)}`
+      const position = Array.isArray(op.transform?.p) ? op.transform.p : runtimeFrontPosition()
+      let def
+      if (op.op === 'add_element' && op.element_id) {
+        def = elementObjectProps(op.element_id, { id, name: op.name || '', transform: { ...(op.transform || {}), p: position }, interaction: op.interaction || {} })
+      } else if (op.op === 'add_object' && ['compound', 'quad', 'light'].includes(op.type)) {
+        def = { ...op, id, transform: { ...(op.transform || {}), p: position } }
+      } else continue
+      const node = makeObject(def)
+      state.scene.objects = [...(state.scene.objects || []), def]
+      state.nodes.set(id, node)
+      state.world.add(node)
+      if (def.interaction?.profile === 'tap_feedback' || /点击|触碰|打开/.test(String(op.name || ''))) {
+        state.scene.triggers = [...(state.scene.triggers || []), { id: `runtime_trigger_${id}`, target: id, when: 'tap', params: {}, do: [{ action: 'highlight', args: { targetId: id } }, { action: 'card', args: { text: `${def.name || '对象'}已触发` } }] }]
+      }
+      applied.push(def.name || def.element_id || def.id)
+    } catch (error) {
+      runtimeAiMessage('error', `未能添加：${error?.message || '元素不存在'}`)
+    }
+  }
+  if (applied.length) runtimeAiMessage('ai', `已在本次体验中添加：${applied.join('、')}。发布版本不会被修改。`)
+}
+
+async function sendRuntimeAi() {
+  const text = elements.aiInput.value.trim()
+  if (!text || !state.scene || state.aiPending) return
+  elements.aiInput.value = ''
+  runtimeAiMessage('user', text)
+  state.aiPending = true
+  elements.aiSend.disabled = true
+  const controller = new AbortController()
+  const summary = (state.scene.objects || []).slice(0, 80).map(item => `${item.id}|${item.element_id || item.type}|${item.name || ''}|p(${(item.transform?.p || []).join(',')})`).join('\n') || '无对象'
+  const timeout = setTimeout(() => controller.abort(), 120000)
+  const messages = [{ role: 'system', content: `你是游客端临时场景助手。只允许返回 JSON：{"reply":"≤60字","ops":[]}。只能使用 add_element（固定元素）或 add_object（compound/quad/light），最多3项。不要修改发布版本、底座、资源库、触发器或权限。没有明确位置时使用用户面前。固定元素目录：\n${elementVoiceSummary({ limit: 124 })}\n当前对象：\n${summary}` }, ...state.aiHistory, { role: 'user', content: text }]
+  try {
+    const result = await requestAi({ messages, signal: controller.signal })
+    const parsed = parseRuntimeAi(result.content)
+    runtimeAiMessage('ai', parsed.reply || '我准备了一组临时场景修改。')
+    state.aiHistory.push({ role: 'user', content: text }, { role: 'assistant', content: parsed.reply || '' })
+    state.aiHistory = state.aiHistory.slice(-10)
+    if (parsed.ops.length) appendRuntimePlan(parsed)
+  } catch (error) {
+    runtimeAiMessage('error', error?.name === 'AbortError' ? 'AI 请求超时，请重试。' : `AI 暂时不可用：${error?.message || '连接失败'}`)
+  } finally {
+    clearTimeout(timeout)
+    state.aiPending = false
+    elements.aiSend.disabled = false
+  }
+}
+
+function setupRuntimeAi() {
+  elements.aiToggle.addEventListener('click', () => {
+    elements.aiPanel.hidden = !elements.aiPanel.hidden
+    elements.aiToggle.setAttribute('aria-expanded', String(!elements.aiPanel.hidden))
+    if (!elements.aiPanel.hidden) elements.aiInput.focus()
+  })
+  elements.aiClose.addEventListener('click', () => { elements.aiPanel.hidden = true; elements.aiToggle.setAttribute('aria-expanded', 'false') })
+  elements.aiSend.addEventListener('click', sendRuntimeAi)
+  elements.aiInput.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendRuntimeAi() } })
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+  if (!SpeechRecognition) { elements.aiMic.hidden = true; return }
+  const recognition = new SpeechRecognition()
+  recognition.lang = 'zh-CN'; recognition.continuous = false; recognition.interimResults = false
+  recognition.onresult = event => { elements.aiInput.value = event.results[0]?.[0]?.transcript || ''; if (elements.aiInput.value) sendRuntimeAi() }
+  elements.aiMic.addEventListener('click', () => { try { recognition.start() } catch {} })
+}
 
 function showError(error) {
   elements.error.hidden = false
@@ -140,40 +273,15 @@ function applyTransform(node, transform = {}) {
 }
 
 function makeObject(def) {
-  const group = new THREE.Group()
-  group.userData.id = def.id
-  group.userData.definition = def
-  const asset = (state.scene.meta?.assets || []).find(item => item?.id === def.asset)
-  const url = resolveUrl(asset?.url || def.asset)
-  if (def.type === 'glb' && url) {
-    const placeholderMesh = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.2, 0.7), new THREE.MeshNormalMaterial({ wireframe: true }))
-    group.add(placeholderMesh)
-    new GLTFLoader().load(url, gltf => {
-      group.clear()
-      group.add(gltf.scene)
-      applyTransform(group, def.transform)
-    }, undefined, () => {})
-  } else if (def.type === 'light') {
-    group.add(new THREE.PointLight(def.material?.color || '#ffb26b', Number(def.material?.intensity || 2), 8))
-    group.add(new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 8), new THREE.MeshBasicMaterial({ color: def.material?.color || '#ffb26b' })))
-  } else if (def.type === 'compound') {
-    ;(def.parts || []).forEach(part => {
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: part.color || '#ffb26b', roughness: 0.7 }))
-      applyTransform(mesh, { p: part.p, r: part.r, s: part.s })
-      group.add(mesh)
-    })
-  } else if (def.type === 'video_quad' && url) {
-    const video = document.createElement('video'); video.src = url; video.loop = true; video.muted = true; video.playsInline = true; video.preload = 'auto'
-    const texture = new THREE.VideoTexture(video); texture.colorSpace = THREE.SRGBColorSpace
-    group.userData.video = video
-    group.add(new THREE.Mesh(new THREE.PlaneGeometry(1, 0.5625), objectMaterial(def, texture)))
-  } else {
-    const texture = makeTexture(url, () => placeholder(def.name || def.id))
-    group.add(new THREE.Mesh(new THREE.PlaneGeometry(1, 1), objectMaterial(def, texture)))
-  }
-  applyTransform(group, def.transform)
-  group.visible = def.visible !== false
-  return group
+  const assets = state.scene.meta?.assets || []
+  const node = createNode(def, assets)
+  node.userData.id = def.id
+  node.userData.definition = def
+  node.visible = def.visible !== false && def.visibleInRuntime !== false
+  node.traverse(child => {
+    if (child.userData?.isHelper) child.visible = false
+  })
+  return node
 }
 
 function buildWorld() {
@@ -265,6 +373,36 @@ function showCard(text) { elements.card.hidden = false; elements.card.textConten
 function currentNodes() { return (state.scene.story?.chapters || []).flatMap(chapter => chapter.nodes || []) }
 function updateProgress() { const nodes = currentNodes(); elements.progress.textContent = `节点 ${Math.max(0, nodes.findIndex(node => node.id === state.scene.story?.start) + 1)}/${nodes.length}` }
 
+function stateOf(id) {
+  if (!state.runtimeStates.has(id)) state.runtimeStates.set(id, { state: 'default', collected: false, destroyed: false })
+  return state.runtimeStates.get(id)
+}
+
+function setState(id, value, patch = {}) {
+  const next = { ...stateOf(id), state: value, ...patch }
+  state.runtimeStates.set(id, next)
+  return next
+}
+
+function pulseParticles(id, args = {}) {
+  const node = state.nodes.get(args.targetId || id)
+  if (!node) return
+  node.userData.particlePulseUntil = performance.now() / 1000 + Math.max(0.1, Number(args.duration) || 0.8)
+}
+
+function resetRuntimeState() {
+  state.fired.clear(); state.gaze.clear(); state.hold.clear(); state.enter.clear(); state.collision.clear(); state.runtimeStates.clear(); state.activeSequences = []; state.score = 0; state.cameraShake = null
+  ;(state.scene?.objects || []).forEach(def => { const node = state.nodes.get(def.id); if (node) node.visible = def.visible !== false && def.visibleInRuntime !== false })
+}
+
+function tickVisuals(time) {
+  state.world?.traverse(node => {
+    const uniforms = node.userData?.shaderUniforms
+    if (uniforms?.uTime) uniforms.uTime.value = time
+    if (typeof node.userData?.animate === 'function') node.userData.animate(time)
+  })
+}
+
 function sequence(id) {
   const seq = (state.scene.sequences || []).find(item => item.id === id); if (!seq) return
   state.activeSequences.push({ seq, time: 0 })
@@ -283,18 +421,37 @@ function tickSequences(dt) {
   })
 }
 
-function fire(when, targetId) {
+function fire(when, targetId, extra = {}) {
   ;(state.scene.triggers || []).filter(trigger => trigger.when === when && trigger.target === targetId).forEach(trigger => {
     const onceKey = `${trigger.id}:${when}`
-    if (trigger.once !== false && state.fired.has(onceKey) && when === 'enter') return
-    if (when === 'enter') state.fired.add(onceKey)
+    if (trigger.once !== false && state.fired.has(onceKey) && (when === 'enter' || when === 'collect')) return
+    if (when === 'enter' || when === 'collect') state.fired.add(onceKey)
     ;(trigger.do || []).forEach(action => {
       const args = action.args || {}
+      const objectId = args.targetId || args.objectId || targetId
+      const node = state.nodes.get(objectId)
       if (action.action === 'play_seq') sequence(args.seqId || args.sequenceId)
       else if (action.action === 'card') showCard(args.text || args.copy)
       else if (action.action === 'reward') showCard(`获得奖励：${args.text || args.reward || ''}`)
-      else if (action.action === 'highlight') { const node = state.nodes.get(args.targetId || args.objectId || targetId); if (node) node.scale.multiplyScalar(1.12); setTimeout(() => node?.scale.multiplyScalar(1 / 1.12), 700) }
-      else if (action.action === 'show' || action.action === 'hide') { const node = state.nodes.get(args.targetId || args.objectId || targetId); if (node) node.visible = action.action === 'show' }
+      else if (action.action === 'highlight') { if (node) node.scale.multiplyScalar(1.12); setTimeout(() => node?.scale.multiplyScalar(1 / 1.12), 700) }
+      else if (action.action === 'show' || action.action === 'hide') { if (node) node.visible = action.action === 'show'; setState(objectId, action.action === 'show' ? 'visible' : 'hidden') }
+      else if (action.action === 'set_state') { const current = stateOf(objectId).state; const next = args.state === 'toggle' ? (['on', 'open', 'active'].includes(current) ? 'off' : 'on') : String(args.state || 'default'); setState(objectId, next); if (node) node.userData.runtimeState = stateOf(objectId) }
+      else if (action.action === 'emit_particles') pulseParticles(objectId, args)
+      else if (action.action === 'collect') { if (!stateOf(objectId).collected) { if (node) node.visible = false; setState(objectId, 'collected', { collected: true }); state.score += Number(args.score) || 1; showCard(args.text || `已收集 ${state.scene.objects.find(item => item.id === objectId)?.name || '对象'} · ${state.score}`); fire('collect', objectId, { score: Number(args.score) || 1 }) } }
+      else if (action.action === 'destroy') { if (node) node.visible = false; setState(objectId, 'destroyed', { destroyed: true }) }
+      else if (action.action === 'add_score') { state.score += Number(args.score ?? args.value ?? args.amount) || 0 }
+      else if (action.action === 'spawn_element') {
+        const elementId = args.elementId || args.element_id || args.voiceToken
+        if (elementId) applyRuntimeAiOps([{ op: 'add_element', element_id: elementId, name: args.name || '', transform: { p: Array.isArray(args.position) ? args.position : runtimeFrontPosition() } }])
+      }
+      else if (action.action === 'teleport') {
+        const position = Array.isArray(args.position) ? args.position : Array.isArray(args.p) ? args.p : null
+        if (position?.length === 3) state.camera.position.fromArray(position.map(Number))
+      }
+      else if (action.action === 'vibrate') { if (navigator.vibrate) navigator.vibrate(Math.min(1000, Math.max(0, Number(args.duration) || 80))) }
+      else if (action.action === 'camera_shake') {
+        state.cameraShake = { time: Number(args.duration) || 250, intensity: Math.min(0.2, Math.max(0, Number(args.intensity) || 0.05)) }
+      }
       else if (action.action === 'goto_node') { state.scene.story.current = args.nodeId || args.id; updateProgress() }
     })
   })
@@ -309,7 +466,16 @@ function tickTriggers(dt) {
       const inside = targetZone ? pointInZone(targetZone, point) : point.distanceTo(targetNode.getWorldPosition(new THREE.Vector3())) < Number(trigger.params?.radius || 2)
       const previous = state.enter.get(trigger.id) || false
       if (inside && !previous) fire('enter', trigger.target)
+      if (!inside && previous) fire('leave', trigger.target)
       state.enter.set(trigger.id, inside)
+    }
+    if (trigger.when === 'collision') {
+      const radius = Math.max(0.1, Number(trigger.params?.radius) || 0.8)
+      const worldPosition = targetNode?.getWorldPosition?.(new THREE.Vector3())
+      const inside = Boolean(worldPosition && point.distanceTo(worldPosition) <= radius)
+      const previous = state.collision.get(trigger.id) || false
+      if (inside && !previous) fire('collision', trigger.target)
+      state.collision.set(trigger.id, inside)
     }
     if (trigger.when === 'gaze' || trigger.when === 'hold') {
       const active = targetNode && targetNode.visible && hitAtCenter() === trigger.target
@@ -324,7 +490,7 @@ function tickTriggers(dt) {
 async function start(withCamera) {
   try {
     state.scene = await readScene()
-    buildWorld(); setupRenderer(); state.started = true; elements.start.hidden = true; elements.error.hidden = true; updateProgress()
+    buildWorld(); setupRenderer(); resetRuntimeState(); state.started = true; elements.start.hidden = true; elements.error.hidden = true; updateProgress()
     if (withCamera && navigator.mediaDevices?.getUserMedia) {
       try { state.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false }); elements.camera.srcObject = state.stream } catch { elements.anchor.textContent = '无相机预览' }
     } else elements.anchor.textContent = '预览模式'
@@ -363,7 +529,17 @@ async function locate() {
 
 function loop(now) {
   const dt = Math.min((now - state.last) / 1000, 0.1); state.last = now
-  if (state.started) { tickSequences(dt); tickTriggers(dt); state.renderer.render(state.world, state.camera) }
+  if (state.started) {
+    tickSequences(dt)
+    tickTriggers(dt)
+    tickVisuals(now / 1000)
+    if (state.cameraShake?.time > 0) {
+      state.cameraShake.time -= dt * 1000
+      state.camera.position.x += (Math.random() - 0.5) * state.cameraShake.intensity
+      state.camera.position.y += (Math.random() - 0.5) * state.cameraShake.intensity
+    }
+    state.renderer.render(state.world, state.camera)
+  }
   requestAnimationFrame(loop)
 }
 

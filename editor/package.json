@@ -8,8 +8,12 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:smoke": "node scripts/smoke.mjs",
+    "test:regression": "node scripts/regression.mjs",
     "gpu:worker": "node ../tools/gpu-worker.mjs serve --port 8787",
-    "test:gpu": "node scripts/gpu-smoke.mjs"
+    "test:gpu": "node scripts/gpu-smoke.mjs",
+    "elements:generate": "node scripts/generate-elements.mjs",
+    "release:serve": "node ../tools/release-server.mjs --dir ./releases --port 8790",
+    "test:release": "node scripts/release-smoke.mjs"
   },
   "dependencies": {
     "@mkkellogg/gaussian-splats-3d": "^0.4.7",

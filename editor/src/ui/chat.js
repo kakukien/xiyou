@@ -1,6 +1,9 @@
 import { store } from '../core/store.js';
+import { collab } from '../core/collab.js';
 import { sceneSummary, SYSTEM_PROMPT, applyOps } from '../core/aiops.js';
 import { log } from './log.js';
+import { elementVoiceSummary, listElements } from '../core/elements.js';
+import { getAiConfig, saveAiConfig, resetAiConfig, requestAi } from '../core/ai-provider.js';
 
 let mounted = false;
 
@@ -78,6 +81,22 @@ function ensureStyle() {
       font-weight: 700;
       white-space: nowrap;
     }
+
+    .ai-chat-settings {
+      display: grid;
+      gap: 7px;
+      padding: 9px;
+      border-bottom: 1px solid var(--line2, #d8d8d2);
+      background: #f7f6f2;
+      font-size: 11px;
+    }
+
+    .ai-chat-settings[hidden] { display: none; }
+    .ai-chat-settings label { display: grid; gap: 3px; color: var(--text2, #777); }
+    .ai-chat-settings input, .ai-chat-settings select { width: 100%; min-height: 27px; }
+    .ai-chat-settings-actions { display: flex; justify-content: flex-end; gap: 5px; }
+    .ai-chat-settings-actions button { min-height: 25px; padding: 0 8px; border: 1px solid var(--line2, #d8d8d2); border-radius: 4px; background: #fff; color: var(--text2, #666); cursor: pointer; font: inherit; }
+    .ai-chat-settings-actions .save { background: #f47721; border-color: #f47721; color: #fff; font-weight: 700; }
 
     .ai-chat-status {
       width: 7px;
@@ -173,6 +192,79 @@ function ensureStyle() {
     .ai-chat-feedback.error {
       color: #d34a3d;
     }
+
+    .ai-chat-plan {
+      margin: 0 0 10px 2px;
+      padding: 9px 10px;
+      border: 1px solid var(--line2, #d8d8d2);
+      border-radius: 6px;
+      background: var(--bg2, #eeeeeb);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .ai-chat-plan-title {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 5px;
+      color: var(--text1, #252525);
+      font-weight: 700;
+    }
+
+    .ai-chat-plan-list {
+      margin: 0 0 8px 16px;
+      color: var(--text2, #777);
+    }
+
+    .ai-chat-plan-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .ai-chat-plan-actions button {
+      min-height: 26px;
+      padding: 0 9px;
+      border: 1px solid var(--line2, #d8d8d2);
+      border-radius: 5px;
+      background: #fff;
+      color: var(--text2, #666);
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .ai-chat-plan-actions .apply {
+      border-color: #e96c16;
+      background: #f47721;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .ai-chat-undo {
+      margin-left: 5px;
+      padding: 1px 5px;
+      border: 1px solid var(--line2, #d8d8d2);
+      border-radius: 4px;
+      background: #fff;
+      color: var(--text2, #777);
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .ai-chat-instance-chooser {
+      margin: 0 0 10px 2px;
+      padding: 9px 10px;
+      border: 1px solid #f1c29e;
+      border-radius: 6px;
+      background: #fff8f2;
+      color: var(--text1, #252525);
+      font-size: 11px;
+    }
+    .ai-chat-instance-chooser strong { display:block; margin-bottom:7px; }
+    .ai-chat-instance-list { display:flex; flex-wrap:wrap; gap:5px; }
+    .ai-chat-instance-choice { min-height:27px; padding:0 8px; border:1px solid #efb889; border-radius:5px; background:#fff; color:#b65316; cursor:pointer; font:inherit; }
+    .ai-chat-instance-choice:hover { background:#fff0e3; border-color:#f47721; }
 
     .ai-chat-typing {
       display: inline-flex;
@@ -363,6 +455,11 @@ function appendTyping(messages) {
 }
 
 function parseResponse(content) {
+  if (content && typeof content === 'object') {
+    const ops = Array.isArray(content.ops) ? content.ops : [];
+    const reply = content.reply ?? content.message ?? content.content ?? '';
+    if (ops.length || reply) return { reply: typeof reply === 'string' ? reply : JSON.stringify(reply), ops, parsed: true };
+  }
   const text = typeof content === 'string' ? content : String(content ?? '');
   const first = text.indexOf('{');
   const last = text.lastIndexOf('}');
@@ -425,14 +522,134 @@ function buildFeedback(results, total) {
   return { text, failed: failed.length > 0 };
 }
 
-function makeRequestMessages() {
+function normalizeVoiceText(value) {
+  return String(value || '').toLowerCase().replace(/[\s，。、“”‘’'"：:；;！!？?、/\\_-]+/g, '');
+}
+
+function voiceCandidates(text) {
+  const normalized = normalizeVoiceText(text);
+  if (!normalized) return [];
+  return listElements().filter(item => [item.name, ...(item.voice?.aliases || [])].some(alias => {
+    const value = normalizeVoiceText(alias);
+    return value.length >= 2 && normalized.includes(value);
+  })).slice(0, 8);
+}
+
+function makeRequestMessages(userText = '') {
   const summary = sceneSummary(store.scene);
-  return [
-    {
-      role: 'system',
-      content: `${SYSTEM_PROMPT}\n当前场景：${summary}`
-    }
-  ];
+  const selected = store.selected().map(id => {
+    const object = store.getObject?.(id);
+    const zone = store.getZone?.(id);
+    const anchor = store.getAnchor?.(id);
+    if (object) return `选中对象|${object.id}|${object.element_id || '-'}|${object.voice_token || '-'}|${object.name || ''}|${object.type || ''}|p(${(object.transform?.p || []).join(',')})`;
+    if (zone) return `选中区域|${zone.id}|${zone.name || ''}|${zone.kind || ''}`;
+    if (anchor) return `选中锚点|${anchor.id}|${anchor.name || ''}|${anchor.kind || ''}|p(${(anchor.pose?.t || []).join(',')})`;
+    return `选中实体|${id}`;
+  }).join('\n') || '选中实体|无';
+  const fixedElements = elementVoiceSummary({ limit: 124 });
+  const placement = window.__xiyou?.viewport?.lastPlacementPoint;
+  const placementContext = placement
+    ? `最近视口落点|p(${placement.join(',')})|来源:viewport-click`
+    : '最近视口落点|无';
+  const assets = (store.scene.meta?.assets || []).slice(0, 80).map(asset =>
+    `资源|${asset.id}|${asset.name || ''}|${asset.kind || asset.type || ''}|标签:${(asset.tags || []).join(',')}`
+  ).join('\n') || '资源|无';
+  const candidates = voiceCandidates(userText);
+  const candidateText = candidates.length
+    ? `\n语音/标签候选（仅供模型选择 element_id，不代表已添加）：\n${candidates.map(item => `${item.voice?.token || item.id}|${item.name}|${(item.voice?.aliases || []).slice(0, 4).join(',')}`).join('\n')}`
+    : '';
+  return [{
+    role: 'system',
+    content: `${SYSTEM_PROMPT}\n当前场景：${summary}\n当前选择：${selected}\n${placementContext}\n固定元素目录（add_element 可引用）：\n${fixedElements}\n可用资源目录：\n${assets}${candidateText}`
+  }];
+}
+
+function isAddIntent(text) {
+  return /(添加|加一个|加个|放一个|放个|创建|生成|摆放|放置|来一个|来个)/.test(String(text || ''));
+}
+
+function instanceCandidates(text) {
+  if (isAddIntent(text)) return [];
+  const normalized = normalizeVoiceText(text);
+  const matched = listElements().filter(item => [item.name, ...(item.voice?.aliases || [])].some(alias => {
+    const value = normalizeVoiceText(alias);
+    return value.length >= 2 && normalized.includes(value);
+  }));
+  if (!matched.length) return [];
+  const ids = new Set(matched.map(item => item.id));
+  return (store.scene.objects || []).filter(object => {
+    if (object.element_id && ids.has(object.element_id)) return true;
+    const name = normalizeVoiceText(object.name || '');
+    return matched.some(item => name === normalizeVoiceText(item.name));
+  });
+}
+
+function appendInstanceChooser(messages, candidates, text, input, resizeInput) {
+  const chooser = makeElement('div', 'ai-chat-instance-chooser');
+  const title = makeElement('strong', '', '请先选择要操作的场景实例');
+  const list = makeElement('div', 'ai-chat-instance-list');
+  candidates.forEach((object, index) => {
+    const position = (object.transform?.p || []).map(value => Number(value).toFixed(1)).join(', ');
+    const button = makeElement('button', 'ai-chat-instance-choice', `${object.name || '元素'} ${index + 1} · (${position})`);
+    button.type = 'button';
+    button.addEventListener('click', () => {
+      store.select(object.id);
+      chooser.remove();
+      input.value = text;
+      resizeInput();
+      appendSystem(messages, `已选中「${object.name || object.id}」，正在继续处理这条指令。`);
+      input.focus();
+      input.dispatchEvent(new Event('input'));
+      // 选中后自动重新提交原句，AI 会收到明确的 object id。
+      input.dataset.confirmedInstance = object.id;
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+    list.appendChild(button);
+  });
+  chooser.append(title, list);
+  messages.appendChild(chooser);
+  scrollBottom(messages);
+  return chooser;
+}
+
+function planLabel(op) {
+  const labels = {
+    add_object: '添加对象',
+    add_element: '添加固定元素',
+    update_object: '修改对象',
+    remove_object: '删除对象',
+    add_trigger: '添加触发器',
+    add_sequence: '添加时间线',
+    add_node: '添加剧情节点',
+    update_node: '修改剧情节点',
+    add_anchor: '添加空间锚点',
+    add_zone: '添加空间区域'
+  };
+  return labels[op?.op] || op?.op || '场景修改';
+}
+
+function appendPlan(messages, ops, onApply, onCancel) {
+  const plan = makeElement('div', 'ai-chat-plan');
+  const title = makeElement('div', 'ai-chat-plan-title', '待确认的场景修改');
+  const list = makeElement('ul', 'ai-chat-plan-list');
+  ops.forEach(op => {
+    const item = makeElement('li', '', `${planLabel(op)}${op.name ? `：${op.name}` : ''}`);
+    list.appendChild(item);
+  });
+  const actions = makeElement('div', 'ai-chat-plan-actions');
+  const cancel = makeElement('button', '', '取消');
+  const apply = makeElement('button', 'apply', '应用修改');
+  cancel.addEventListener('click', () => { plan.remove(); onCancel?.(); });
+  apply.addEventListener('click', async () => {
+    apply.disabled = true;
+    cancel.disabled = true;
+    await onApply(plan);
+  });
+  actions.append(cancel, apply);
+  plan.append(title, list, actions);
+  messages.appendChild(plan);
+  scrollBottom(messages);
+  return plan;
 }
 
 export function mount() {
@@ -451,13 +668,38 @@ export function mount() {
   const header = makeElement('div', 'ai-chat-header');
   const title = makeElement('div', 'ai-chat-title', 'AI 助手 · 场景编辑');
   const status = makeElement('div', 'ai-chat-status');
+  const settingsButton = makeElement('button', 'ai-chat-collapse', '⚙');
+  settingsButton.type = 'button';
+  settingsButton.title = '配置 AI 服务';
   const collapse = makeElement('button', 'ai-chat-collapse', '−');
   collapse.type = 'button';
   collapse.title = '收起';
 
   header.appendChild(title);
   header.appendChild(status);
+  header.appendChild(settingsButton);
   header.appendChild(collapse);
+
+  const settings = makeElement('div', 'ai-chat-settings');
+  settings.hidden = true;
+  const protocolLabel = makeElement('label', '', '协议');
+  const protocol = document.createElement('select');
+  protocol.innerHTML = '<option value="relay">项目代理 / Relay</option><option value="openai">OpenAI-compatible</option>';
+  protocolLabel.appendChild(protocol);
+  const endpointLabel = makeElement('label', '', '服务地址');
+  const endpoint = document.createElement('input');
+  endpoint.type = 'url'; endpoint.placeholder = 'https://...'; endpointLabel.appendChild(endpoint);
+  const modelLabel = makeElement('label', '', '模型（可选）');
+  const model = document.createElement('input');
+  model.type = 'text'; model.placeholder = '例如 gpt-4o-mini'; modelLabel.appendChild(model);
+  const keyLabel = makeElement('label', '', 'API Key（仅保存在本机）');
+  const apiKey = document.createElement('input');
+  apiKey.type = 'password'; apiKey.autocomplete = 'off'; keyLabel.appendChild(apiKey);
+  const settingActions = makeElement('div', 'ai-chat-settings-actions');
+  const resetSettings = makeElement('button', '', '恢复默认');
+  const saveSettings = makeElement('button', 'save', '保存配置');
+  settingActions.append(resetSettings, saveSettings);
+  settings.append(protocolLabel, endpointLabel, modelLabel, keyLabel, settingActions);
 
   const messages = makeElement('div', 'ai-chat-messages');
   const inputArea = makeElement('div', 'ai-chat-input-area');
@@ -478,6 +720,7 @@ export function mount() {
   inputArea.appendChild(mic);
   inputArea.appendChild(send);
   panel.appendChild(header);
+  panel.appendChild(settings);
   panel.appendChild(messages);
   panel.appendChild(inputArea);
   root.appendChild(panel);
@@ -485,9 +728,23 @@ export function mount() {
   document.body.appendChild(root);
 
   let open = false;
+  let aiConfig = getAiConfig();
   let sending = false;
   let welcomed = false;
+  let pendingPlan = null;
   const history = [];
+
+  const renderProvider = () => {
+    status.classList.toggle('is-disabled', !aiConfig.endpoint);
+    status.title = `${aiConfig.protocol === 'openai' ? 'OpenAI-compatible' : '项目代理'} · ${aiConfig.endpoint || '未配置服务地址'}`;
+  };
+
+  const fillSettings = () => {
+    protocol.value = aiConfig.protocol || 'relay';
+    endpoint.value = aiConfig.endpoint || '';
+    model.value = aiConfig.model || '';
+    apiKey.value = aiConfig.apiKey || '';
+  };
 
   const updateMode = () => {
     const playMode = store.mode === 'play';
@@ -522,7 +779,7 @@ export function mount() {
       appendMessage(
         messages,
         'ai',
-        '你好！我是场景编辑助手。说出你想改的场景，比如：在入口加一个会发光的符咒 / 把悟空移到左边两米'
+        '你好！我是空间互动编辑助手。你可以说：在这里加一个椅子 / 把选中的元素移到右边'
       );
     }
 
@@ -540,6 +797,15 @@ export function mount() {
     const text = input.value.trim();
     if (!text || sending || store.mode === 'play') return;
 
+    const candidates = instanceCandidates(text);
+    const selectedIds = new Set(store.selected());
+    const hasSelectedCandidate = candidates.some(object => selectedIds.has(object.id));
+    if (candidates.length > 1 && !hasSelectedCandidate && input.dataset.confirmedInstance !== candidates[0]?.id) {
+      appendInstanceChooser(messages, candidates, text, input, resizeInput);
+      return;
+    }
+    delete input.dataset.confirmedInstance;
+
     appendMessage(messages, 'user', text);
     history.push({ role: 'user', content: text });
     while (history.length > 20) history.shift();
@@ -554,22 +820,8 @@ export function mount() {
     const timeout = setTimeout(() => controller.abort(), 120000);
 
     try {
-      const endpoint = `${location.origin === 'https://agentpay.xx.kg' ? '' : 'https://agentpay.xx.kg'}/xiyou-ai/chat`;
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [...makeRequestMessages(), ...history]
-        }),
-        signal: controller.signal
-      });
-
-      if (!response.ok) {
-        throw new Error(`服务响应异常（${response.status}）`);
-      }
-
-      const data = await response.json();
-      const parsed = parseResponse(data.content);
+      const result = await requestAi({ messages: [...makeRequestMessages(text), ...history], signal: controller.signal });
+      const parsed = parseResponse(result.content);
       typing.remove();
 
       appendMessage(messages, 'ai', parsed.reply);
@@ -577,28 +829,44 @@ export function mount() {
       while (history.length > 20) history.shift();
 
       if (parsed.ops.length) {
-        try {
-          const rawResults = await applyOps(parsed.ops);
-          const results = normalizeResults(rawResults, parsed.ops);
-          const feedback = buildFeedback(results, parsed.ops.length);
-          const feedbackEl = makeElement('div', `ai-chat-feedback${feedback.failed ? ' error' : ''}`, feedback.text);
-          messages.appendChild(feedbackEl);
-
-          results.forEach((result, index) => {
-            const ok = resultSuccess(result);
-            log(
-              `AI 修改 ${index + 1}/${parsed.ops.length}：${resultMessage(result, index)}`,
-              ok ? 'info' : 'error'
-            );
-          });
-          scrollBottom(messages);
-        } catch (error) {
-          const message = `修改执行失败：${error?.message || '未知错误'}`;
-          const feedbackEl = makeElement('div', 'ai-chat-feedback error', message);
-          messages.appendChild(feedbackEl);
-          log(message, 'error');
-          scrollBottom(messages);
-        }
+        if (pendingPlan) pendingPlan.remove();
+        pendingPlan = appendPlan(messages, parsed.ops, async plan => {
+          try {
+            const rawResults = await applyOps(parsed.ops);
+            const done = Array.isArray(rawResults?.done) ? rawResults.done : [];
+            const failed = Array.isArray(rawResults?.failed) ? rawResults.failed : [];
+            const feedback = buildFeedback([
+              ...done.map(() => ({ ok: true })),
+              ...failed.map(item => ({ ok: false, error: item.err }))
+            ], parsed.ops.length);
+            const feedbackEl = makeElement('div', `ai-chat-feedback${feedback.failed ? ' error' : ''}`, feedback.text);
+            messages.appendChild(feedbackEl);
+            if (done.length) {
+              const undo = makeElement('button', 'ai-chat-undo', '撤销本次修改');
+              undo.type = 'button';
+              undo.addEventListener('click', () => {
+                const ok = collab.connected ? collab.undo() : store.undo();
+                undo.disabled = true;
+                undo.textContent = ok ? '已撤销' : '无法撤销';
+                if (ok) log('已撤销本次 AI 修改');
+              });
+              feedbackEl.append(' ', undo);
+            }
+            done.forEach((op, index) => log(`AI 修改 ${index + 1}/${parsed.ops.length}：${planLabel(op)}已完成`));
+            failed.forEach(item => log(`AI 修改失败：${item.err}`, 'error'));
+            plan.remove();
+            pendingPlan = null;
+            scrollBottom(messages);
+          } catch (error) {
+            const message = `修改执行失败：${error?.message || '未知错误'}`;
+            const feedbackEl = makeElement('div', 'ai-chat-feedback error', message);
+            messages.appendChild(feedbackEl);
+            log(message, 'error');
+            apply.disabled = false;
+            cancel.disabled = false;
+            scrollBottom(messages);
+          }
+        }, () => { pendingPlan = null; appendSystem(messages, '已取消这组场景修改。'); });
       } else if (!parsed.parsed) {
         appendSystem(messages, '我已理解你的描述，但没有识别出可直接执行的场景修改。');
       }
@@ -620,6 +888,22 @@ export function mount() {
     }
   };
 
+  settingsButton.addEventListener('click', () => {
+    settings.hidden = !settings.hidden;
+    if (!settings.hidden) fillSettings();
+  });
+  saveSettings.addEventListener('click', () => {
+    aiConfig = saveAiConfig({ protocol: protocol.value, endpoint: endpoint.value.trim(), model: model.value.trim(), apiKey: apiKey.value });
+    renderProvider();
+    settings.hidden = true;
+    appendSystem(messages, 'AI 服务配置已保存。');
+  });
+  resetSettings.addEventListener('click', () => {
+    aiConfig = resetAiConfig();
+    fillSettings();
+    renderProvider();
+  });
+
   fab.addEventListener('click', () => {
     if (open) closePanel();
     else openPanel();
@@ -629,7 +913,7 @@ export function mount() {
   send.addEventListener('click', sendMessage);
   input.addEventListener('input', resizeInput);
 
-  // 语音输入：浏览器 SpeechRecognition（zh-CN），识别完成自动发送
+  // 语音输入：浏览器 SpeechRecognition（zh-CN），识别完成后自动提交文本；场景修改仍需计划确认
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   let recActive = false;
   if (SpeechRecognition) {
@@ -647,7 +931,11 @@ export function mount() {
       }
       input.value = (final || interim).trim();
       resizeInput();
-      if (final && !sending && store.mode !== 'play') sendMessage();
+      if (final && !sending && store.mode !== 'play') {
+        input.placeholder = '正在提交识别结果…';
+        input.focus();
+        sendMessage();
+      }
     };
     const stopRec = () => { recActive = false; mic.classList.remove('is-rec'); };
     rec.onend = stopRec;
@@ -675,5 +963,6 @@ export function mount() {
   });
 
   store.on('mode', updateMode);
+  renderProvider();
   updateMode();
 }

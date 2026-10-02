@@ -1,5 +1,6 @@
 import { store } from './store.js'
 import { OBJECT_TYPES } from './schema.js'
+import { getElement, resolveElementVoice, elementVoiceSummary, elementObjectProps } from './elements.js'
 
 const OBJECT_TYPE_IDS = new Set(Object.keys(OBJECT_TYPES))
 
@@ -9,7 +10,10 @@ const CONDITION_IDS = new Set([
   'hold',
   'enter',
   'seq_event',
-  'node_done'
+  'node_done',
+  'leave',
+  'collision',
+  'collect'
 ])
 
 const ACTION_IDS = new Set([
@@ -19,7 +23,16 @@ const ACTION_IDS = new Set([
   'highlight',
   'card',
   'reward',
-  'goto_node'
+  'goto_node',
+  'collect',
+  'set_state',
+  'emit_particles',
+  'add_score',
+  'teleport',
+  'destroy',
+  'camera_shake',
+  'vibrate',
+  'spawn_element'
 ])
 
 function clone(value) {
@@ -213,7 +226,9 @@ export function sceneSummary() {
     ? `流式走廊|${stream.enabled === false ? '关' : '开'}|${stream.axis || 'z'}${stream.dir === -1 ? '-' : '+'}|段长${numberOr(stream.segLen, 6)}m|前${numberOr(stream.ahead, 8)}段|parts${Array.isArray(stream.parts) ? stream.parts.length : 0}件`
     : '流式走廊|无')
 
-  return lines.join('\n').slice(0, 2000)
+  const elementQuery = scene.meta?.voiceQuery || ''
+  if (elementQuery) lines.push(`固定元素候选|${elementVoiceSummary({ query: elementQuery, limit: 24 })}`)
+  return lines.join('\n').slice(0, 5000)
 }
 
 export const SYSTEM_PROMPT = `你是「造梦 · 故事空间 AR 空间编辑器」的内置助手，帮助合作伙伴用自然语言编辑三维 AR 场景。
@@ -225,7 +240,7 @@ export const SYSTEM_PROMPT = `你是「造梦 · 故事空间 AR 空间编辑器
 1. {"op":"add_object","type":"quad|video_quad|glb|light|splat_segment|compound","name":"","transform":{"p":[x,y,z],"r":[0,0,0],"s":[1,1,1]},"node_id":"","zone_id":"","material":{},"asset":"","parts":[]}
 2. {"op":"update_object","id":"","patch":{}}
 3. {"op":"remove_object","id":""}
-4. {"op":"add_trigger","id":"","target":"<objectId|zoneId>","when":"tap|gaze|hold|enter|seq_event|node_done","params":{},"do":[{"action":"play_seq|show|hide|highlight|card|reward|goto_node","args":{}}]}
+4. {"op":"add_trigger","id":"","target":"<objectId|zoneId>","when":"tap|gaze|hold|enter|leave|collision|collect|seq_event|node_done","params":{},"do":[{"action":"play_seq|show|hide|highlight|card|reward|goto_node|collect|set_state|emit_particles|add_score|teleport|destroy|camera_shake|vibrate|spawn_element","args":{}}]}
 5. {"op":"add_sequence","id":"","name":"","duration":2,"tracks":[{"target":"<objectId>","kind":"transform|opacity","keys":[{"t":0,"v":{},"ease":"out"}]}]}
 6. {"op":"add_node","chapter_id":"","id":"","title":"","text":"≤40字","next":""}
 7. {"op":"update_node","chapter_id":"","id":"","patch":{}}
@@ -236,6 +251,8 @@ export const SYSTEM_PROMPT = `你是「造梦 · 故事空间 AR 空间编辑器
 12. {"op":"add_zone","id":"","name":"","kind":"editable|trigger|forbidden","transform":{"p":[x,y,z],"r":[0,0,0],"s":[x,y,z]},"description":""} // 建空间区域
 13. {"op":"update_zone","id":"","patch":{}} // 改空间区域
 14. {"op":"remove_zone","id":""} // 删空间区域
+15. {"op":"add_element","element_id":"xj.element.<category>.<name>","name":"","transform":{"p":[x,y,z],"r":[0,0,0],"s":[1,1,1]},"zone_id":"","interaction":{}} // 从固定元素目录创建可互动实例
+16. {"op":"add_runtime_rule","target":"<objectId|zoneId>","when":"leave|collision|collect","params":{},"do":[{"action":"collect|set_state|emit_particles|add_score|teleport|destroy|camera_shake|vibrate"}]} // 配置试玩/Runtime 临时互动规则
 
 compound 组装体（实时生成任意 3D）：parts 是数组，每项 {"shape":"box|sphere|cylinder|cone|torus|icosa|octa|tetra|capsule|plane|ring","p":[x,y,z],"r":[deg,deg,deg],"s":[x,y,z],"color":"#hex","opacity":0-1,"emissive":"#hex","metalness":0-1,"roughness":0-1,"blend":"additive","flat":true,"shader":{"kind":""}}。
 例：生成莲花台 = 底部 cylinder 灰座 + 中层 6 个倾斜的 capsule 花瓣(粉色) + 顶部 sphere 莲心(金) + 环绕 ring(additive 金色光晕)。多思考物体的组成部分再动手。
@@ -248,6 +265,7 @@ material.shader 动态效果（quad/compound 部件可用）：{"kind":"nebula�
 - 粒子发射器：compound 的 parts 里放 {"shape":"points","count":300,"spread":[宽,高,深],"size":0.05,"speed":0.3,"drift":0.2,"material":{"color":"#hex","alpha":"fx:mote"}}——萤火虫/下雪/上升光尘/星尘都能做。
 - set_sky 可选 {"image":"fx/sky_dusk.jpg|fx/sky_night.jpg|fx/sky_dawn.jpg"} 用内置全景天空图，或传 top/horizon/bottom 纯色渐变。
 - 你只能编辑场景内容（对象、触发器、时间线、剧情节点）。底座(base)、素材库、编辑器界面不可修改——没有对应 op，被要求时 reply 说明超出权限，ops 给空数组。
+- 固定元素语音/标签：优先使用 add_element + element_id 或 voice token（如 xj.element.furniture.chair）。如果用户要改已有实例，必须使用 object id；同名或多个候选时先回复候选列表，请用户确认，不要猜。
 - 引用已有对象、节点、时间线和锚点时必须使用场景清单中的 id。
 - 剧情节点的 anchor 字段绑定锚点 id（场景清单「锚点」行）；把内容落到物理空间时优先绑锚点。锚点坐标是米制、y 轴向上、地面 y=0。
 - 拿不准时先根据场景清单猜测，并在 reply 中说明。
@@ -255,6 +273,25 @@ material.shader 动态效果（quad/compound 部件可用）：{"kind":"nebula�
 - reply 不超过 60 字；节点 text 不超过 40 字。
 - 不知道如何执行时，reply 说明原因，ops 使用空数组。
 - 只输出 JSON 对象。`
+
+function validateAddElement(op) {
+  const rawReference = op.element_id || op.voice_token || op.name
+  let item = getElement(rawReference)
+  if (!item) {
+    const resolved = resolveElementVoice(rawReference)
+    if (resolved.status === 'ambiguous') throw new Error(`元素名称不唯一，请从候选中选择：${resolved.candidates.map(candidate => candidate.name).join('、')}`)
+    item = resolved.element || null
+  }
+  if (!item) throw new Error('固定元素不存在，请提供 element_id、voice token 或中文别名')
+  const props = elementObjectProps(item.id, {
+    ...(cleanId(op.id) ? { id: cleanId(op.id) } : {}),
+    name: typeof op.name === 'string' ? op.name : item.name,
+    transform: op.transform,
+    zone_id: typeof op.zone_id === 'string' ? op.zone_id : '',
+    interaction: op.interaction && typeof op.interaction === 'object' ? op.interaction : {}
+  })
+  return props
+}
 
 function validateAddObject(op) {
   if (!OBJECT_TYPE_IDS.has(op.type) || !OBJECT_TYPES?.[op.type]) {
@@ -276,6 +313,23 @@ function validateAddObject(op) {
   return props
 }
 
+function validateRuntimeRule(op) {
+  if (!hasObjectOrZone(op.target)) throw new Error('Runtime 规则目标不存在')
+  if (!['leave', 'collision', 'collect'].includes(op.when)) throw new Error('Runtime 规则条件不合法')
+  if (!Array.isArray(op.do) || !op.do.length) throw new Error('Runtime 规则动作不能为空')
+  op.do.forEach(action => {
+    if (!action || !ACTION_IDS.has(action.action)) throw new Error('Runtime 规则动作不合法')
+  })
+  return {
+    id: cleanId(op.id) || `runtime_rule_${op.target}_${op.when}`,
+    target: op.target,
+    when: op.when,
+    params: op.params && typeof op.params === 'object' ? op.params : {},
+    do: clone(op.do),
+    runtimeOnly: true
+  }
+}
+
 function validateTrigger(op) {
   if (!hasObjectOrZone(op.target)) throw new Error('触发器目标对象或空间区域不存在')
   if (!CONDITION_IDS.has(op.when)) throw new Error('触发条件不合法')
@@ -284,6 +338,9 @@ function validateTrigger(op) {
   for (const action of op.do) {
     if (!action || !ACTION_IDS.has(action.action)) {
       throw new Error('触发动作不合法')
+    }
+    if (action.action === 'spawn_element' && !String(action.args?.elementId || action.args?.element_id || action.args?.voiceToken || '').trim()) {
+      throw new Error('spawn_element 缺少 elementId')
     }
   }
 
@@ -310,7 +367,7 @@ function validateSequence(op) {
   })
 
   return uniqueSequenceProps({
-    id: cleanId(op.id),
+    ...(cleanId(op.id) ? { id: cleanId(op.id) } : {}),
     name: typeof op.name === 'string' ? op.name : '',
     duration: numberOr(op.duration, 2),
     tracks
@@ -323,6 +380,20 @@ function executeOp(op) {
   }
 
   switch (op.op) {
+    case 'add_element': {
+      const props = validateAddElement(op)
+      let object = null
+      store.batch(() => {
+        object = store.addObject(props.type, props)
+        const profile = object.interaction?.profile
+        if (['tap_feedback', 'gaze_feedback', 'hold_feedback'].includes(profile)) {
+          const when = profile.replace('_feedback', '')
+          store.addTrigger({ id: `trigger_${object.id}`, name: `${object.name}${when}反馈`, target: object.id, when, params: when === 'tap' ? {} : { secs: 1 }, do: [{ action: 'highlight', args: { targetId: object.id } }] })
+        }
+      })
+      return object
+    }
+
     case 'add_object': {
       const props = validateAddObject(op)
       return store.addObject(op.type, props)
@@ -343,6 +414,10 @@ function executeOp(op) {
     case 'remove_object': {
       if (!hasObject(op.id)) throw new Error('对象不存在')
       return store.removeObject(op.id)
+    }
+
+    case 'add_runtime_rule': {
+      return store.addTrigger(validateRuntimeRule(op))
     }
 
     case 'add_trigger': {
@@ -523,9 +598,10 @@ function rewriteRefs(op, aliases) {
   return cloned
 }
 
-export function applyOps(ops) {
+export function applyOps(ops, { atomic = true } = {}) {
   const done = []
   const failed = []
+  const before = atomic ? store.exportJSON() : null
 
   if (!Array.isArray(ops)) {
     return {
@@ -559,6 +635,11 @@ export function applyOps(ops) {
       }
     }
   })
+
+  if (atomic && failed.length && before) {
+    store.rollbackSnapshot?.(before)
+    return { done: [], failed: [{ op: 'transaction', err: `本组修改已回滚：${failed.map(item => item.err).join('；')}` }] }
+  }
 
   return { done, failed }
 }

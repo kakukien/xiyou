@@ -63,7 +63,10 @@ export const CONDITIONS = [
   { id: 'hold', label: '按住1s' },
   { id: 'enter', label: '进入区域' },
   { id: 'seq_event', label: '时间线事件' },
-  { id: 'node_done', label: '节点完成' }
+  { id: 'node_done', label: '节点完成' },
+  { id: 'leave', label: '离开区域' },
+  { id: 'collision', label: '发生碰撞' },
+  { id: 'collect', label: '收集对象' }
 ];
 
 export const ACTIONS = [
@@ -73,7 +76,16 @@ export const ACTIONS = [
   { id: 'highlight', label: '高亮', argKinds: [] },
   { id: 'card', label: '弹卡片', argKinds: ['text'] },
   { id: 'reward', label: '给奖励', argKinds: ['text'] },
-  { id: 'goto_node', label: '跳转节点', argKinds: ['node'] }
+  { id: 'goto_node', label: '跳转节点', argKinds: ['node'] },
+  { id: 'collect', label: '收集', argKinds: [] },
+  { id: 'set_state', label: '设置状态', argKinds: ['text'] },
+  { id: 'emit_particles', label: '发射粒子', argKinds: [] },
+  { id: 'add_score', label: '增加分数', argKinds: ['text'] },
+  { id: 'teleport', label: '传送', argKinds: ['text'] },
+  { id: 'destroy', label: '销毁实例', argKinds: [] },
+  { id: 'camera_shake', label: '镜头震动', argKinds: [] },
+  { id: 'vibrate', label: '触感反馈', argKinds: [] },
+  { id: 'spawn_element', label: '生成固定元素', argKinds: ['text'] }
 ];
 
 function clone(value) {
@@ -207,6 +219,13 @@ export function newObject(type, props = {}) {
     visible: true,
     node_id: '',
     zone_id: '',
+    element_id: '',
+    element_version: '',
+    voice_token: '',
+    element_category: '',
+    render_preset: '',
+    interaction: null,
+    visibleInRuntime: true,
     comments: []
   };
 
@@ -231,7 +250,8 @@ export function newTrigger(props = {}) {
     target: '',
     when: 'tap',
     params: {},
-    do: []
+    do: [],
+    runtimeOnly: false
   };
 
   return merge(trigger, props);
@@ -667,13 +687,14 @@ export function publishCheck(scene) {
     });
   });
 
-  if (chapters.length === 0 || !chapters[0] || !Array.isArray(chapters[0].nodes) || chapters[0].nodes.length === 0) {
+  const storyEnabled = data.meta?.storyEnabled === true || chapters.length > 0;
+  if (storyEnabled && (chapters.length === 0 || !chapters[0] || !Array.isArray(chapters[0].nodes) || chapters[0].nodes.length === 0)) {
     block('no_start_node', '没有可用的起始节点', 'story');
   }
 
   const allNodes = Array.from(nodes.values());
 
-  if (!allNodes.some((node) => node.next === null || node.next === '')) {
+  if (storyEnabled && !allNodes.some((node) => node.next === null || node.next === '')) {
     block('no_ending', '没有终点节点', 'story');
   }
 

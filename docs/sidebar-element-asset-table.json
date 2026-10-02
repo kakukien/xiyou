@@ -81,7 +81,29 @@
               0.8
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.furniture.box",
+            "aliases": [
+              "盒子",
+              "基础",
+              "可推动",
+              "box",
+              "furniture box",
+              "furniture.box"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "furniture.crate",
@@ -113,7 +135,29 @@
               0.9
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.furniture.crate",
+            "aliases": [
+              "木箱",
+              "容器",
+              "可打开",
+              "crate",
+              "furniture crate",
+              "furniture.crate"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "furniture.table",
@@ -143,7 +187,29 @@
               1.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 6,
+            "maxDrawCalls": 6,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.furniture.table",
+            "aliases": [
+              "桌子",
+              "家具",
+              "平台",
+              "table",
+              "furniture table",
+              "furniture.table"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "furniture.chair",
@@ -173,7 +239,29 @@
               0.75
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 6,
+            "maxDrawCalls": 6,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.furniture.chair",
+            "aliases": [
+              "椅子",
+              "家具",
+              "可推动",
+              "chair",
+              "furniture chair",
+              "furniture.chair"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "furniture.stool",
@@ -203,7 +291,29 @@
               0.6
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.furniture.stool",
+            "aliases": [
+              "凳子",
+              "家具",
+              "可推动",
+              "stool",
+              "furniture stool",
+              "furniture.stool"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "furniture.bench",
@@ -233,7 +343,29 @@
               1
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 6,
+            "maxDrawCalls": 6,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.furniture.bench",
+            "aliases": [
+              "长凳",
+              "家具",
+              "平台",
+              "bench",
+              "furniture bench",
+              "furniture.bench"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "furniture.cabinet",
@@ -263,7 +395,29 @@
               1
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.furniture.cabinet",
+            "aliases": [
+              "柜子",
+              "家具",
+              "开合",
+              "cabinet",
+              "furniture cabinet",
+              "furniture.cabinet"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "furniture.shelf",
@@ -293,7 +447,29 @@
               0.8
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 6,
+            "maxDrawCalls": 6,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.furniture.shelf",
+            "aliases": [
+              "货架",
+              "家具",
+              "陈列",
+              "shelf",
+              "furniture shelf",
+              "furniture.shelf"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "furniture.barrel",
@@ -324,7 +500,29 @@
               0.65
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.furniture.barrel",
+            "aliases": [
+              "木桶",
+              "容器",
+              "滚动",
+              "barrel",
+              "furniture barrel",
+              "furniture.barrel"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "furniture.lamp",
@@ -355,7 +553,29 @@
               0.45
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.furniture.lamp",
+            "aliases": [
+              "台灯",
+              "开关",
+              "灯光",
+              "lamp",
+              "furniture lamp",
+              "furniture.lamp"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "furniture.rug",
@@ -385,7 +605,29 @@
               1.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.furniture.rug",
+            "aliases": [
+              "地毯",
+              "地面",
+              "装饰",
+              "rug",
+              "furniture rug",
+              "furniture.rug"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "furniture.screen",
@@ -416,7 +658,30 @@
               1
             ]
           },
-          "assetPolicy": "optional-external"
+          "assetPolicy": "optional-external",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": true,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.furniture.screen",
+            "aliases": [
+              "桌面屏幕",
+              "屏幕",
+              "展示",
+              "信息",
+              "screen",
+              "furniture screen",
+              "furniture.screen"
+            ],
+            "locale": "zh-CN"
+          }
         }
       ]
     },
@@ -453,7 +718,29 @@
               2.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 6,
+            "maxDrawCalls": 6,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.environment.house",
+            "aliases": [
+              "房子",
+              "建筑",
+              "场景",
+              "house",
+              "environment house",
+              "environment.house"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "environment.cabin",
@@ -483,7 +770,29 @@
               2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 6,
+            "maxDrawCalls": 6,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.environment.cabin",
+            "aliases": [
+              "小屋",
+              "建筑",
+              "入口",
+              "cabin",
+              "environment cabin",
+              "environment.cabin"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "environment.wall",
@@ -513,7 +822,30 @@
               0.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.environment.wall",
+            "aliases": [
+              "墙体",
+              "墙",
+              "建筑",
+              "遮挡",
+              "wall",
+              "environment wall",
+              "environment.wall"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "environment.fence",
@@ -543,7 +875,29 @@
               0.15
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.environment.fence",
+            "aliases": [
+              "栅栏",
+              "边界",
+              "建筑",
+              "fence",
+              "environment fence",
+              "environment.fence"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "environment.gate",
@@ -574,7 +928,29 @@
               0.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.environment.gate",
+            "aliases": [
+              "大门",
+              "机关",
+              "开合",
+              "gate",
+              "environment gate",
+              "environment.gate"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "environment.bridge",
@@ -604,7 +980,29 @@
               3
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.environment.bridge",
+            "aliases": [
+              "桥",
+              "通道",
+              "路径",
+              "bridge",
+              "environment bridge",
+              "environment.bridge"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "environment.stairs",
@@ -634,7 +1032,29 @@
               1.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.environment.stairs",
+            "aliases": [
+              "台阶",
+              "地形",
+              "通道",
+              "stairs",
+              "environment stairs",
+              "environment.stairs"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "environment.tree",
@@ -664,7 +1084,29 @@
               1.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 6,
+            "maxDrawCalls": 6,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.environment.tree",
+            "aliases": [
+              "树",
+              "自然",
+              "环境",
+              "tree",
+              "environment tree",
+              "environment.tree"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "environment.shrub",
@@ -693,7 +1135,29 @@
               0.9
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.environment.shrub",
+            "aliases": [
+              "灌木",
+              "自然",
+              "装饰",
+              "shrub",
+              "environment shrub",
+              "environment.shrub"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "environment.flower",
@@ -723,7 +1187,30 @@
               0.8
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.environment.flower",
+            "aliases": [
+              "花丛",
+              "花",
+              "自然",
+              "装饰",
+              "flower",
+              "environment flower",
+              "environment.flower"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "environment.rock",
@@ -753,7 +1240,29 @@
               1
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.environment.rock",
+            "aliases": [
+              "岩石",
+              "自然",
+              "障碍",
+              "rock",
+              "environment rock",
+              "environment.rock"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "environment.boulder",
@@ -783,7 +1292,29 @@
               1.8
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.environment.boulder",
+            "aliases": [
+              "巨石",
+              "自然",
+              "障碍",
+              "boulder",
+              "environment boulder",
+              "environment.boulder"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "environment.signpost",
@@ -814,7 +1345,29 @@
               0.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.environment.signpost",
+            "aliases": [
+              "路牌",
+              "指引",
+              "文字",
+              "signpost",
+              "environment signpost",
+              "environment.signpost"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "environment.lamp_post",
@@ -844,7 +1397,29 @@
               0.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.environment.lamp_post",
+            "aliases": [
+              "路灯",
+              "灯光",
+              "环境",
+              "lamp_post",
+              "environment lamp_post",
+              "environment.lamp_post"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "environment.well",
@@ -875,7 +1450,30 @@
               1.1
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.environment.well",
+            "aliases": [
+              "井",
+              "水井",
+              "建筑",
+              "探索",
+              "well",
+              "environment well",
+              "environment.well"
+            ],
+            "locale": "zh-CN"
+          }
         }
       ]
     },
@@ -913,7 +1511,29 @@
               2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.volume.water_surface",
+            "aliases": [
+              "水面",
+              "水",
+              "反射",
+              "water_surface",
+              "volume water_surface",
+              "volume.water_surface"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "volume.stream",
@@ -944,7 +1564,29 @@
               0.8
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.volume.stream",
+            "aliases": [
+              "溪流",
+              "水",
+              "流动",
+              "stream",
+              "volume stream",
+              "volume.stream"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "volume.pool",
@@ -975,7 +1617,29 @@
               2.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.volume.pool",
+            "aliases": [
+              "水池",
+              "水",
+              "区域",
+              "pool",
+              "volume pool",
+              "volume.pool"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "volume.ice_patch",
@@ -1006,7 +1670,29 @@
               2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.volume.ice_patch",
+            "aliases": [
+              "冰面",
+              "冰",
+              "滑动",
+              "ice_patch",
+              "volume ice_patch",
+              "volume.ice_patch"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "volume.ice_wall",
@@ -1036,7 +1722,30 @@
               0.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.volume.ice_wall",
+            "aliases": [
+              "冰墙",
+              "冰",
+              "墙",
+              "障碍",
+              "ice_wall",
+              "volume ice_wall",
+              "volume.ice_wall"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "volume.stone_block",
@@ -1067,7 +1776,29 @@
               0.8
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.volume.stone_block",
+            "aliases": [
+              "石块",
+              "石头",
+              "基础",
+              "stone_block",
+              "volume stone_block",
+              "volume.stone_block"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "volume.sand_patch",
@@ -1097,7 +1828,29 @@
               2.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.volume.sand_patch",
+            "aliases": [
+              "沙地",
+              "地面",
+              "材质",
+              "sand_patch",
+              "volume sand_patch",
+              "volume.sand_patch"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "volume.mud_patch",
@@ -1128,7 +1881,29 @@
               2.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.volume.mud_patch",
+            "aliases": [
+              "泥地",
+              "地面",
+              "减速",
+              "mud_patch",
+              "volume mud_patch",
+              "volume.mud_patch"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "volume.lava_flow",
@@ -1159,7 +1934,30 @@
               0.8
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.volume.lava_flow",
+            "aliases": [
+              "熔岩流",
+              "熔岩",
+              "危险",
+              "流动",
+              "lava_flow",
+              "volume lava_flow",
+              "volume.lava_flow"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "volume.fog",
@@ -1189,7 +1987,30 @@
               3
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.volume.fog",
+            "aliases": [
+              "雾气体积",
+              "雾",
+              "体积",
+              "氛围",
+              "fog_volume",
+              "volume fog",
+              "volume.fog"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "volume.wind",
@@ -1219,7 +2040,30 @@
               2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.volume.wind",
+            "aliases": [
+              "风场",
+              "风",
+              "体积",
+              "受力",
+              "wind_volume",
+              "volume wind",
+              "volume.wind"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "volume.force_field",
@@ -1250,7 +2094,29 @@
               2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.volume.force_field",
+            "aliases": [
+              "力场",
+              "范围",
+              "机关",
+              "force_field",
+              "volume force_field",
+              "volume.force_field"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "volume.cloud",
@@ -1281,7 +2147,30 @@
               2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.volume.cloud",
+            "aliases": [
+              "云团",
+              "云",
+              "天空",
+              "氛围",
+              "cloud_volume",
+              "volume cloud",
+              "volume.cloud"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "volume.snow_field",
@@ -1311,7 +2200,30 @@
               2.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.volume.snow_field",
+            "aliases": [
+              "积雪",
+              "雪",
+              "地面",
+              "季节",
+              "snow_field",
+              "volume snow_field",
+              "volume.snow_field"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "volume.grass_patch",
@@ -1341,7 +2253,30 @@
               2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.volume.grass_patch",
+            "aliases": [
+              "草地",
+              "草",
+              "地面",
+              "自然",
+              "grass_patch",
+              "volume grass_patch",
+              "volume.grass_patch"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "volume.ripple",
@@ -1371,7 +2306,29 @@
               1.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.volume.ripple",
+            "aliases": [
+              "水波",
+              "反馈",
+              "动画",
+              "ripple_surface",
+              "volume ripple",
+              "volume.ripple"
+            ],
+            "locale": "zh-CN"
+          }
         }
       ]
     },
@@ -1409,7 +2366,29 @@
               0.9
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.chest",
+            "aliases": [
+              "宝箱",
+              "开合",
+              "奖励",
+              "chest",
+              "game chest",
+              "game.chest"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.treasure_chest",
@@ -1440,7 +2419,30 @@
               1.3
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.treasure_chest",
+            "aliases": [
+              "大型宝箱",
+              "宝箱",
+              "奖励",
+              "关卡",
+              "treasure_chest",
+              "game treasure_chest",
+              "game.treasure_chest"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.key",
@@ -1470,7 +2472,29 @@
               0.3
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.key",
+            "aliases": [
+              "钥匙",
+              "收集",
+              "道具",
+              "key",
+              "game key",
+              "game.key"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.coin",
@@ -1500,7 +2524,29 @@
               0.25
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.coin",
+            "aliases": [
+              "金币",
+              "收集",
+              "计分",
+              "coin",
+              "game coin",
+              "game.coin"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.crystal",
@@ -1531,7 +2577,30 @@
               0.4
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.crystal",
+            "aliases": [
+              "能量晶体",
+              "晶体",
+              "收集",
+              "发光",
+              "crystal",
+              "game crystal",
+              "game.crystal"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.health_pack",
@@ -1561,7 +2630,30 @@
               0.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.health_pack",
+            "aliases": [
+              "补给包",
+              "补给",
+              "生命",
+              "道具",
+              "health_pack",
+              "game health_pack",
+              "game.health_pack"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.checkpoint",
@@ -1591,7 +2683,29 @@
               0.8
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.checkpoint",
+            "aliases": [
+              "检查点",
+              "存档",
+              "进度",
+              "checkpoint",
+              "game checkpoint",
+              "game.checkpoint"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.target",
@@ -1621,7 +2735,29 @@
               0.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.target",
+            "aliases": [
+              "靶标",
+              "射击",
+              "反馈",
+              "target",
+              "game target",
+              "game.target"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.switch",
@@ -1651,7 +2787,30 @@
               0.3
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.switch",
+            "aliases": [
+              "拨杆开关",
+              "开关",
+              "拨杆",
+              "联动",
+              "switch",
+              "game switch",
+              "game.switch"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.pressure_plate",
@@ -1682,7 +2841,29 @@
               1
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.pressure_plate",
+            "aliases": [
+              "压力板",
+              "机关",
+              "进入",
+              "pressure_plate",
+              "game pressure_plate",
+              "game.pressure_plate"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.button",
@@ -1713,7 +2894,29 @@
               0.35
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.button",
+            "aliases": [
+              "按钮",
+              "点击",
+              "按住",
+              "button",
+              "game button",
+              "game.button"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.lever",
@@ -1743,7 +2946,29 @@
               0.3
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.lever",
+            "aliases": [
+              "拉杆",
+              "机关",
+              "开关",
+              "lever",
+              "game lever",
+              "game.lever"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.gear",
@@ -1774,7 +2999,29 @@
               0.8
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.gear",
+            "aliases": [
+              "齿轮",
+              "旋转",
+              "机关",
+              "gear",
+              "game gear",
+              "game.gear"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.door",
@@ -1805,7 +3052,30 @@
               0.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.door",
+            "aliases": [
+              "机关门",
+              "门",
+              "开合",
+              "机关",
+              "door",
+              "game door",
+              "game.door"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.moving_platform",
@@ -1836,7 +3106,30 @@
               1.8
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.moving_platform",
+            "aliases": [
+              "移动平台",
+              "平台",
+              "移动",
+              "承载",
+              "moving_platform",
+              "game moving_platform",
+              "game.moving_platform"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.spring_pad",
@@ -1867,7 +3160,30 @@
               1
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.spring_pad",
+            "aliases": [
+              "弹跳板",
+              "弹跳",
+              "平台",
+              "受力",
+              "spring_pad",
+              "game spring_pad",
+              "game.spring_pad"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.launcher",
@@ -1898,7 +3214,30 @@
               1.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.launcher",
+            "aliases": [
+              "发射器",
+              "发射",
+              "机关",
+              "投射",
+              "launcher",
+              "game launcher",
+              "game.launcher"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.portal",
@@ -1929,7 +3268,29 @@
               0.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.portal",
+            "aliases": [
+              "传送门",
+              "入口",
+              "空间",
+              "portal",
+              "game portal",
+              "game.portal"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.teleporter",
@@ -1959,7 +3320,30 @@
               1.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.teleporter",
+            "aliases": [
+              "传送台",
+              "传送",
+              "平台",
+              "移动",
+              "teleporter",
+              "game teleporter",
+              "game.teleporter"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.mine",
@@ -1990,7 +3374,29 @@
               0.35
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.mine",
+            "aliases": [
+              "地雷",
+              "危险",
+              "碰撞",
+              "mine",
+              "game mine",
+              "game.mine"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.beacon",
@@ -2021,7 +3427,29 @@
               0.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.beacon",
+            "aliases": [
+              "信标",
+              "引导",
+              "定位",
+              "beacon",
+              "game beacon",
+              "game.beacon"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "game.collectible_card",
@@ -2052,7 +3480,30 @@
               1
             ]
           },
-          "assetPolicy": "optional-external"
+          "assetPolicy": "optional-external",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": true,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.game.collectible_card",
+            "aliases": [
+              "收集卡片",
+              "卡片",
+              "收集",
+              "信息",
+              "collectible_card",
+              "game collectible_card",
+              "game.collectible_card"
+            ],
+            "locale": "zh-CN"
+          }
         }
       ]
     },
@@ -2090,7 +3541,30 @@
               1
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 6,
+            "maxDrawCalls": 6,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.toy.toy_tank",
+            "aliases": [
+              "玩具坦克",
+              "玩具",
+              "坦克",
+              "载具",
+              "toy_tank",
+              "toy toy_tank",
+              "toy.toy_tank"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "toy.tank",
@@ -2121,7 +3595,29 @@
               2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 6,
+            "maxDrawCalls": 6,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.toy.tank",
+            "aliases": [
+              "坦克",
+              "载具",
+              "游戏",
+              "tank",
+              "toy tank",
+              "toy.tank"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "toy.car",
@@ -2152,7 +3648,29 @@
               1.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 6,
+            "maxDrawCalls": 6,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.toy.car",
+            "aliases": [
+              "小车",
+              "载具",
+              "移动",
+              "car",
+              "toy car",
+              "toy.car"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "toy.drone",
@@ -2183,7 +3701,29 @@
               0.8
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 6,
+            "maxDrawCalls": 6,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.toy.drone",
+            "aliases": [
+              "无人机",
+              "飞行",
+              "载具",
+              "drone",
+              "toy drone",
+              "toy.drone"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "toy.robot",
@@ -2214,7 +3754,29 @@
               0.6
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 6,
+            "maxDrawCalls": 6,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.toy.robot",
+            "aliases": [
+              "机器人",
+              "角色",
+              "移动",
+              "robot",
+              "toy robot",
+              "toy.robot"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "toy.turret",
@@ -2245,7 +3807,29 @@
               0.8
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.toy.turret",
+            "aliases": [
+              "炮台",
+              "瞄准",
+              "机关",
+              "turret",
+              "toy turret",
+              "toy.turret"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "toy.cannon",
@@ -2276,7 +3860,29 @@
               1.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.toy.cannon",
+            "aliases": [
+              "火炮",
+              "发射",
+              "游戏",
+              "cannon",
+              "toy cannon",
+              "toy.cannon"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "toy.ball",
@@ -2307,7 +3913,30 @@
               0.45
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.toy.ball",
+            "aliases": [
+              "球体玩具",
+              "球",
+              "投掷",
+              "物理",
+              "ball",
+              "toy ball",
+              "toy.ball"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "toy.cube",
@@ -2338,7 +3967,30 @@
               0.6
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.toy.cube",
+            "aliases": [
+              "彩色方块",
+              "方块",
+              "玩具",
+              "物理",
+              "cube_toy",
+              "toy cube",
+              "toy.cube"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "toy.windup",
@@ -2368,7 +4020,30 @@
               0.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.toy.windup",
+            "aliases": [
+              "发条玩具",
+              "发条",
+              "玩具",
+              "自动移动",
+              "windup_toy",
+              "toy windup",
+              "toy.windup"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "toy.balloon",
@@ -2399,7 +4074,29 @@
               0.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.toy.balloon",
+            "aliases": [
+              "气球",
+              "漂浮",
+              "飞行",
+              "balloon",
+              "toy balloon",
+              "toy.balloon"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "toy.saucer",
@@ -2430,7 +4127,29 @@
               1
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.toy.saucer",
+            "aliases": [
+              "飞碟",
+              "飞行",
+              "载具",
+              "flying_saucer",
+              "toy saucer",
+              "toy.saucer"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "toy.boat",
@@ -2461,7 +4180,29 @@
               2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.toy.boat",
+            "aliases": [
+              "小船",
+              "水面",
+              "载具",
+              "boat",
+              "toy boat",
+              "toy.boat"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "toy.glider",
@@ -2492,7 +4233,29 @@
               1.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.toy.glider",
+            "aliases": [
+              "滑翔机",
+              "飞行",
+              "载具",
+              "glider",
+              "toy glider",
+              "toy.glider"
+            ],
+            "locale": "zh-CN"
+          }
         }
       ]
     },
@@ -2529,7 +4292,30 @@
               1
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 300,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.particle_emitter",
+            "aliases": [
+              "粒子发射器",
+              "粒子",
+              "发射器",
+              "可配置",
+              "particle_emitter",
+              "fx particle_emitter",
+              "fx.particle_emitter"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "fx.spark_burst",
@@ -2559,7 +4345,30 @@
               0.8
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 300,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.spark_burst",
+            "aliases": [
+              "火花爆发",
+              "火花",
+              "爆发",
+              "反馈",
+              "spark_burst",
+              "fx spark_burst",
+              "fx.spark_burst"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "fx.firefly_swarm",
@@ -2590,7 +4399,30 @@
               2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 300,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.firefly_swarm",
+            "aliases": [
+              "萤火虫群",
+              "萤火虫",
+              "粒子",
+              "氛围",
+              "firefly_swarm",
+              "fx firefly_swarm",
+              "fx.firefly_swarm"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "fx.flyby_motes",
@@ -2621,7 +4453,30 @@
               3
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 300,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.flyby_motes",
+            "aliases": [
+              "飘飞光点",
+              "飘飞",
+              "光点",
+              "经过",
+              "flyby_motes",
+              "fx flyby_motes",
+              "fx.flyby_motes"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "fx.bird_flock",
@@ -2651,7 +4506,30 @@
               4
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.bird_flock",
+            "aliases": [
+              "飞鸟群",
+              "飞鸟",
+              "群体",
+              "飞掠",
+              "bird_flock",
+              "fx bird_flock",
+              "fx.bird_flock"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "fx.falling_leaves",
@@ -2682,7 +4560,29 @@
               3
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 180,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.falling_leaves",
+            "aliases": [
+              "落叶",
+              "粒子",
+              "季节",
+              "falling_leaves",
+              "fx falling_leaves",
+              "fx.falling_leaves"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "fx.petals",
@@ -2713,7 +4613,30 @@
               3
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 180,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.petals",
+            "aliases": [
+              "花瓣飘落",
+              "花瓣",
+              "飘落",
+              "氛围",
+              "petals",
+              "fx petals",
+              "fx.petals"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "fx.snow_particles",
@@ -2743,7 +4666,29 @@
               4
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 180,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.snow_particles",
+            "aliases": [
+              "雪花",
+              "粒子",
+              "天气",
+              "snow_particles",
+              "fx snow_particles",
+              "fx.snow_particles"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "fx.rain",
@@ -2774,7 +4719,30 @@
               4
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 180,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.rain",
+            "aliases": [
+              "雨幕",
+              "雨",
+              "天气",
+              "粒子",
+              "rain",
+              "fx rain",
+              "fx.rain"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "fx.dust",
@@ -2804,7 +4772,29 @@
               2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 300,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.dust",
+            "aliases": [
+              "尘埃",
+              "氛围",
+              "粒子",
+              "dust",
+              "fx dust",
+              "fx.dust"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "fx.smoke",
@@ -2835,7 +4825,29 @@
               1.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 300,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.smoke",
+            "aliases": [
+              "烟雾",
+              "体积",
+              "氛围",
+              "smoke",
+              "fx smoke",
+              "fx.smoke"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "fx.steam",
@@ -2866,7 +4878,29 @@
               1
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 180,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.steam",
+            "aliases": [
+              "蒸汽",
+              "体积",
+              "反馈",
+              "steam",
+              "fx steam",
+              "fx.steam"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "fx.fire",
@@ -2897,7 +4931,29 @@
               1
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 300,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.fire",
+            "aliases": [
+              "火焰",
+              "危险",
+              "粒子",
+              "fire",
+              "fx fire",
+              "fx.fire"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "fx.magic_trail",
@@ -2928,7 +4984,30 @@
               2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 300,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.magic_trail",
+            "aliases": [
+              "能量轨迹",
+              "轨迹",
+              "能量",
+              "移动",
+              "magic_trail",
+              "fx magic_trail",
+              "fx.magic_trail"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "fx.vortex",
@@ -2959,7 +5038,29 @@
               1.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 180,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.vortex",
+            "aliases": [
+              "旋涡",
+              "空间",
+              "动画",
+              "vortex",
+              "fx vortex",
+              "fx.vortex"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "fx.floating_orbs",
@@ -2990,7 +5091,30 @@
               2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 300,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.floating_orbs",
+            "aliases": [
+              "漂浮光球",
+              "光球",
+              "漂浮",
+              "注视",
+              "floating_orbs",
+              "fx floating_orbs",
+              "fx.floating_orbs"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "fx.shockwave",
@@ -3021,7 +5145,29 @@
               1
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 300,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.shockwave",
+            "aliases": [
+              "冲击波",
+              "点击",
+              "反馈",
+              "shockwave",
+              "fx shockwave",
+              "fx.shockwave"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "fx.confetti",
@@ -3051,7 +5197,30 @@
               2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 180,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.fx.confetti",
+            "aliases": [
+              "彩纸喷射",
+              "彩纸",
+              "庆祝",
+              "粒子",
+              "confetti",
+              "fx confetti",
+              "fx.confetti"
+            ],
+            "locale": "zh-CN"
+          }
         }
       ]
     },
@@ -3088,7 +5257,30 @@
               0.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.interactive.tap_target",
+            "aliases": [
+              "点击目标",
+              "点击",
+              "目标",
+              "触发",
+              "tap_target",
+              "interactive tap_target",
+              "interactive.tap_target"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "interactive.gaze_target",
@@ -3118,7 +5310,30 @@
               0.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.interactive.gaze_target",
+            "aliases": [
+              "注视目标",
+              "注视",
+              "目标",
+              "触发",
+              "gaze_target",
+              "interactive gaze_target",
+              "interactive.gaze_target"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "interactive.hold_target",
@@ -3148,7 +5363,30 @@
               0.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.interactive.hold_target",
+            "aliases": [
+              "长按目标",
+              "长按",
+              "目标",
+              "触发",
+              "hold_target",
+              "interactive hold_target",
+              "interactive.hold_target"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "interactive.drag_handle",
@@ -3178,7 +5416,30 @@
               0.4
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.interactive.drag_handle",
+            "aliases": [
+              "拖拽把手",
+              "拖拽",
+              "控制",
+              "交互",
+              "drag_handle",
+              "interactive drag_handle",
+              "interactive.drag_handle"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "interactive.pickup_object",
@@ -3208,7 +5469,30 @@
               0.4
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.interactive.pickup_object",
+            "aliases": [
+              "拾取点",
+              "拾取",
+              "抓取",
+              "交互",
+              "pickup_object",
+              "interactive pickup_object",
+              "interactive.pickup_object"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "interactive.throwable",
@@ -3238,7 +5522,30 @@
               0.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.interactive.throwable",
+            "aliases": [
+              "投掷物",
+              "投掷",
+              "物理",
+              "交互",
+              "throwable",
+              "interactive throwable",
+              "interactive.throwable"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "interactive.link_beam",
@@ -3268,7 +5575,30 @@
               1
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.interactive.link_beam",
+            "aliases": [
+              "联动光束",
+              "光束",
+              "联动",
+              "连接",
+              "link_beam",
+              "interactive link_beam",
+              "interactive.link_beam"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "interactive.sound_source",
@@ -3298,7 +5628,30 @@
               0.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.interactive.sound_source",
+            "aliases": [
+              "空间音源",
+              "声音",
+              "音效",
+              "空间",
+              "sound_source",
+              "interactive sound_source",
+              "interactive.sound_source"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "interactive.display_panel",
@@ -3329,7 +5682,30 @@
               1
             ]
           },
-          "assetPolicy": "optional-external"
+          "assetPolicy": "optional-external",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": true,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.interactive.display_panel",
+            "aliases": [
+              "信息面板",
+              "面板",
+              "文字",
+              "展示",
+              "display_panel",
+              "interactive display_panel",
+              "interactive.display_panel"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "interactive.timer",
@@ -3359,7 +5735,30 @@
               1
             ]
           },
-          "assetPolicy": "optional-external"
+          "assetPolicy": "optional-external",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 3,
+            "maxDrawCalls": 3,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": true,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.interactive.timer",
+            "aliases": [
+              "倒计时器",
+              "倒计时",
+              "游戏",
+              "UI",
+              "timer",
+              "interactive timer",
+              "interactive.timer"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "interactive.trigger_zone",
@@ -3389,7 +5788,30 @@
               2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.interactive.trigger_zone",
+            "aliases": [
+              "触发区域",
+              "区域",
+              "进入",
+              "触发",
+              "trigger_zone",
+              "interactive trigger_zone",
+              "interactive.trigger_zone"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "interactive.spawn_point",
@@ -3419,7 +5841,30 @@
               0.3
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.interactive.spawn_point",
+            "aliases": [
+              "生成点",
+              "生成",
+              "出生点",
+              "关卡",
+              "spawn_point",
+              "interactive spawn_point",
+              "interactive.spawn_point"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "interactive.camera_rig",
@@ -3449,7 +5894,30 @@
               1
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.interactive.camera_rig",
+            "aliases": [
+              "镜头轨道",
+              "镜头",
+              "轨道",
+              "相机",
+              "camera_rig",
+              "interactive camera_rig",
+              "interactive.camera_rig"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "interactive.spline_path",
@@ -3479,7 +5947,30 @@
               1
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.interactive.spline_path",
+            "aliases": [
+              "移动路径",
+              "路径",
+              "巡航",
+              "轨迹",
+              "spline_path",
+              "interactive spline_path",
+              "interactive.spline_path"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "interactive.animation_driver",
@@ -3509,7 +6000,30 @@
               0.3
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.interactive.animation_driver",
+            "aliases": [
+              "动画控制器",
+              "动画",
+              "控制器",
+              "状态",
+              "animation_driver",
+              "interactive animation_driver",
+              "interactive.animation_driver"
+            ],
+            "locale": "zh-CN"
+          }
         }
       ]
     },
@@ -3546,7 +6060,30 @@
               0.5
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.helper.ground_marker",
+            "aliases": [
+              "地面标记",
+              "地面",
+              "标记",
+              "定位",
+              "ground_marker",
+              "helper ground_marker",
+              "helper.ground_marker"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "helper.wall_anchor",
@@ -3575,7 +6112,30 @@
               0.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.helper.wall_anchor",
+            "aliases": [
+              "墙面锚点",
+              "墙面",
+              "锚点",
+              "定位",
+              "wall_anchor",
+              "helper wall_anchor",
+              "helper.wall_anchor"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "helper.snap_point",
@@ -3604,7 +6164,30 @@
               0.15
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.helper.snap_point",
+            "aliases": [
+              "吸附点",
+              "吸附",
+              "定位",
+              "编辑",
+              "snap_point",
+              "helper snap_point",
+              "helper.snap_point"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "helper.waypoint",
@@ -3634,7 +6217,29 @@
               0.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.helper.waypoint",
+            "aliases": [
+              "路径点",
+              "导航",
+              "巡航",
+              "waypoint",
+              "helper waypoint",
+              "helper.waypoint"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "helper.checkpoint_marker",
@@ -3664,7 +6269,30 @@
               0.4
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.helper.checkpoint_marker",
+            "aliases": [
+              "检查点标记",
+              "检查点",
+              "标记",
+              "进度",
+              "checkpoint_marker",
+              "helper checkpoint_marker",
+              "helper.checkpoint_marker"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "helper.boundary_volume",
@@ -3694,7 +6322,30 @@
               3
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.helper.boundary_volume",
+            "aliases": [
+              "边界体",
+              "边界",
+              "限制",
+              "区域",
+              "boundary_volume",
+              "helper boundary_volume",
+              "helper.boundary_volume"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "helper.nav_surface",
@@ -3724,7 +6375,30 @@
               3
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.helper.nav_surface",
+            "aliases": [
+              "导航面",
+              "导航",
+              "地面",
+              "路径",
+              "nav_surface",
+              "helper nav_surface",
+              "helper.nav_surface"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "helper.occluder",
@@ -3753,7 +6427,30 @@
               0.1
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.helper.occluder",
+            "aliases": [
+              "遮挡体",
+              "遮挡",
+              "优化",
+              "性能",
+              "occluder",
+              "helper occluder",
+              "helper.occluder"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "helper.light_probe",
@@ -3782,7 +6479,30 @@
               0.2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.helper.light_probe",
+            "aliases": [
+              "光照探针",
+              "光照",
+              "探针",
+              "调试",
+              "light_probe",
+              "helper light_probe",
+              "helper.light_probe"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "helper.measurement_ruler",
@@ -3811,7 +6531,30 @@
               0.05
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.helper.measurement_ruler",
+            "aliases": [
+              "测量尺",
+              "测量",
+              "尺寸",
+              "调试",
+              "measurement_ruler",
+              "helper measurement_ruler",
+              "helper.measurement_ruler"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "helper.camera_spawn",
@@ -3841,7 +6584,30 @@
               0.3
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.helper.camera_spawn",
+            "aliases": [
+              "相机出生点",
+              "相机",
+              "出生点",
+              "预览",
+              "camera_spawn",
+              "helper camera_spawn",
+              "helper.camera_spawn"
+            ],
+            "locale": "zh-CN"
+          }
         },
         {
           "id": "helper.reset_zone",
@@ -3871,7 +6637,30 @@
               2
             ]
           },
-          "assetPolicy": "builtin-procedural"
+          "assetPolicy": "builtin-procedural",
+          "quality": {
+            "strategy": "procedural-prefab",
+            "visualTier": "high-preview",
+            "maxParts": 2,
+            "maxDrawCalls": 2,
+            "particleMaxCount": 0,
+            "binaryBytes": 0,
+            "externalAssetOptional": false,
+            "lod": "recipe-low-medium-high"
+          },
+          "voice": {
+            "token": "xj.element.helper.reset_zone",
+            "aliases": [
+              "重置区域",
+              "重置",
+              "区域",
+              "失败处理",
+              "reset_zone",
+              "helper reset_zone",
+              "helper.reset_zone"
+            ],
+            "locale": "zh-CN"
+          }
         }
       ]
     }
@@ -3885,5 +6674,26 @@
     "render.kind": "目录分类，effect/helper 尚不是当前 OBJECT_TYPES；开发时需要映射至真实支持的运行时类型。",
     "interactionProfiles": "规划中的行为声明，当前仅少数通用触发/粒子预览能力已存在。",
     "priority": "P0 首批应交付可用实例；P1/P2 不得呈现为已经可用。"
+  },
+  "qualityPolicy": {
+    "default": "高精度程序化预制体：使用少量几何部件、透明/Shader/点粒子表达细节，不携带二进制文件。",
+    "binaryBytesMeaning": "目录定义本身不包含 GLB/贴图二进制；真实外部资产如果接入，必须单独登记 meta.assets 并提供低模/变体。",
+    "runtimeBudgetMeaning": "maxDrawCalls / particleMaxCount 是首版预算上限，开发验收时以设备实测 FPS、GPU memory 和加载时间复核。",
+    "upgradeRule": "不要为了视觉细节直接提高全局粒子数或几何分段；先增加法线/材质/实例复用，仍不足再提供可选高质量变体。"
+  },
+  "voiceProtocol": {
+    "version": "1.0.0",
+    "tokenPrefix": "xj.element.",
+    "canonicalField": "element_id",
+    "matchOrder": [
+      "exact_token",
+      "exact_alias",
+      "normalized_alias",
+      "tag_or_preset",
+      "fuzzy"
+    ],
+    "ambiguityPolicy": "若命中多个同类场景实例，返回候选 object_id、name、index，等待用户确认；不要猜测。",
+    "addPolicy": "用户表达添加/放置/创建一个元素时返回 add_element，使用 canonical element_id；目录 token 不写入 meta.assets。",
+    "instancePolicy": "场景对象保存 element_id、element_version、voice_token；voice_token 只用于稳定指代，实例 id 仍是唯一编辑目标。"
   }
 }

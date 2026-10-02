@@ -1301,3 +1301,31 @@ select.field,
 .vp-toolbar .navigation-mode-button > span { display:inline-block; }
 .vp-toolbar .navigation-mode-button > i { flex:none; }
 @media (max-width:1280px) { .vp-toolbar .navigation-mode-button { width:auto; min-width:62px; } }
+
+
+/* Fixed element catalog: reusable sidebar templates, separate from project assets. */
+.ol-fixed-title { justify-content:space-between; }
+.ol-fixed-count { color:var(--ui-subtle); font:600 10px var(--mono); }
+.ol-context-hint { color:var(--ui-subtle); font-size:10px; }
+.ol-element-groups { padding:0 8px 10px; }
+.ol-element-group { border-bottom:1px solid var(--ui-line-soft); }
+.ol-element-group-head { display:flex; align-items:center; justify-content:space-between; min-height:30px; padding:0 6px; color:var(--ui-muted); font-size:11px; font-weight:700; }
+.ol-element-list { display:flex; flex-direction:column; gap:2px; padding:0 0 7px; }
+.ol-element-row { display:flex; align-items:center; gap:7px; min-height:38px; padding:4px 5px; border:1px solid transparent; border-radius:5px; background:#fff; cursor:grab; }
+.ol-element-row:hover, .ol-element-row:focus-within { border-color:#f5c09b; background:#fff8f2; }
+.ol-element-row:active { cursor:grabbing; }
+.ol-element-icon { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; flex:none; border-radius:5px; background:#f2f5f7; color:#708191; font-size:15px; }
+.ol-element-main { display:flex; flex:1; min-width:0; flex-direction:column; gap:2px; }
+.ol-element-main strong { overflow:hidden; color:var(--ui-ink); font-size:11px; font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
+.ol-element-main small { overflow:hidden; color:var(--ui-subtle); font-size:9px; text-overflow:ellipsis; white-space:nowrap; }
+.ol-element-add { display:inline-flex; align-items:center; justify-content:center; width:25px; height:25px; flex:none; border:1px solid #dce3e8; border-radius:5px; background:#fff; color:#f56c16; cursor:pointer; }
+.ol-element-add:hover { border-color:#f5a06c; background:#fff1e7; }
+.ol-element-add i { font-size:15px; }
+.ol-element-more { padding:3px 6px 0; color:var(--ui-subtle); font-size:9px; }
+@media (max-width:900px) {
+  .ol-element-main small { display:none; }
+  .ol-element-row { min-height:34px; }
+}
+
+.tb-release-actions { display:flex; gap:6px; margin:10px 0 5px; }
+.tb-release-hint { color:var(--fg-dim); font-size:11px; line-height:1.45; }

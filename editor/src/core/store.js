@@ -9,6 +9,7 @@ let selection = new Set()
 let mode = 'edit'
 let editorMode = 'scene'
 let storageKey = 'xiyou.scene'
+let lastLoadStatus = 'idle'
 let batchDepth = 0
 let batchDirty = false
 let batchSnapshot = null
@@ -116,8 +117,25 @@ function normalizeScene(input) {
   }
 
   source.objects = Array.isArray(source.objects) ? source.objects : []
+  source.objects.forEach(object => {
+    if (!isObject(object)) return
+    object.element_id = typeof object.element_id === 'string' ? object.element_id : ''
+    object.element_version = typeof object.element_version === 'string' ? object.element_version : ''
+    object.voice_token = typeof object.voice_token === 'string' ? object.voice_token : ''
+    object.element_category = typeof object.element_category === 'string' ? object.element_category : ''
+    object.render_preset = typeof object.render_preset === 'string' ? object.render_preset : ''
+    object.visibleInRuntime = object.visibleInRuntime !== false
+    if (object.interaction !== null && !isObject(object.interaction)) object.interaction = null
+  })
   source.sequences = Array.isArray(source.sequences) ? source.sequences : []
   source.triggers = Array.isArray(source.triggers) ? source.triggers : []
+  source.triggers.forEach(trigger => {
+    if (!isObject(trigger)) return
+    trigger.when = typeof trigger.when === 'string' ? trigger.when : 'tap'
+    trigger.params = isObject(trigger.params) ? trigger.params : {}
+    trigger.do = Array.isArray(trigger.do) ? trigger.do : []
+    trigger.runtimeOnly = trigger.runtimeOnly === true
+  })
   source.anchors = Array.isArray(source.anchors) ? source.anchors : []
   source.zones = Array.isArray(source.zones) ? source.zones : []
 
@@ -130,6 +148,13 @@ function normalizeScene(input) {
   source.meta.name = typeof source.meta.name === 'string'
     ? source.meta.name
     : '未命名场景'
+  source.meta.draftId = typeof source.meta.draftId === 'string' && source.meta.draftId
+    ? source.meta.draftId
+    : randomId('draft')
+  source.meta.updatedAt = typeof source.meta.updatedAt === 'string'
+    ? source.meta.updatedAt
+    : ''
+  source.meta.storageVersion = Number(source.meta.storageVersion) || 2
   source.meta.assets = Array.isArray(source.meta.assets)
     ? source.meta.assets
     : []
@@ -694,10 +719,17 @@ export const store = {
 
   save() {
     try {
+      scene.meta.updatedAt = new Date().toISOString()
+      scene.meta.storageVersion = 2
       scene.meta.dirty = false
-      localStorage.setItem(storageKey, JSON.stringify(scene))
+      const serialized = JSON.stringify(scene)
+      // 先保留上一份可恢复副本，避免一次错误写入让用户失去最后一份草稿。
+      const previous = localStorage.getItem(storageKey)
+      if (previous) localStorage.setItem(`${storageKey}.backup`, previous)
+      localStorage.setItem(storageKey, serialized)
       return true
     } catch (error) {
+      scene.meta.dirty = true
       emit('log', {
         message: `保存场景失败：${error?.message || String(error)}`,
         level: 'error'
@@ -709,14 +741,34 @@ export const store = {
   load() {
     try {
       const raw = localStorage.getItem(storageKey)
-      if (!raw) return false
+      if (!raw) {
+        lastLoadStatus = 'missing'
+        return false
+      }
 
       const parsed = JSON.parse(raw)
-      if (!isValidScene(parsed)) return false
+      if (!isValidScene(parsed)) {
+        const backup = localStorage.getItem(`${storageKey}.backup`)
+        let backupScene = null
+        try { backupScene = backup ? JSON.parse(backup) : null } catch {}
+        if (isValidScene(backupScene)) {
+          scene = normalizeScene(backupScene)
+          scene.meta.dirty = true
+          committedSnapshot = JSON.stringify(scene)
+          lastLoadStatus = 'backup'
+          emit('change', { transient: false })
+          emit('log', { message: '主草稿损坏，已恢复最近一次备份；请尽快导出保存', level: 'warn' })
+          return true
+        }
+        lastLoadStatus = 'invalid'
+        emit('log', { message: '场景草稿结构无效，已保留原数据；可尝试导入备份文件', level: 'error' })
+        return false
+      }
 
       scene = normalizeScene(parsed)
       scene.meta.dirty = false
       committedSnapshot = JSON.stringify(scene)
+      lastLoadStatus = 'loaded'
 
       const hadSelection = selection.size > 0
       selection.clear()
@@ -728,12 +780,32 @@ export const store = {
       if (hadSelection) emit('selection', [])
       return true
     } catch (error) {
+      const backup = localStorage.getItem(`${storageKey}.backup`)
+      try {
+        const backupScene = backup ? JSON.parse(backup) : null
+        if (isValidScene(backupScene)) {
+          scene = normalizeScene(backupScene)
+          scene.meta.dirty = true
+          committedSnapshot = JSON.stringify(scene)
+          lastLoadStatus = 'backup'
+          emit('change', { transient: false })
+          emit('log', { message: '主草稿无法读取，已恢复最近一次备份；请尽快导出保存', level: 'warn' })
+          return true
+        }
+      } catch {
+        // 主草稿和备份都不可解析，继续报告原始读取错误。
+      }
+      lastLoadStatus = 'error'
       emit('log', {
         message: `读取场景失败：${error?.message || String(error)}`,
         level: 'error'
       })
       return false
     }
+  },
+
+  get lastLoadStatus() {
+    return lastLoadStatus
   },
 
   newScene(template) {
@@ -764,6 +836,36 @@ export const store = {
         message: `导入场景失败：${error?.message || String(error)}`,
         level: 'error'
       })
+      return false
+    }
+  },
+
+  restoreSnapshot(jsonString, { record = false } = {}) {
+    try {
+      const parsed = typeof jsonString === 'string' ? JSON.parse(jsonString) : jsonString
+      if (!isValidScene(parsed)) throw new Error('场景快照结构无效')
+      replaceScene(parsed, { record, transient: false })
+      return true
+    } catch (error) {
+      emit('log', { message: `恢复场景快照失败：${error?.message || String(error)}`, level: 'error' })
+      return false
+    }
+  },
+
+  rollbackSnapshot(snapshot) {
+    try {
+      const parsed = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot
+      if (!isValidScene(parsed)) throw new Error('场景快照结构无效')
+      scene = normalizeScene(parsed)
+      scene.meta.dirty = true
+      committedSnapshot = JSON.stringify(scene)
+      const last = undoStack[undoStack.length - 1]
+      if (last === snapshot || last === JSON.stringify(parsed)) undoStack.pop()
+      redoStack.length = 0
+      emit('change', { transient: false, rollback: true })
+      return true
+    } catch (error) {
+      emit('log', { message: `回滚场景失败：${error?.message || String(error)}`, level: 'error' })
       return false
     }
   },
@@ -828,6 +930,22 @@ export const store = {
 
   validate() {
     return validateScene(scene)
+  },
+
+  runtimeSnapshot() {
+    return {
+      mode: mode === 'play' ? 'play' : 'edit',
+      objects: (scene.objects || []).map(object => ({
+        id: object.id,
+        element_id: object.element_id || '',
+        voice_token: object.voice_token || '',
+        name: object.name || object.id,
+        transform: clone(object.transform),
+        visible: object.visible !== false,
+        interaction: clone(object.interaction)
+      })),
+      score: 0
+    }
   },
 
   setEditorMode(nextMode) {
@@ -950,8 +1068,14 @@ export const store = {
       objects: scene.objects.length,
       zones: scene.zones.length,
       assets: scene.meta.assets.length,
-      snapshot: JSON.stringify(snapshot)
+      snapshot: JSON.stringify(snapshot),
+      payload: {
+        releaseId: '',
+        version: previousVersion + 1,
+        scene: snapshot
+      }
     }
+    release.payload.releaseId = release.id
     scene.meta.releases.push(release)
     addHistory(release.id, `创建发布版本 v${release.version}`)
     markChanged(false)

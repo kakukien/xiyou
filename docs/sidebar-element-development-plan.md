@@ -1,6 +1,6 @@
 # 侧边栏固定元素开发文档
 
-> 状态：规划稿 v0.1.0。当前只做方案与资产表，不执行代码开发。
+> 状态：规划稿 v0.1.0；基础目录与实例链路已落地，完整能力仍按本文件分阶段开发。
 >
 > 目标：在现有浅色专业空间编辑器中，增加一个“空间 > 固定元素”入口，让用户可以选择、拖入并反复创建可互动元素。
 
@@ -166,7 +166,7 @@ createElementInstance(elementId, placementPoint, overrides)
 
 - 已有 `scene.triggers` 记录 `{ target: obj.id, when, params, do }`，`scene.sequences` 可驱动变换/透明度；新 `interaction` 字段承担配置与状态声明，工厂生成的触发器仍存现有集合，不能另造一套平行的触发引擎。
 - `play_seq` 动作统一使用 `{ action: 'play_seq', args: { seqId: '<id>' } }`，编辑器与 Runtime 均可识别；不要沿用局部动作卡中的 `args.seq` 作为新目录契约。
-- 目录新增 `leave`、`collision`、`collect` 等条件及粒子、声音、状态、传送等动作前，先扩 `CONDITIONS`/`ACTIONS`、`publishCheck`、`playback.js`、Runtime、Details 与测试；不能因编辑器有相似占位而标记为已实现。
+- 新增的 `leave`、`collision`、`collect` 条件及 `set_state`、`collect`、`emit_particles`、`add_score`、`destroy`、`camera_shake`、`vibrate` 等基础动作已扩展到 `CONDITIONS`/`ACTIONS`、`playback.js`、Runtime、Details；真实物理、`spawn_element`、传送和声音仍不能标记为已完成。
 - 点击/拖放一次创建对象 + 默认触发器 + 时间线/联动的操作必须是一个 Undo/Yjs 原子事务；现有 `store.batch()` 可用于本地历史归并，但 Yjs UndoManager 仍需专项联调，不能只凭本地 batch 宣称协作事务原子化；删除实例时清理相关触发器与时间线引用，解绑则不改变目录定义。当前 `removeObject` 只删除对象，需要补齐引用清理。
 
 ## 5. 渲染实现建议
@@ -251,10 +251,11 @@ createElementInstance(elementId, placementPoint, overrides)
 ### 7.3 互动
 
 - [ ] 每个 P0 交互元素至少有一个有效默认 Profile；静态元素允许 `static`，其余 Profile 必须有可验证的实际事件与反馈；
-- [ ] 宝箱/门可开合，按钮/开关可联动，金币/钥匙/晶体可收集；
+- [x] 宝箱/门可开合状态、按钮/开关可联动、金币/钥匙/晶体可收集已接入基础状态机；
 - [ ] 粒子发射器支持持续/脉冲两种模式；
-- [ ] 萤火虫和飘飞光点支持启动、停止、数量上限和区域；
+- [x] 萤火虫和飘飞光点沿用点粒子动画与目录粒子预算；启动/停止/区域参数仍需进一步产品化。
 - [ ] 粒子、声音、移动等行为有冷却或数量上限，不产生无限事件。
+- [x] 编辑器与 Runtime 已支持 leave/collision/collect 基础事件，以及 set_state/collect/emit_particles/add_score/destroy/camera_shake/vibrate 基础动作；spawn_element、真实物理和生产级传送仍待完成。
 
 ### 7.4 内容清理
 
@@ -268,7 +269,7 @@ createElementInstance(elementId, placementPoint, overrides)
 - [ ] 无剧情的纯游戏场景不因“缺少起始节点/终点节点”被 `publishCheck` 阻断；如加载旧剧情场景，仅在该模式下检查节点链。
 - [ ] 无底座时可在网格空间创作；如发布模式要求真实底座，应单独说明限制，不能通过误用剧情校验拦截。
 - [ ] 元素实例及默认触发器、序列在 Yjs 协作中同步，远端客户端无需再次执行目录创建逻辑，不产生重复实例。
-- [ ] 编辑器内试玩与独立 `runtime.html` 的材质、几何部件、命中区域和事件效果一致；当前 Runtime 将组装体所有部件渲染为 Box，属于待补缺口。
+- [ ] 编辑器内试玩与独立 `runtime.html` 的材质、几何部件、命中区域和事件效果一致；Runtime 已复用编辑器的 `createNode` 组装体渲染路径；仍需在目标设备上逐项校验材质、粒子预算和交互事件一致性。
 - [ ] 动态元素资源在对象删除、试玩退出和场景切换后正确释放，无重复动画计时器或粒子循环泄漏。
 
 ## 8. 测试用例
@@ -307,4 +308,18 @@ createElementInstance(elementId, placementPoint, overrides)
 - `editor/src/style.css`：沿用现有 Token，不新增独立视觉风格；
 - `docs/sidebar-element-asset-table.json`：目录规划主表，开发后作为 manifest 初始来源。
 
-本轮只交付 `docs/` 文档，不修改以上代码文件。
+本轮文档阶段原计划只交付 `docs/`；在用户确认“先把资产做出来”后，已开始实现目录、程序化配方、侧边栏添加和语音 token 基础层。
+
+## 10. 已落地的基础实现切片（2026-10-03）
+
+本轮已落地目录与语音标识的基础层：
+
+- `editor/src/core/element-catalog.js`：由 JSON 资产表生成的 124 项 manifest；
+- `editor/src/core/elements.js`：元素查询、语音 token 解析、程序化几何配方、元素实例创建入口；
+- `editor/src/ui/outliner.js`：空间侧边栏固定元素目录、搜索、点击添加、拖拽标识；已验证剧情页不显示固定元素，空间页显示 8 类 124 项；
+- `editor/src/main.js`：接受 `text/x-xiyou-element` 拖入；
+- `editor/src/core/schema.js` / `store.js`：实例持久化 `element_id`、版本、voice token、互动声明；
+- `editor/scripts/generate-elements.mjs`：从文档 JSON 重新生成 manifest；
+- `editor/package.json`：增加 `npm run elements:generate`。
+
+这只是第一层：编辑器侧目录/实例已进入开发，不代表 124 个元素的所有运行时互动、Runtime 同构渲染、语音对话确认流和完整剧情清理已经完成。构建、Smoke、回归和 GPU 验证已通过；后续补齐语音候选确认、Runtime 互动状态与完整剧情清理。

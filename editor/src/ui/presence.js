@@ -52,7 +52,9 @@ export function mount(el) {
   let selectedIds = [];
 
   const user = getUser();
-  const wsUrl = new URLSearchParams(location.search).get('ws') ||
+  const params = new URLSearchParams(location.search);
+  const hasExplicitCollab = params.has('ws') || params.has('collab') || location.hostname === 'agentpay.xx.kg';
+  const wsUrl = params.get('ws') ||
     (location.hostname === 'agentpay.xx.kg'
       ? 'wss://agentpay.xx.kg/xiyou-yjs'
       : `ws://${location.hostname}:8022`);
@@ -193,6 +195,7 @@ export function mount(el) {
 
   // expose for main.js auto-connect
   root._connect = connect;
+  root._hasExplicitCollab = hasExplicitCollab;
 
   roomInput.addEventListener('keydown', event => {
     if (event.key === 'Enter') {

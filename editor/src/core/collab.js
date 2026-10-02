@@ -209,16 +209,46 @@ function handleRemoteTransaction(events, transaction) {
   applyRemoteScene()
 }
 
+function sceneHasContent(value) {
+  if (!value) return false
+  return Boolean(
+    value.base?.sog_url ||
+    value.base?.chunks?.length ||
+    value.objects?.length ||
+    value.zones?.length ||
+    value.triggers?.length ||
+    value.anchors?.length ||
+    value.meta?.assets?.length ||
+    value.story?.chapters?.length
+  )
+}
+
+function remoteSceneForComparison() {
+  return readRemoteScene()
+}
+
 function finishInitialSync() {
   if (synced) return
   synced = true
 
-  if (hasRemoteData()) {
-    applyRemoteScene({ loaded: true })
-    log('已载入协作场景')
-  } else {
+  if (!hasRemoteData()) {
     writeLocalScene()
     log('已发布本地场景到协作房间')
+  } else {
+    const remote = remoteSceneForComparison()
+    const localHasContent = sceneHasContent(store.scene)
+    const remoteHasContent = sceneHasContent(remote)
+    const localTime = Date.parse(store.scene.meta?.updatedAt || '') || 0
+    const remoteTime = Date.parse(remote.meta?.updatedAt || '') || 0
+
+    // 两边都有内容时不再无条件用远端覆盖本地；保留较新的草稿，避免刷新/错房间造成“内容消失”。
+    if (localHasContent && remoteHasContent && localTime >= remoteTime) {
+      writeLocalScene()
+      log('本地草稿较新，已保留本地并同步到协作房间', 'warn')
+    } else {
+      applyRemoteScene({ loaded: true })
+      log('已载入协作场景')
+    }
   }
 
   publishPeers()

@@ -9,7 +9,10 @@ const CONDITION_LABELS = {
   hold: '按住',
   enter: '进入区域',
   seq_event: '时间线事件',
-  node_done: '节点完成'
+  node_done: '节点完成',
+  leave: '离开区域',
+  collision: '发生碰撞',
+  collect: '收集对象'
 };
 
 const ACTION_LABELS = {
@@ -19,7 +22,16 @@ const ACTION_LABELS = {
   highlight: '高亮',
   card: '弹卡片',
   reward: '奖励',
-  goto_node: '跳转节点'
+  goto_node: '跳转节点',
+  collect: '收集',
+  set_state: '设置状态',
+  emit_particles: '发射粒子',
+  add_score: '增加分数',
+  teleport: '传送',
+  destroy: '销毁实例',
+  camera_shake: '镜头震动',
+  vibrate: '触感反馈',
+  spawn_element: '生成固定元素'
 };
 
 const MATERIAL_LABELS = {
@@ -262,6 +274,9 @@ function actionSummary(action) {
     const node = allNodes().find(item => item.id === args.nodeId);
     return node ? `跳转：${node.title || node.id}` : '跳转节点';
   }
+  if (action.action === 'set_state') return `状态：${args.state || '默认'}`;
+  if (action.action === 'add_score') return `加分：${args.score ?? 0}`;
+  if (action.action === 'spawn_element') return `生成：${args.elementId || args.element_id || '固定元素'}`;
   return ACTION_LABELS[action.action] || action.action || '选择动作';
 }
 
@@ -276,6 +291,12 @@ function renderActionEditor(trigger, index) {
     extra = `<input class="field action-arg" placeholder="卡片文字" value="${esc(args.text || '')}" data-trigger="${trigger.id}" data-action-index="${index}" data-arg="text">`;
   } else if (action.action === 'goto_node') {
     extra = `<select class="field action-arg" data-trigger="${trigger.id}" data-action-index="${index}" data-arg="nodeId">${nodeOptions(args.nodeId)}</select>`;
+  } else if (action.action === 'set_state') {
+    extra = `<input class="field action-arg" placeholder="状态：on / off / open / closed" value="${esc(args.state || '')}" data-trigger="${trigger.id}" data-action-index="${index}" data-arg="state">`;
+  } else if (action.action === 'add_score') {
+    extra = `<input class="field action-arg" type="number" step="1" placeholder="分数" value="${esc(args.score ?? '')}" data-trigger="${trigger.id}" data-action-index="${index}" data-arg="score">`;
+  } else if (action.action === 'spawn_element') {
+    extra = `<input class="field action-arg" placeholder="element_id 或 voice token" value="${esc(args.elementId || args.element_id || '')}" data-trigger="${trigger.id}" data-action-index="${index}" data-arg="elementId">`;
   }
 
   return `
@@ -307,7 +328,7 @@ function renderInteraction(obj) {
           <span class="muted">触发条件</span>
           ${CONDITION_IDS.map(id => `<button class="chip ${trigger.when === id ? 'active' : ''}" data-set-when="${id}" data-trigger="${trigger.id}">${CONDITION_LABELS[id] || id}</button>`).join('')}
         </div>
-        ${trigger.when === 'enter' ? `<label class="row field-row trigger-param"><span>进入半径</span><input class="field" type="number" min="0.1" step="0.1" value="${esc(trigger.params?.radius ?? 2)}" data-trigger-param="radius" data-trigger="${trigger.id}"></label>` : ''}
+        ${trigger.when === 'enter' || trigger.when === 'leave' ? `<label class="row field-row trigger-param"><span>${trigger.when === 'leave' ? '离开半径' : '进入半径'}</span><input class="field" type="number" min="0.1" step="0.1" value="${esc(trigger.params?.radius ?? 2)}" data-trigger-param="radius" data-trigger="${trigger.id}"></label>` : ''}
         ${trigger.when === 'gaze' || trigger.when === 'hold' ? `<label class="row field-row trigger-param"><span>持续秒数</span><input class="field" type="number" min="0.1" step="0.1" value="${esc(trigger.params?.secs ?? 1)}" data-trigger-param="secs" data-trigger="${trigger.id}"></label>` : ''}
         ${editingAction?.triggerId === trigger.id ? renderActionEditor(trigger, editingAction.index) : ''}
       </div>

@@ -6,6 +6,10 @@ import { log } from '../ui/log.js';
 const active = [];
 const highlightStates = new Set();
 const enterStates = new Map();
+const leaveStates = new Map();
+const collisionStates = new Map();
+const runtimeStates = new Map();
+let runtimeScore = 0;
 // 预览快照：拖动播放头改视口前先留底，endPreview() 还原
 const previewSnapshots = new Map();
 
@@ -533,6 +537,56 @@ function highlightTarget(targetId) {
   if (node) highlight(node)
 }
 
+function runtimeNode(targetId) {
+  return viewport.node(targetId) || viewport.zoneNodes?.get(targetId) || null
+}
+
+function runtimeStateOf(id) {
+  if (!runtimeStates.has(id)) runtimeStates.set(id, { state: 'default', collected: false, destroyed: false })
+  return runtimeStates.get(id)
+}
+
+function setRuntimeState(id, state, extra = {}) {
+  const next = { ...runtimeStateOf(id), state, ...extra }
+  runtimeStates.set(id, next)
+  const node = runtimeNode(id)
+  if (node) node.userData.runtimeState = next
+  store.emit('runtime-state', { id, state: next })
+  return next
+}
+
+function resetRuntime() {
+  active.splice(0).forEach(item => {
+    item.tracks.forEach(restoreTrack)
+    item.mixers.forEach(mixer => mixer.stopAllAction())
+  })
+  highlightStates.clear()
+  enterStates.clear()
+  leaveStates.clear()
+  collisionStates.clear()
+  runtimeStates.clear()
+  runtimeScore = 0
+  ;(store.scene.objects || []).forEach(object => {
+    const node = viewport.node(object.id)
+    if (node) {
+      node.visible = object.visible !== false
+      node.userData.runtimeState = null
+    }
+  })
+  store.emit('runtime-score', { score: 0 })
+}
+
+function pulseParticles(targetId, args = {}) {
+  const node = runtimeNode(args.targetId || targetId)
+  if (!node) return
+  const duration = Math.max(0.1, Number(args.duration) || 0.8)
+  const until = performance.now() / 1000 + duration
+  node.userData.particlePulseUntil = until
+  node.userData.particleBurst = Number(args.count) || 0
+  node.userData.runtimeState = { ...runtimeStateOf(targetId), particleUntil: until }
+  store.emit('particle-emitted', { targetId: args.targetId || targetId, duration, count: node.userData.particleBurst })
+}
+
 export const triggers = {
   fire(when, targetId, extra = {}) {
     const triggerList = Array.isArray(store.scene.triggers) ? store.scene.triggers : [];
@@ -557,11 +611,75 @@ export const triggers = {
 
         if (action === 'show' || action === 'hide') {
           const objectId = args.targetId || args.objectId || trigger.target;
-          if (objectId && store.getObject?.(objectId)) {
-            store.updateObject(objectId, { visible: action === 'show' });
-          } else if (objectId && store.getZone?.(objectId)) {
-            store.updateZone(objectId, { visible: action === 'show' });
-          }
+          const node = runtimeNode(objectId);
+          if (node) node.visible = action === 'show';
+          setRuntimeState(objectId, action === 'show' ? 'visible' : 'hidden');
+          return;
+        }
+
+        if (action === 'set_state') {
+          const objectId = args.targetId || args.objectId || trigger.target;
+          const current = runtimeStateOf(objectId).state;
+          const next = args.state === 'toggle'
+            ? (current === 'on' || current === 'open' || current === 'active' ? 'off' : 'on')
+            : String(args.state || 'default');
+          setRuntimeState(objectId, next);
+          highlightTarget(objectId);
+          return;
+        }
+
+        if (action === 'collect') {
+          const objectId = args.targetId || args.objectId || trigger.target;
+          const current = runtimeStateOf(objectId);
+          if (current.collected || current.destroyed) return;
+          const node = runtimeNode(objectId);
+          if (node) node.visible = false;
+          setRuntimeState(objectId, 'collected', { collected: true });
+          runtimeScore += Number(args.score) || 1;
+          store.emit('runtime-score', { score: runtimeScore, delta: Number(args.score) || 1, targetId: objectId });
+          store.emit('card', { text: args.text || `已收集 ${store.getObject?.(objectId)?.name || '对象'}` });
+          triggers.fire('collect', objectId, { from: 'action', score: Number(args.score) || 1 });
+          return;
+        }
+
+        if (action === 'destroy') {
+          const objectId = args.targetId || args.objectId || trigger.target;
+          const node = runtimeNode(objectId);
+          if (node) node.visible = false;
+          setRuntimeState(objectId, 'destroyed', { destroyed: true });
+          return;
+        }
+
+        if (action === 'emit_particles') {
+          pulseParticles(trigger.target, args);
+          return;
+        }
+
+        if (action === 'add_score') {
+          const delta = Number(args.score ?? args.value ?? args.amount) || 0;
+          runtimeScore += delta;
+          store.emit('runtime-score', { score: runtimeScore, delta, targetId: trigger.target });
+          return;
+        }
+
+        if (action === 'vibrate') {
+          if (navigator.vibrate) navigator.vibrate(Math.min(1000, Math.max(0, Number(args.duration) || 80)));
+          return;
+        }
+
+        if (action === 'camera_shake') {
+          store.emit('camera-shake', { intensity: Math.min(1, Math.max(0, Number(args.intensity) || 0.15)), duration: Number(args.duration) || 250 });
+          return;
+        }
+        if (action === 'spawn_element') {
+          const elementId = args.elementId || args.element_id || args.voiceToken
+          const direction = viewport.camera?.getWorldDirection?.(new Vector3())
+          const point = Array.isArray(args.position)
+            ? args.position
+            : direction && viewport.camera?.position
+              ? viewport.camera.position.clone().add(direction.multiplyScalar(2)).toArray()
+              : null
+          if (elementId && point) store.emit('spawn-element', { elementId, point, name: args.name || '' })
           return;
         }
 
@@ -591,6 +709,23 @@ export const triggers = {
     });
   }
 };
+
+function tickCollision() {
+  if (store.mode !== 'play') return
+  const position = cameraPosition()
+  if (!position) return
+  const triggerList = Array.isArray(store.scene.triggers) ? store.scene.triggers : []
+  triggerList.filter(trigger => trigger.when === 'collision' && trigger.target).forEach(trigger => {
+    const node = viewport.node(trigger.target)
+    if (!node || !node.visible) return
+    const radius = Math.max(0.1, Number(trigger.params?.radius) || 0.8)
+    const worldPosition = node.getWorldPosition(new Vector3())
+    const inside = distanceBetween(position, worldPosition) <= radius
+    const previous = collisionStates.get(trigger.id) === true
+    if (inside && !previous) triggers.fire('collision', trigger.target, { from: 'camera-proximity' })
+    collisionStates.set(trigger.id, inside)
+  })
+}
 
 function tickEnter() {
   if (store.mode !== 'play') return;
@@ -624,12 +759,23 @@ function tickEnter() {
         triggers.fire('enter', trigger.target);
       } else if (!inside && wasInside) {
         enterStates.set(trigger.id, false);
+        triggers.fire('leave', trigger.target);
       }
     });
+}
+
+store.on('mode', mode => {
+  if (mode === 'play') resetRuntime()
+  else resetRuntime()
+})
+
+export function getRuntimeState(id) {
+  return runtimeStates.get(id) || null
 }
 
 export function tickPlay(dt) {
   player.tick(dt);
   tickHighlights(Math.max(0, Number(dt) || 0));
   tickEnter();
+  tickCollision();
 }
