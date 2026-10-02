@@ -3,6 +3,7 @@ import { publishCheck } from '../core/schema.js';
 import { demoScene } from '../core/templates.js';
 import { openAR } from './arview.js';
 import { log } from './log.js';
+import { copyText, toast } from './toast.js';
 
 function randomDraftCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -397,19 +398,34 @@ export function mount(el) {
     url.searchParams.set('room', getRoomCode());
     url.searchParams.delete('draft');
 
-    try {
-      await navigator.clipboard.writeText(url.toString());
-      draftChip.textContent = '已复制房间链接';
-      setTimeout(renderDraft, 1400);
-    } catch {
-      window.prompt('复制房间链接', url.toString());
-    }
+    copyText(url.toString(), '已复制房间链接');
+    draftChip.textContent = '已复制房间链接';
+    setTimeout(renderDraft, 1400);
   });
 
+  // 演示场景会覆盖当前场景：两步确认（第一次点击进入待确认态，3s 内再点执行）
+  let demoArmed = false;
+  let demoTimer = null;
   demoButton.addEventListener('click', () => {
-    if (!window.confirm('载入演示场景会覆盖当前房间的场景内容，确定继续？')) return;
+    if (!demoArmed) {
+      demoArmed = true;
+      const prev = demoButton.textContent;
+      demoButton.textContent = '再点一次确认载入（覆盖当前场景）';
+      demoButton.classList.add('danger');
+      demoTimer = setTimeout(() => {
+        demoArmed = false;
+        demoButton.textContent = prev;
+        demoButton.classList.remove('danger');
+      }, 3000);
+      return;
+    }
+    clearTimeout(demoTimer);
+    demoArmed = false;
+    demoButton.textContent = '演示';
+    demoButton.classList.remove('danger');
     store.newScene(demoScene());
     log('已载入演示场景');
+    toast('已载入演示场景 · Ctrl+Z 撤销');
   });
 
   arButton.addEventListener('click', () => openAR());

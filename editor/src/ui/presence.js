@@ -1,5 +1,6 @@
 import { store } from '../core/store.js';
 import { collab } from '../core/collab.js';
+import { copyText } from './toast.js';
 
 export function mount(el) {
   const root = document.createElement('div');
@@ -72,10 +73,9 @@ export function mount(el) {
     if (connectionState === 'connected') return;
     const url = new URL(location.href);
     url.searchParams.set('room', roomInput?.value?.trim() || new URLSearchParams(location.search).get('room') || 'demo');
-    navigator.clipboard?.writeText(url.toString()).then(() => {
-      statusText.textContent = '链接已复制 ✓';
-      setTimeout(renderStatus, 1500);
-    }).catch(() => window.prompt('复制协作链接', url.toString()));
+    copyText(url.toString(), '协作链接已复制');
+    statusText.textContent = '链接已复制 ✓';
+    setTimeout(renderStatus, 1500);
   });
 
   wrap.append(status, peersCount, avatars, roomInput, lockHint);

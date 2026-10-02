@@ -3,6 +3,7 @@ import { ACTION_CARDS, cardToSequence } from '../core/templates.js';
 import { budget } from '../core/schema.js';
 import { player } from '../core/playback.js';
 import { log } from './log.js';
+import { toast } from './toast.js';
 
 const KIND_LABELS = {
   transform: '变换',
@@ -34,6 +35,32 @@ let renderQueued = false;
 let dockMaximized = false;
 let dockPrevHeight = null;
 let tlZoom = 140; // 时间线缩放：像素/秒
+
+// 行内改名：把 el 换成 input，Enter/失焦提交，Esc 取消
+function inlineEditInto(el, current, onCommit) {
+  const input = document.createElement('input');
+  input.className = 'field ol-inline-edit';
+  input.value = current;
+  input.style.width = Math.max(80, el.offsetWidth) + 'px';
+  el.replaceWith(input);
+  input.focus();
+  input.select();
+  let done = false;
+  const commit = (save) => {
+    if (done) return;
+    done = true;
+    const value = input.value.trim();
+    if (save && value && value !== current) onCommit(value);
+    requestRender();
+  };
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') commit(true);
+    if (e.key === 'Escape') commit(false);
+    e.stopPropagation();
+  });
+  input.addEventListener('blur', () => commit(true));
+  input.addEventListener('click', e => e.stopPropagation());
+}
 
 function esc(value) {
   return String(value ?? '');
@@ -342,22 +369,23 @@ function renderTimeline() {
   renameSequence.addEventListener('click', () => {
     const current = getSequence();
     if (!current) return;
-    const name = window.prompt('时间线名称', current.name || current.id);
-    if (name === null) return;
-    updateSequencePatch(current, { name: name.trim() || current.name });
+    inlineEditInto(select, current.name || current.id, name => {
+      updateSequencePatch(current, { name });
+    });
   });
 
   const deleteSequence = makeButton('删除', 'btn danger');
   deleteSequence.addEventListener('click', () => {
     const current = getSequence();
     if (!current) return;
-    if (!window.confirm(`删除时间线「${current.name || current.id}」？触发器中的引用会悬空。`)) return;
+    const name = current.name || current.id;
     player.stop();
     player.endPreview?.();
     store.removeSequence(current.id);
     selectedSequenceId = null;
     selectedKey = null;
     requestRender();
+    toast(`已删除时间线「${name}」· Ctrl+Z 撤销`);
   });
 
   const seq = getSequence();
@@ -842,6 +870,8 @@ function renderStatusbar() {
   return bar;
 }
 
+let dockGrip = null;
+
 function render() {
   if (!root) return;
   root.replaceChildren();
@@ -854,6 +884,7 @@ function render() {
   if (activeTab === 'timeline') content.appendChild(renderTimeline());
   if (activeTab === 'log') content.appendChild(renderLogs());
 
+  if (dockGrip) root.append(dockGrip);
   root.append(tabs, content, renderStatusbar());
 }
 
@@ -865,11 +896,11 @@ export function mount(el) {
   const savedH = localStorage.getItem('xiyou.dockH');
   if (savedH) root.style.height = savedH;
 
-  const grip = document.createElement('div');
-  grip.className = 'dock-resize';
-  grip.title = '上下拖动调整面板高度';
-  grip.innerHTML = '<span class="dock-grip-pill"></span>';
-  grip.addEventListener('pointerdown', event => {
+  dockGrip = document.createElement('div');
+  dockGrip.className = 'dock-resize';
+  dockGrip.title = '上下拖动调整面板高度';
+  dockGrip.innerHTML = '<span class="dock-grip-pill"></span>';
+  dockGrip.addEventListener('pointerdown', event => {
     event.preventDefault();
     dockMaximized = false;
     const startY = event.clientY;
@@ -886,7 +917,6 @@ export function mount(el) {
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
   });
-  root.prepend(grip);
 
   store.on('change', requestRender);
   store.on('selection', requestRender);

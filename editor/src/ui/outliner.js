@@ -1,6 +1,7 @@
 import { store } from '../core/store.js';
 import { OBJECT_TYPES } from '../core/schema.js';
 import { viewport } from '../core/viewport.js';
+import { toast } from './toast.js';
 
 const typeLabels = {
   splat_segment: '点云片段',
@@ -46,15 +47,6 @@ function initials(name) {
     .join('')
     .slice(0, 2)
     .toUpperCase() || '?';
-}
-
-function toast(text) {
-  const el = document.createElement('div');
-  el.className = 'story-toast';
-  el.textContent = text;
-  document.body.appendChild(el);
-  requestAnimationFrame(() => el.classList.add('in'));
-  setTimeout(() => { el.classList.remove('in'); setTimeout(() => el.remove(), 300); }, 2600);
 }
 
 // 双击行内改名：span → input，Enter/失焦提交，Esc 取消
