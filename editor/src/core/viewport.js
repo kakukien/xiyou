@@ -55,6 +55,17 @@ function objectSignature(obj) {
   });
 }
 
+// 确定性随机：同一段序号永远长出同样的段落
+function seededRand(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6D2B79F5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function anchorLabelSprite(text, color) {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
@@ -94,6 +105,9 @@ export const viewport = {
   gizmo: null,
   nodes: new Map(),
   nodeSignatures: new Map(),
+  streamGroup: null,
+  streamSegs: new Map(),
+  streamSig: '',
   baseGroup: null,
   baseHelpers: [],
   pointerDown: null,
@@ -762,11 +776,90 @@ export const viewport = {
     this.controls.target.add(movement);
   },
 
+  // ===== 流式走廊：相机往前走，虚拟路段不断往前铺 =====
+  // scene.stream = { enabled, axis:'z'|'x', dir:1|-1, segLen, ahead, behind, origin:[x,y,z], jitter, parts:[compound part…] }
+  _tickStream() {
+    const spec = store.scene?.stream;
+    if (!spec || spec.enabled === false || !Array.isArray(spec.parts) || !spec.parts.length) {
+      if (this.streamSegs.size) {
+        this.streamSegs.forEach(node => { this.streamGroup.remove(node); disposeNode(node); });
+        this.streamSegs.clear();
+      }
+      this.streamSig = '';
+      return;
+    }
+    if (!this.streamGroup) {
+      this.streamGroup = new THREE.Group();
+      this.streamGroup.userData.isHelper = true;
+      this.scene.add(this.streamGroup);
+    }
+
+    const sig = JSON.stringify(spec);
+    if (sig !== this.streamSig) {
+      this.streamSegs.forEach(node => { this.streamGroup.remove(node); disposeNode(node); });
+      this.streamSegs.clear();
+      this.streamSig = sig;
+    }
+
+    const axis = spec.axis === 'x' ? 'x' : 'z';
+    const dir = spec.dir === -1 ? -1 : 1;
+    const segLen = Math.max(0.5, Number(spec.segLen) || 6);
+    const ahead = Math.max(0, Number(spec.ahead ?? 8));
+    const behind = Math.max(0, Number(spec.behind ?? 1));
+    const origin = Array.isArray(spec.origin) ? spec.origin : [0, 0, 0];
+
+    const camAx = this.camera.position[axis] * dir;
+    const idx0 = Math.floor(camAx / segLen);
+    const lo = idx0 - behind;
+    const hi = idx0 + ahead;
+
+    for (const [idx, node] of [...this.streamSegs]) {
+      if (idx < lo || idx > hi) {
+        this.streamGroup.remove(node);
+        disposeNode(node);
+        this.streamSegs.delete(idx);
+      }
+    }
+
+    for (let i = lo; i <= hi; i++) {
+      if (this.streamSegs.has(i)) continue;
+      const rand = seededRand((i * 2654435761) >>> 0);
+      const jitter = Number(spec.jitter) || 0;
+      const parts = spec.parts.map(part => {
+        const p = { ...(part || {}) };
+        if (jitter && Array.isArray(p.p)) {
+          p.p = [0, 1, 2].map(k => p.p[k] + (rand() - 0.5) * jitter * (k === 1 ? 0.4 : 1));
+        }
+        if (rand() > (p.chance ?? 1)) return null;
+        if (p.vary_color && Array.isArray(spec.palette) && spec.palette.length) {
+          p.color = spec.palette[Math.floor(rand() * spec.palette.length)];
+        }
+        return p;
+      }).filter(Boolean);
+
+      const offset = [0, 0, 0];
+      offset[axis === 'x' ? 0 : 2] = dir * i * segLen;
+      const node = createNode({
+        id: `stream_${i}`,
+        type: 'compound',
+        name: `流段 ${i}`,
+        parts,
+        transform: { p: [origin[0] + offset[0], origin[1] + offset[1], origin[2] + offset[2]] }
+      }, store.scene.meta?.assets || []);
+      // 流段不进 nodes 表：不可选中、不进拾取；命中盒辅助线一并隐藏
+      node.userData.isHelper = true;
+      node.traverse(child => { if (child.userData?.isHelper) child.visible = false; });
+      this.streamGroup.add(node);
+      this.streamSegs.set(i, node);
+    }
+  },
+
   tick(dt) {
     if (!this.camera || !this.controls) return;
 
     this._tickFlight(dt);
     this._tickFocus(dt);
+    this._tickStream();
     this.controls.update();
 
     // 动画 shader + 粒子心跳

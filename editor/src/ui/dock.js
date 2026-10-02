@@ -104,7 +104,7 @@ function renderCardChips() {
         target: obj.id,
         when: 'tap',
         params: {},
-        do: [{ action: 'play_seq', args: { seq: seq.id } }]
+        do: [{ action: 'play_seq', args: { seqId: seq.id } }]
       });
       selectedSequenceId = seq.id;
       activeTab = 'timeline';

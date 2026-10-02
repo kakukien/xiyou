@@ -541,7 +541,7 @@ export const triggers = {
         const args = item?.args || {};
 
         if (action === 'play_seq') {
-          const seqId = args.seqId || args.sequenceId || args.id;
+          const seqId = args.seqId || args.sequenceId || args.seq || args.id;
           if (seqId) player.play(seqId);
           return;
         }

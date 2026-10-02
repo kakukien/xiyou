@@ -191,6 +191,11 @@ export function sceneSummary() {
     lines.push('锚点|无')
   }
 
+  const stream = scene.stream
+  lines.push(stream
+    ? `流式走廊|${stream.enabled === false ? '关' : '开'}|${stream.axis || 'z'}${stream.dir === -1 ? '-' : '+'}|段长${numberOr(stream.segLen, 6)}m|前${numberOr(stream.ahead, 8)}段|parts${Array.isArray(stream.parts) ? stream.parts.length : 0}件`
+    : '流式走廊|无')
+
   return lines.join('\n').slice(0, 2000)
 }
 
@@ -211,6 +216,8 @@ export const SYSTEM_PROMPT = `你是「西游·虚境 AR 空间编辑器」的�
 9. {"op":"add_anchor","id":"","name":"","kind":"vps|poster|image","pose":{"t":[x,y,z],"r":[0,0,0]}} // 放置空间定位锚点（vps=空间定位点, poster=海报/图锚点）
 10. {"op":"update_anchor","id":"","patch":{}} // 改锚点（name/pose.t 等）
 11. {"op":"remove_anchor","id":""} // 删锚点
+12. {"op":"set_stream","enabled":true,"axis":"z","dir":1,"segLen":6,"ahead":8,"behind":1,"origin":[0,0,0],"jitter":0.1,"parts":[...]} // 流式走廊：相机沿轴前进时自动向前铺段、身后回收；parts 用 compound 同套基元描述「一段路」。做「走不到头的街道/长廊」时用它。parts 里可给单项加 "chance":0-1（随机出现率）、"vary_color":true（从 palette 随机取色）。{"op":"set_stream","enabled":false} 关闭。
+例：中式古风长廊 = 石板路(灰 box 3×0.1×6) + 两侧红柱(cylinder 朱红 #A22) + 柱顶横梁(box 深木 #4a2f1e) + 悬挂灯笼(sphere 橙红发光 emissive #ff5533) + 间隔牌坊(box 门框)
 
 compound 组装体（实时生成任意 3D）：parts 是数组，每项 {"shape":"box|sphere|cylinder|cone|torus|icosa|octa|tetra|capsule|plane|ring","p":[x,y,z],"r":[deg,deg,deg],"s":[x,y,z],"color":"#hex","opacity":0-1,"emissive":"#hex","metalness":0-1,"roughness":0-1,"blend":"additive","flat":true,"shader":{"kind":""}}。
 例：生成莲花台 = 底部 cylinder 灰座 + 中层 6 个倾斜的 capsule 花瓣(粉色) + 顶部 sphere 莲心(金) + 环绕 ring(additive 金色光晕)。多思考物体的组成部分再动手。
@@ -401,6 +408,29 @@ function executeOp(op) {
       if (!Object.keys(sky).length) throw new Error('set_sky 参数无效')
       store.setBase({ env: { sky } })
       return store.scene.base.env
+    }
+
+    case 'set_stream': {
+      if (op.enabled === false) {
+        store.setStream(null)
+        return null
+      }
+      if (!Array.isArray(op.parts) || !op.parts.length) {
+        throw new Error('流式走廊缺 parts（每段的 compound 基元配方）')
+      }
+      const spec = {
+        enabled: true,
+        axis: op.axis === 'x' ? 'x' : 'z',
+        dir: op.dir === -1 ? -1 : 1,
+        segLen: Math.max(0.5, numberOr(op.segLen, 6)),
+        ahead: Math.min(24, Math.max(1, numberOr(op.ahead, 8))),
+        behind: Math.min(6, Math.max(0, numberOr(op.behind, 1))),
+        origin: vector(op.origin, [0, 0, 0]),
+        jitter: numberOr(op.jitter, 0.1),
+        palette: Array.isArray(op.palette) ? op.palette.filter(c => typeof c === 'string') : undefined,
+        parts: clone(op.parts).slice(0, 64)
+      }
+      return store.setStream(spec)
     }
 
     case 'set_base':

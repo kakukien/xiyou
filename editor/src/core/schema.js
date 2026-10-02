@@ -140,6 +140,7 @@ export function defaults() {
       chapters: []
     },
     anchors: [],
+    stream: null,
     meta: {
       name: '未命名场景',
       assets: []

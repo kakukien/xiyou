@@ -497,6 +497,12 @@ export const store = {
     return scene.base
   },
 
+  setStream(spec) {
+    scene.stream = spec === null ? null : clone(spec)
+    markChanged(false)
+    return scene.stream
+  },
+
   undo() {
     if (!undoStack.length) return false
 
