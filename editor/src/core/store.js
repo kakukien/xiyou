@@ -71,6 +71,7 @@ function normalizeScene(input) {
 
   source.base = {
     sog_url: typeof base.sog_url === 'string' ? base.sog_url : '',
+    visible: base.visible !== false,
     collider_url: base.collider_url ?? null,
     env: isObject(base.env) ? base.env : {},
     transform: {
@@ -489,11 +490,11 @@ export const store = {
     return true
   },
 
-  setBase(patch) {
+  setBase(patch, { transient = false } = {}) {
     if (!isObject(patch)) return scene.base
 
     scene.base = deepMerge(scene.base, patch)
-    markChanged(false)
+    markChanged(transient)
     return scene.base
   },
 

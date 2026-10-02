@@ -125,6 +125,7 @@ export function defaults() {
   return {
     base: {
       sog_url: '',
+      visible: true,
       collider_url: null,
       transform: {
         s: 1,

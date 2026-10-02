@@ -526,8 +526,33 @@ export const viewport = {
     }
   },
 
+  applyBaseTransform(base) {
+    const bt = base?.transform;
+    if (!bt || !this.baseGroup) return;
+    if (Array.isArray(bt.R) && bt.R.length === 9) {
+      const m = new THREE.Matrix4().set(
+        bt.R[0], bt.R[1], bt.R[2], 0,
+        bt.R[3], bt.R[4], bt.R[5], 0,
+        bt.R[6], bt.R[7], bt.R[8], 0,
+        0, 0, 0, 1
+      );
+      this.baseGroup.quaternion.setFromRotationMatrix(m);
+    }
+    this.baseGroup.scale.setScalar(Number(bt.s) > 0 ? Number(bt.s) : 1);
+    if (Array.isArray(bt.t)) this.baseGroup.position.fromArray(bt.t.map(Number));
+  },
+
   setBase(base) {
     if (!this.scene) return;
+
+    const url = base?.sog_url || '';
+    // 同源快路径：只改显隐/变换时不再重载 PLY（大模型重载要几秒）
+    if (this.baseGroup && this._baseUrl === url) {
+      this.baseGroup.visible = base?.visible !== false;
+      this.applyBaseTransform(base);
+      return;
+    }
+    this._baseUrl = url;
 
     if (this.baseGroup) {
       this.scene.remove(this.baseGroup);
@@ -537,6 +562,7 @@ export const viewport = {
     }
 
     this.baseGroup = new THREE.Group();
+    this.baseGroup.visible = base?.visible !== false;
     this.baseGroup.userData.isBase = true;
     this.baseHelpers = [];
 
@@ -603,20 +629,7 @@ export const viewport = {
     }
 
     // Sim3 对齐：base.transform = {s(标量), R(3x3 行主序), t(米)}
-    const bt = base?.transform;
-    if (bt) {
-      if (Array.isArray(bt.R) && bt.R.length === 9) {
-        const m = new THREE.Matrix4().set(
-          bt.R[0], bt.R[1], bt.R[2], 0,
-          bt.R[3], bt.R[4], bt.R[5], 0,
-          bt.R[6], bt.R[7], bt.R[8], 0,
-          0, 0, 0, 1
-        );
-        this.baseGroup.quaternion.setFromRotationMatrix(m);
-      }
-      this.baseGroup.scale.setScalar(Number(bt.s) > 0 ? Number(bt.s) : 1);
-      if (Array.isArray(bt.t)) this.baseGroup.position.fromArray(bt.t.map(Number));
-    }
+    this.applyBaseTransform(base);
 
     // 天空穹顶：base.env.sky = {top, horizon, bottom, sun, sunColor} 或 {image:'fx/sky_dusk.jpg'}
     const sky = base?.env?.sky;

@@ -47,7 +47,7 @@ function buildScene() {
   // 3GS 底座：定位走 locdb（与泼溅无关），泼溅只作视觉底座。
   // 手机端默认不加载（70万高斯会把帧率压垮），调试时用 ?splat=1 打开。
   const wantSplat = new URLSearchParams(location.search).get('splat') === '1';
-  if (base.sog_url && wantSplat) {
+  if (base.sog_url && wantSplat && base.visible !== false) {
     const viewer = new DropInViewer({ sharedMemoryForWorkers: false });
     const baseGroup = new THREE.Group();
     const bt = base.transform;
