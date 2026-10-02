@@ -9,6 +9,14 @@ import { log } from '../ui/log.js';
 
 const DEG = Math.PI / 180;
 
+// 底座加载状态，details 面板订阅 xiyou:base-status 事件刷新芯片
+export const baseStatus = { state: 'idle', msg: '' };
+function setBaseStatus(state, msg = '') {
+  baseStatus.state = state;
+  baseStatus.msg = msg;
+  window.dispatchEvent(new CustomEvent('xiyou:base-status'));
+}
+
 function cloneTransform(node) {
   return {
     p: [node.position.x, node.position.y, node.position.z],
@@ -567,6 +575,7 @@ export const viewport = {
     this.baseHelpers = [];
 
     if (!base?.sog_url) {
+      setBaseStatus('placeholder');
       const grid = new THREE.GridHelper(
         20,
         20,
@@ -620,12 +629,13 @@ export const viewport = {
     } else {
       // 3GS/PLY 底座：gaussian-splats-3d 支持 .ply/.compressed.ply/.splat/.ksplat/.spz 直读
       // sharedMemoryForWorkers:false —— 静态托管无 COOP/COEP 头，SAB 会炸
+      setBaseStatus('loading');
       const viewer = new DropInViewer({ sharedMemoryForWorkers: false });
       this.baseGroup.add(viewer);
       this.splatViewer = viewer;
       viewer.addSplatScene(base.sog_url, { showLoadingUI: false, progressiveLoad: false })
-        .then(() => log(`3GS 底座已加载：${base.sog_url}`, 'info'))
-        .catch(error => log(`底座加载失败：${error?.message || error}`, 'error'));
+        .then(() => { setBaseStatus('loaded'); log(`3GS 底座已加载：${base.sog_url}`, 'info'); })
+        .catch(error => { setBaseStatus('error', error?.message || String(error)); log(`底座加载失败：${error?.message || error}`, 'error'); });
     }
 
     // Sim3 对齐：base.transform = {s(标量), R(3x3 行主序), t(米)}

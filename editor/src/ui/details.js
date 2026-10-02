@@ -2,6 +2,7 @@ import { store } from '../core/store.js';
 import { collab } from '../core/collab.js';
 import { CONDITIONS } from '../core/schema.js';
 import { parsePly, compressPly, downloadBlob, fmtSize } from './basekit.js';
+import { baseStatus } from '../core/viewport.js';
 
 const CONDITION_LABELS = {
   tap: '点击',
@@ -435,19 +436,25 @@ function renderBaseEditor() {
   const isBlob = (base.sog_url || '').startsWith('blob:');
   const up = __plyUp;
   const tt = Array.isArray(t.t) ? t.t : [0, 0, 0];
+  const stChip = baseStatus.state === 'loading' ? chip('下载/解析中…', 'warn')
+    : baseStatus.state === 'loaded' ? chip('已渲染', 'ok')
+      : baseStatus.state === 'error' ? chip('加载失败', 'warn') : '';
   return `
     <div class="obj-head">
       <div class="t">场景底座</div>
       <div class="chips">
-        ${chip(hasSplat ? '3GS 已加载' : '占位网格', hasSplat ? 'ok' : 'warn')}
+        ${chip(hasSplat ? '3GS 已配置' : '占位网格', hasSplat ? 'ok' : 'warn')}
         ${chip(base.visible !== false ? '显示中' : '已隐藏', base.visible !== false ? '' : 'warn')}
         ${isBlob ? chip('本地预览', 'warn') : ''}
+        ${stChip}
       </div>
     </div>
     <div class="details-content">
       ${card('实景底座（3DGS / PLY）', `
         <label class="row toggle-row"><span>在场景中显示</span><button class="toggle ${base.visible !== false ? 'on' : ''}" data-base-action="toggle-vis"><i></i></button></label>
-        <label class="row field-row"><span>底座路径</span><input class="field" value="${esc(isBlob ? '(本地预览)' : base.sog_url || '')}" placeholder="assets/hks204606.compressed.ply" data-base-field="sog_url"></label>
+        <label class="row field-row"><span>底座路径</span><input class="field" value="${esc(isBlob ? '(本地预览)' : base.sog_url || '')}" placeholder="assets/hks204606.compressed.ply" data-base-field="sog_url"><button class="btn sm" type="button" data-base-action="apply-url">加载</button></label>
+        ${baseStatus.state === 'loading' ? `<div class="row readonly-row"><span>状态</span><code>下载/解析中…（43MB 经 CDN 约 40 秒，请稍候）</code></div>` : ''}
+        ${baseStatus.state === 'error' ? `<div class="row readonly-row"><span>状态</span><code>加载失败：${esc(baseStatus.msg || '')}</code></div>` : ''}
         <div class="row">
           <button class="btn" type="button" data-base-action="upload">上传 PLY…</button>
           <button class="btn" type="button" data-base-action="load-hks">载入 hks204606</button>
@@ -616,6 +623,10 @@ function bindEvents() {
         ensureFileInput().click();
       } else if (act === 'apply-path') {
         if (__plyUp?.canon) store.setBase({ sog_url: __plyUp.canon });
+      } else if (act === 'apply-url') {
+        const inp = baseAction.parentElement?.querySelector('[data-base-field="sog_url"]');
+        const v = inp?.value.trim();
+        if (v && v !== '(本地预览)') store.setBase({ sog_url: v });
       } else if (act === 'reset-rot') {
         store.setBase({ transform: { R: [1, 0, 0, 0, 1, 0, 0, 0, 1] } });
       } else if (act === 'reset-pos') {
@@ -861,6 +872,9 @@ export function mount(el) {
   const refreshChange = payload => {
     if (!payload?.transient || !root?.contains(document.activeElement)) render();
   };
+  const onBaseStatus = () => render();
+  window.addEventListener('xiyou:base-status', onBaseStatus);
+  unsubscribe.push(() => window.removeEventListener('xiyou:base-status', onBaseStatus));
 
   if (typeof store.on === 'function') {
     ['selection', 'history', 'collab-peers', 'mode'].forEach(event => {
