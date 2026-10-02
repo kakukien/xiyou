@@ -792,12 +792,14 @@ export const viewport = {
       this.streamGroup = new THREE.Group();
       this.streamGroup.userData.isHelper = true;
       this.scene.add(this.streamGroup);
+      log(`流式走廊已启用：${spec.axis || 'z'}轴 · 段长${spec.segLen || 6}m · 前${spec.ahead ?? 8}段`, 'info');
     }
 
-    // axis:'auto' 或 autoDir 时跟随相机朝向（面向哪个轴就往哪铺）
+    // axis:'auto'（或未指定合法轴）时跟随相机朝向（面向哪个轴就往哪铺）
     let axis = spec.axis === 'x' ? 'x' : 'z';
     let dir = spec.dir === -1 ? -1 : 1;
-    if (spec.axis === 'auto' || spec.autoDir) {
+    const axisAuto = spec.axis === 'auto' || spec.autoDir || !['x', 'z'].includes(spec.axis);
+    if (axisAuto) {
       const fwd = this.camera.getWorldDirection(new THREE.Vector3());
       axis = Math.abs(fwd.x) > Math.abs(fwd.z) ? 'x' : 'z';
       dir = (axis === 'x' ? fwd.x : fwd.z) >= 0 ? 1 : -1;
@@ -859,7 +861,7 @@ export const viewport = {
       }, store.scene.meta?.assets || []);
       // 流段不进 nodes 表：不可选中、不进拾取；命中盒辅助线一并隐藏
       node.userData.isHelper = true;
-      node.traverse(child => { if (child.userData?.isHelper) child.visible = false; });
+      node.traverse(child => { if (child !== node && child.userData?.isHelper) child.visible = false; });
       this.streamGroup.add(node);
       this.streamSegs.set(i, node);
     }
