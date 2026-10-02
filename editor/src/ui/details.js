@@ -459,73 +459,6 @@ function mulR(A, B) {
   return o;
 }
 
-// 未选中任何东西时：显示场景底座编辑器（3GS/PLY 路径 + 显隐 + 上传 + 矫正 + 压缩）
-function renderBaseEditor() {
-  const base = store.scene?.base || {};
-  const t = base.transform || {};
-  const hasSplat = Boolean(base.sog_url);
-  const isBlob = (base.sog_url || '').startsWith('blob:');
-  const up = __plyUp;
-  const tt = Array.isArray(t.t) ? t.t : [0, 0, 0];
-  const stChip = baseStatus.state === 'loading' ? chip('下载/解析中…', 'warn')
-    : baseStatus.state === 'loaded' ? chip('已渲染', 'ok')
-      : baseStatus.state === 'error' ? chip('加载失败', 'warn') : '';
-  return `
-    <div class="obj-head">
-      <div class="t">场景底座</div>
-      <div class="chips">
-        ${chip(hasSplat ? '3GS 已配置' : '占位网格', hasSplat ? 'ok' : 'warn')}
-        ${chip(base.visible !== false ? '显示中' : '已隐藏', base.visible !== false ? '' : 'warn')}
-        ${isBlob ? chip('本地预览', 'warn') : ''}
-        ${stChip}
-      </div>
-    </div>
-    <div class="details-content">
-      ${card('实景底座（3DGS / PLY）', `
-        <label class="row toggle-row"><span>在场景中显示</span><button class="toggle ${base.visible !== false ? 'on' : ''}" data-base-action="toggle-vis"><i></i></button></label>
-        <label class="row field-row"><span>底座路径</span><input class="field" value="${esc(isBlob ? '(本地预览)' : base.sog_url || '')}" placeholder="assets/hks204606.compressed.ply" data-base-field="sog_url"><button class="btn sm" type="button" data-base-action="apply-url">加载</button></label>
-        ${baseStatus.state === 'loading' ? `<div class="row readonly-row"><span>状态</span><code>下载/解析中…（43MB 经 CDN 约 40 秒，请稍候）</code></div>` : ''}
-        ${baseStatus.state === 'error' ? `<div class="row readonly-row"><span>状态</span><code>加载失败：${esc(baseStatus.msg || '')}</code></div>` : ''}
-        <div class="row">
-          <button class="btn" type="button" data-base-action="upload">上传 PLY…</button>
-          <button class="btn" type="button" data-base-action="load-hks">载入 hks204606</button>
-          ${hasSplat ? `<button class="btn danger" type="button" data-base-action="clear">卸载底座</button>` : ''}
-        </div>
-        ${up ? `<div class="row readonly-row"><span>本地文件</span><code>${esc(up.name)} · ${fmtSize(up.size)}${up.count ? ` · ${(up.count / 1000).toFixed(0)}k 高斯 · SH${up.sh}` : ''}${up.parseErr ? ' · 解析失败:' + esc(up.parseErr) : ''}</code></div>` : ''}
-        ${isBlob ? `<div class="row readonly-row"><span>提示</span><code>本地预览中·发布前把文件放入 public/assets/ 并设为正式路径</code></div>` : ''}
-      `)}
-      ${hasSplat ? card('空间矫正（模型 → AR 坐标，VPS 定位共用此坐标系）', `
-        <label class="row field-row"><span>缩放 s</span><input class="field" type="number" step="0.01" value="${esc(Number(t.s ?? 1))}" data-base-t="s"></label>
-        <div class="row axis-row"><span class="axis-label">平移 t</span>${['X', 'Y', 'Z'].map((axis, i) => `<label>${axis}<input class="field" type="number" step="0.05" value="${esc(Number(tt[i] ?? 0))}" data-base-t="t${i}"></label>`).join('')}</div>
-        <div class="row">
-          ${['x', 'y', 'z'].map(ax => `<button class="btn sm" type="button" data-base-rot="${ax}">绕${ax.toUpperCase()} +90°</button>`).join('')}
-          ${['x', 'y', 'z'].map(ax => `<button class="btn sm" type="button" data-base-rot="${ax}:-90">绕${ax.toUpperCase()} -90°</button>`).join('')}
-        </div>
-        <div class="row">
-          <button class="btn" type="button" data-base-action="reset-rot">重置旋转</button>
-          <button class="btn" type="button" data-base-action="reset-pos">重置平移</button>
-        </div>
-        <div class="row readonly-row"><span>当前</span><code>R 行列式≈1 · s=${esc(t.s ?? 1)}</code></div>
-      `) : ''}
-      ${up && !up.parseErr ? card('减体积（浏览器内处理，产物可下载）', `
-        <label class="row field-row"><span>保留 SH 阶</span><select class="field" data-base-opt="sh">
-          ${[0, 1, 2, 3].map(d => `<option value="${d}" ${d === Math.min(up.sh, 1) ? 'selected' : ''}>${d} 阶${d === 0 ? '（最小·无色差光晕）' : ''}</option>`).join('')}
-        </select></label>
-        <label class="row field-row"><span>高斯采样</span><select class="field" data-base-opt="keep">
-          ${[[1, '100%'], [0.7, '70%'], [0.5, '50%'], [0.3, '30%']].map(([v, l]) => `<option value="${v}" ${v === 0.7 ? 'selected' : ''}>${l}</option>`).join('')}
-        </select></label>
-        <div class="row">
-          <button class="btn" type="button" data-base-action="compress">压缩并预览</button>
-          <button class="btn" type="button" data-base-action="apply-path">设为正式路径</button>
-        </div>
-        ${up.compressed ? `<div class="row readonly-row"><span>产物</span><code>${esc(up.canonName)} · ${fmtSize(up.compressed.bytes)} · ${(up.compressed.count / 1000).toFixed(0)}k 高斯（已自动下载并预览）</code></div>` : ''}
-        <div class="row readonly-row"><span>正式路径</span><code>${esc(up.canon)}</code></div>
-      `) : ''}
-      <div class="details-empty">在左侧或视口中选择对象可编辑其属性</div>
-    </div>
-  `;
-}
-
 function renderAnchorEditor(anchor) {
   const t = anchor.pose?.t || [0, 0, 0];
   return `
@@ -1010,12 +943,6 @@ function bindEvents() {
       const t = [...(anchor.pose?.t || [0, 0, 0])];
       t[Number(anchorPos.dataset.anchorPos)] = Number(anchorPos.value) || 0;
       store.updateAnchor?.(anchor.id, { pose: { ...(anchor.pose || {}), t } });
-      return;
-    }
-
-    const baseField = event.target.closest('[data-base-field]');
-    if (baseField && typeof store.setBase === 'function') {
-      store.setBase({ [baseField.dataset.baseField]: baseField.value.trim() });
       return;
     }
 
