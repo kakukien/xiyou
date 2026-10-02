@@ -506,36 +506,47 @@ async function startVpsMode() {
   }
 
   const flip = new THREE.Matrix4().makeScale(1, -1, -1);
-  let busy = false;
+  const vpsCamP0 = new THREE.Vector3(), desQ = new THREE.Quaternion();
+  let busy = false, locFail = 0;
+  const arm = ms => { if (mode === 'vps') vpsTimer = setTimeout(locate, ms); };
   const locate = async () => {
-    if (busy || mode !== 'vps' || !freeVideo.videoWidth) return;
+    if (mode !== 'vps') return;
+    if (busy) { arm(1500); return; }
+    if (!freeVideo.videoWidth) { arm(600); return; }
     busy = true;
+    let wait = 1300; // 失败快速重试，抓一帧清晰的
     try {
-      const blob = await capFrame(freeVideo);
-      const res = await fetch(`${VPS_URL}/locate`, { method: 'POST', body: blob });
+      const blob = await capFrame(freeVideo, 1100);
+      const res = await fetch(`${VPS_URL}/locate?k=15&min=${vpsCamQ0 ? 10 : 15}`, { method: 'POST', body: blob });
       const j = await res.json();
       if (j.ok) {
+        locFail = 0; wait = 4000;
         const m = new THREE.Matrix4().fromArray(j.cam2world).multiply(flip);
         vpsCamQ0 = new THREE.Quaternion().setFromRotationMatrix(m);
+        vpsCamP0.setFromMatrixPosition(m);
         vpsGyroQ0 = vpsGyroQ ? vpsGyroQ.clone() : null;
-        freeCamera.position.setFromMatrixPosition(m);
-        freeCamera.quaternion.copy(vpsCamQ0);
-        freeCamera.updateMatrix();
+        if (!sceneContent.visible) { // 首帧直接落位，之后靠平滑过渡
+          freeCamera.position.copy(vpsCamP0);
+          freeCamera.quaternion.copy(vpsCamQ0);
+          freeCamera.updateMatrix();
+        }
         sceneContent.visible = true;
         setState(`已定位 · 内点 ${j.inliers} · ${j.ms}ms`);
       } else {
+        locFail++;
         console.warn('[vps] locate fail', j);
-        const hint = j.max_inliers != null ? ` · 最佳匹配内点 ${j.max_inliers}` : (j.reason ? ` · ${j.reason}` : '');
-        setState((vpsCamQ0 ? '定位刷新失败 · 保持上帧位姿' : '定位中…对准舞台/大屏区域缓慢移动') + hint);
+        const hint = j.max_inliers != null ? ` · 内点 ${j.max_inliers}` : (j.reason ? ` · ${j.reason}` : '');
+        setState((vpsCamQ0 ? '定位偏移中 · 保持上帧位姿' : '定位中…对准舞台/大屏区域缓慢移动') + hint);
       }
     } catch (e) {
+      locFail++;
       setState('定位服务不可达 · ' + VPS_URL);
     }
     busy = false;
+    arm(wait);
   };
   setState('VPS · 对准环境，首次定位…');
-  await locate();
-  vpsTimer = setInterval(locate, 4000);
+  locate();
 
   rootEl.addEventListener('pointerup', e => {
     const x = (e.clientX / innerWidth) * 2 - 1, y = -(e.clientY / innerHeight) * 2 + 1;
@@ -549,11 +560,18 @@ async function startVpsMode() {
   });
 
   const dq = new THREE.Quaternion();
+  let tPrev = performance.now();
   freeRenderer.setAnimationLoop(() => {
-    // 两次 VPS 修正之间，用陀螺仪旋转增量维持姿态（位置等下次定位）
-    if (vpsGyroQ && vpsGyroQ0 && vpsCamQ0) {
-      dq.copy(vpsGyroQ0).invert().premultiply(vpsGyroQ);
-      freeCamera.quaternion.copy(dq).multiply(vpsCamQ0);
+    const now = performance.now();
+    const dt = Math.min((now - tPrev) / 1000, 0.1); tPrev = now;
+    // 两次 VPS 修正之间：陀螺仪旋转增量维持姿态；位姿指数平滑过渡，抑制跳变漂移
+    if (vpsCamQ0) {
+      if (vpsGyroQ && vpsGyroQ0) {
+        dq.copy(vpsGyroQ0).invert().premultiply(vpsGyroQ);
+        desQ.copy(vpsCamQ0).premultiply(dq);
+      } else desQ.copy(vpsCamQ0);
+      freeCamera.quaternion.slerp(desQ, 1 - Math.exp(-dt * 7));
+      freeCamera.position.lerp(vpsCamP0, 1 - Math.exp(-dt * 4));
       freeCamera.updateMatrix();
     }
     tickStream(freeCamera);
