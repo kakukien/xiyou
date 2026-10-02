@@ -39,13 +39,18 @@ export function demoScene() {
   const scene = defaults();
 
   scene.base = {
-    sog_url: '',
+    // 花果山拍摄点 3GS 底座（hks204606，708k 高斯 compressed.ply 41MB，AR 坐标经 Sim3 对齐）
+    sog_url: 'assets/hks204606.compressed.ply',
     collider_url: null,
     transform: {
-      s: 1,
-      R: [1, 0, 0, 0, 1, 0, 0, 0, 1],
-      t: [0, 0, 0],
-      scale_source: 'manual'
+      s: 0.6405792403036242,
+      R: [
+        0.9666439262936674, -0.006198977271578077, -0.2560490039823422,
+        0.006198977271578077, -0.9988479663538381, 0.04758479580273278,
+        -0.2560490039823422, -0.04758479580273278, -0.9654918926475056
+      ],
+      t: [0.00618069, 0.995901, 0.0474444],
+      scale_source: 'camera_height:1.55 (inv)'
     },
     env: {
       sky: { image: 'fx/sky_dusk.jpg' }
@@ -467,8 +472,8 @@ export function demoScene() {
     chapters: [chapter, ch2, ch3, ch4, ch5]
   };
   scene.anchors = [
-    { id: 'anchor_入口', name: '入口定位点', kind: 'vps' },
-    { id: 'anchor_殿门', name: '殿门定位点', kind: 'poster' }
+    { id: 'anchor_入口', name: '入口定位点', kind: 'vps', pose: { t: [0, 0, 0], r: [0, 0, 0] } },
+    { id: 'anchor_殿门', name: '殿门定位点', kind: 'poster', pose: { t: [0, 1.3, -3.2], r: [0, 0, 0] }, image_url: 'assets/poster.png' }
   ];
   scene.meta = {
     name: '花果山觉醒',

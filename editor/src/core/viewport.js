@@ -592,8 +592,9 @@ export const viewport = {
         this.baseHelpers.push(wall);
       });
     } else {
-      // 3GS/PLY 底座：gaussian-splats-3d 支持 .ply/.splat/.ksplat/.sog/.spz 直读
-      const viewer = new DropInViewer();
+      // 3GS/PLY 底座：gaussian-splats-3d 支持 .ply/.compressed.ply/.splat/.ksplat/.spz 直读
+      // sharedMemoryForWorkers:false —— 静态托管无 COOP/COEP 头，SAB 会炸
+      const viewer = new DropInViewer({ sharedMemoryForWorkers: false });
       this.baseGroup.add(viewer);
       this.splatViewer = viewer;
       viewer.addSplatScene(base.sog_url, { showLoadingUI: false, progressiveLoad: false })

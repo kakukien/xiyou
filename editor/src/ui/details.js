@@ -380,6 +380,30 @@ function renderNodeEditor(node) {
   `;
 }
 
+// 未选中任何东西时：显示场景底座编辑器（3GS/PLY 路径 + 对齐参数）
+function renderBaseEditor() {
+  const base = store.scene?.base || {};
+  const t = base.transform || {};
+  const hasSplat = Boolean(base.sog_url);
+  return `
+    <div class="obj-head">
+      <div class="t">场景底座</div>
+      <div class="chips">
+        ${chip(hasSplat ? '3GS 已加载' : '占位网格', hasSplat ? 'ok' : 'warn')}
+      </div>
+    </div>
+    <div class="details-content">
+      ${card('实景底座（3DGS / PLY）', `
+        <label class="row field-row"><span>底座路径</span><input class="field" value="${esc(base.sog_url || '')}" placeholder="assets/hks204606.compressed.ply" data-base-field="sog_url"></label>
+        <button class="btn" type="button" data-base-action="load-hks">载入本次重建（hks204606）</button>
+        ${hasSplat ? `<button class="btn danger" type="button" data-base-action="clear">卸载底座</button>` : ''}
+        <div class="row readonly-row"><span>对齐</span><code>s=${esc(t.s ?? 1)} t=${esc(JSON.stringify(t.t || [0,0,0]))}</code></div>
+      `)}
+      <div class="details-empty">在左侧或视口中选择对象可编辑其属性</div>
+    </div>
+  `;
+}
+
 function renderAnchorEditor(anchor) {
   const t = anchor.pose?.t || [0, 0, 0];
   return `
@@ -422,7 +446,7 @@ function render() {
       ? renderNodeEditor(node)
       : anchor
         ? renderAnchorEditor(anchor)
-        : '<div class="details-empty">在左侧或视口中选择对象</div>';
+        : renderBaseEditor();
     applyModeState();
     return;
   }
@@ -480,6 +504,28 @@ function bindEvents() {
     if (uniform) {
       uniformScale = !uniformScale;
       render();
+      return;
+    }
+
+    const baseAction = event.target.closest('[data-base-action]');
+    if (baseAction && typeof store.setBase === 'function') {
+      if (baseAction.dataset.baseAction === 'load-hks') {
+        store.setBase({
+          sog_url: 'assets/hks204606.compressed.ply',
+          transform: {
+      s: 0.6405792403036242,
+      R: [
+        0.9666439262936674, -0.006198977271578077, -0.2560490039823422,
+        0.006198977271578077, -0.9988479663538381, 0.04758479580273278,
+        -0.2560490039823422, -0.04758479580273278, -0.9654918926475056
+      ],
+      t: [0.00618069, 0.995901, 0.0474444],
+      scale_source: 'camera_height:1.55 (inv)'
+    },
+        });
+      } else if (baseAction.dataset.baseAction === 'clear') {
+        store.setBase({ sog_url: '' });
+      }
       return;
     }
 
@@ -601,6 +647,12 @@ function bindEvents() {
       const t = [...(anchor.pose?.t || [0, 0, 0])];
       t[Number(anchorPos.dataset.anchorPos)] = Number(anchorPos.value) || 0;
       store.updateAnchor?.(anchor.id, { pose: { ...(anchor.pose || {}), t } });
+      return;
+    }
+
+    const baseField = event.target.closest('[data-base-field]');
+    if (baseField && typeof store.setBase === 'function') {
+      store.setBase({ [baseField.dataset.baseField]: baseField.value.trim() });
       return;
     }
 
