@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { DropInViewer } from '@mkkellogg/gaussian-splats-3d';
 import { store } from './store.js';
 import { createNode, applyTransform, placeholderTexture } from './objects.js';
 import { triggers } from './playback.js';
@@ -52,6 +53,36 @@ function objectSignature(obj) {
     material: obj.material || {},
     hitbox: obj.hitbox || {}
   });
+}
+
+function anchorLabelSprite(text, color) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.font = '600 30px system-ui, sans-serif';
+  const w = Math.min(240, Math.ceil(ctx.measureText(text).width) + 28);
+  const x0 = (256 - w) / 2;
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.beginPath();
+  ctx.roundRect(x0, 8, w, 48, 10);
+  ctx.fill();
+  ctx.strokeStyle = `#${color.toString(16).padStart(6, '0')}`;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = '#1c2733';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 33);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.userData.xiyouDisposable = true;
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false })
+  );
+  sprite.scale.set(0.9, 0.225, 1);
+  return sprite;
 }
 
 export const viewport = {
@@ -220,6 +251,10 @@ export const viewport = {
         const selected = store.selected()[0];
         if (selected) this.focus(selected);
       }
+      if (event.code === 'Escape' && this.anchorPlacement) {
+        this.setAnchorPlacement(null);
+        store.emit('anchor-placement', null);
+      }
     });
 
     window.addEventListener('keyup', event => {
@@ -346,7 +381,66 @@ export const viewport = {
       this.nodeSignatures.set(objDef.id, signature);
     });
 
+    this.syncAnchors();
     this._syncGizmo();
+  },
+
+  // 定位锚点渲染：八面体标记 + 立柱 + 名牌（编辑器可见，play 模式藏）
+  syncAnchors() {
+    if (!this.scene) return;
+    if (this.anchorGroup) {
+      this.scene.remove(this.anchorGroup);
+      disposeNode(this.anchorGroup);
+    }
+    this.anchorGroup = new THREE.Group();
+    this.anchorGroup.userData.isAnchorLayer = true;
+
+    const anchors = Array.isArray(store.scene?.anchors) ? store.scene.anchors : [];
+    for (const anchor of anchors) {
+      const t = anchor.pose?.t || [0, 0, 0];
+      const color = (anchor.kind === 'poster' || anchor.kind === 'image') ? 0x2e7cf6 : 0xf5822c;
+
+      const marker = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.11),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 })
+      );
+      marker.position.fromArray(t.map(Number));
+      marker.userData.id = anchor.id;
+      marker.userData.isHelper = true;
+      this.anchorGroup.add(marker);
+
+      const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.008, 0.008, Math.max(0.05, t[1]), 6),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5 })
+      );
+      stem.position.set(t[0], t[1] / 2, t[2]);
+      stem.userData.isHelper = true;
+      this.anchorGroup.add(stem);
+
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.14, 0.2, 24),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.4, side: THREE.DoubleSide })
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(t[0], t[1] + 0.01, t[2]);
+      ring.userData.isHelper = true;
+      this.anchorGroup.add(ring);
+
+      const label = anchorLabelSprite(anchor.name || anchor.id, color);
+      label.position.set(t[0], t[1] + 0.34, t[2]);
+      label.userData.isHelper = true;
+      this.anchorGroup.add(label);
+    }
+    this.scene.add(this.anchorGroup);
+  },
+
+  // 锚点放置模式：非空时下一次左键点击在地面(y=0平面)落锚
+  anchorPlacement: null,
+  setAnchorPlacement(kind) {
+    this.anchorPlacement = kind || null;
+    if (this.renderer?.domElement) {
+      this.renderer.domElement.style.cursor = kind ? 'crosshair' : '';
+    }
   },
 
   _syncGizmo() {
@@ -378,6 +472,21 @@ export const viewport = {
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(pointer, this.camera);
 
+    if (this.anchorPlacement && store.mode !== 'play') {
+      const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      const point = new THREE.Vector3();
+      if (raycaster.ray.intersectPlane(plane, point)) {
+        const anchor = store.addAnchor({
+          kind: this.anchorPlacement,
+          pose: { t: [point.x, point.y, point.z], r: [0, 0, 0] }
+        });
+        log(`锚点已放置：${anchor.id} @ (${point.x.toFixed(2)}, ${point.y.toFixed(2)}, ${point.z.toFixed(2)})`);
+      }
+      this.setAnchorPlacement(null);
+      store.emit('anchor-placement', null);
+      return;
+    }
+
     const objects = [...this.nodes.values()].filter(node => node.visible);
     const hits = raycaster.intersectObjects(objects, true);
 
@@ -408,6 +517,8 @@ export const viewport = {
 
     if (this.baseGroup) {
       this.scene.remove(this.baseGroup);
+      this.splatViewer?.viewer?.dispose?.();
+      this.splatViewer = null;
       disposeNode(this.baseGroup);
     }
 
@@ -467,7 +578,29 @@ export const viewport = {
         this.baseHelpers.push(wall);
       });
     } else {
-      log('SOG 场景底座加载接口暂未接入', 'info');
+      // 3GS/PLY 底座：gaussian-splats-3d 支持 .ply/.splat/.ksplat/.sog/.spz 直读
+      const viewer = new DropInViewer();
+      this.baseGroup.add(viewer);
+      this.splatViewer = viewer;
+      viewer.addSplatScene(base.sog_url, { showLoadingUI: false, progressiveLoad: false })
+        .then(() => log(`3GS 底座已加载：${base.sog_url}`, 'info'))
+        .catch(error => log(`底座加载失败：${error?.message || error}`, 'error'));
+    }
+
+    // Sim3 对齐：base.transform = {s(标量), R(3x3 行主序), t(米)}
+    const bt = base?.transform;
+    if (bt) {
+      if (Array.isArray(bt.R) && bt.R.length === 9) {
+        const m = new THREE.Matrix4().set(
+          bt.R[0], bt.R[1], bt.R[2], 0,
+          bt.R[3], bt.R[4], bt.R[5], 0,
+          bt.R[6], bt.R[7], bt.R[8], 0,
+          0, 0, 0, 1
+        );
+        this.baseGroup.quaternion.setFromRotationMatrix(m);
+      }
+      this.baseGroup.scale.setScalar(Number(bt.s) > 0 ? Number(bt.s) : 1);
+      if (Array.isArray(bt.t)) this.baseGroup.position.fromArray(bt.t.map(Number));
     }
 
     // 天空穹顶：base.env.sky = {top, horizon, bottom, sun, sunColor} 或 {image:'fx/sky_dusk.jpg'}
@@ -528,6 +661,12 @@ export const viewport = {
     if (this.baseHelpers) {
       this.baseHelpers.forEach(helper => {
         helper.visible = Boolean(visible);
+      });
+    }
+
+    if (this.anchorGroup) {
+      this.anchorGroup.traverse(child => {
+        if (child.userData?.isHelper) child.visible = Boolean(visible);
       });
     }
 

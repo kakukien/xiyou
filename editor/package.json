@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mkkellogg/gaussian-splats-3d": "^0.4.7",
     "three": "^0.169.0",
     "y-websocket": "^3.1.0",
     "yjs": "^13.6.33"

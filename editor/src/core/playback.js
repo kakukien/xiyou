@@ -6,6 +6,8 @@ import { log } from '../ui/log.js';
 const active = [];
 const highlightStates = new Set();
 const enterStates = new Map();
+// 预览快照：拖动播放头改视口前先留底，endPreview() 还原
+const previewSnapshots = new Map();
 
 function clamp01(value) {
   return Math.max(0, Math.min(1, value));
@@ -143,6 +145,18 @@ function valueAt(keys, time, current) {
   }
 
   return right.v;
+}
+
+function readOpacity(node) {
+  let value = 1;
+  node?.traverse?.((child) => {
+    if (value !== 1) return;
+    const materials = child.material
+      ? (Array.isArray(child.material) ? child.material : [child.material])
+      : [];
+    if (materials.length) value = materials[0].opacity ?? 1;
+  });
+  return value;
 }
 
 function setOpacity(node, opacity) {
@@ -329,6 +343,15 @@ export const player = {
     const trackStates = [];
     const mixers = new Set();
 
+    // 同一条时间线不叠实例：先摘走旧实例并还原其轨道
+    for (let i = active.length - 1; i >= 0; i -= 1) {
+      if (active[i].seq.id === seq.id) {
+        const stale = active.splice(i, 1)[0];
+        stale.tracks.forEach(restoreTrack);
+        stale.mixers.forEach((mixer) => mixer.stopAllAction());
+      }
+    }
+
     tracks.forEach((track) => {
       const node = viewport.node(track.target);
       if (!node) return;
@@ -363,6 +386,17 @@ export const player = {
     return true;
   },
 
+  // 供时间线 UI 轮询播放头：返回 {time, duration} 或 null
+  progress(seqId) {
+    const state = active.find(item => item.seq.id === seqId);
+    if (!state) return null;
+    return {
+      time: Math.min(state.time, state.duration),
+      duration: state.duration,
+      finished: state.finished
+    };
+  },
+
   stop(reset = false) {
     active.splice(0).forEach((state) => {
       if (reset) state.tracks.forEach(restoreTrack);
@@ -378,9 +412,27 @@ export const player = {
     (seq.tracks || []).forEach((track) => {
       const node = viewport.node(track.target);
       if (!node) return;
+      if (!previewSnapshots.has(node)) {
+        previewSnapshots.set(node, {
+          node,
+          transform: readTransform(node),
+          opacity: readOpacity(node),
+          video: false
+        });
+      }
       updateTrack({ track, node, events: new Set() }, t);
     });
     return true;
+  },
+
+  // 结束预览：把所有被预览动过的节点还原到快照
+  endPreview() {
+    previewSnapshots.forEach((snap) => {
+      applyTransform(snap.node, snap.transform);
+      setOpacity(snap.node, snap.opacity);
+      setVideoState(snap.node, snap.video);
+    });
+    previewSnapshots.clear();
   },
 
   tick(dt) {

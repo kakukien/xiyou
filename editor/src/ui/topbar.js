@@ -144,6 +144,12 @@ export function mount(el) {
   arButton.title = '以游客视角看场景：手机上是相机画面+陀螺仪';
   arButton.textContent = '游客视角';
 
+  const anchorButton = document.createElement('button');
+  anchorButton.className = 'btn';
+  anchorButton.type = 'button';
+  anchorButton.title = '放置定位锚点：点击视口地面落点，剧情节点可绑定（Esc 取消）';
+  anchorButton.textContent = '锚点';
+
   const previewButton = document.createElement('button');
   previewButton.className = 'btn';
   previewButton.type = 'button';
@@ -172,6 +178,7 @@ export function mount(el) {
     draftChip,
     demoButton,
     arButton,
+    anchorButton,
     previewButton,
     publishButton,
     connection,
@@ -406,6 +413,19 @@ export function mount(el) {
   });
 
   arButton.addEventListener('click', () => openAR());
+
+  anchorButton.addEventListener('click', () => {
+    const vp = window.__xiyou?.viewport;
+    if (!vp) return;
+    const next = vp.anchorPlacement ? null : 'vps';
+    vp.setAnchorPlacement(next);
+    anchorButton.classList.toggle('active', Boolean(next));
+    log(next ? '锚点放置模式：点击视口地面放置（Esc 取消）' : '已退出锚点放置');
+  });
+
+  store.on('anchor-placement', kind => {
+    if (!kind) anchorButton.classList.remove('active');
+  });
 
   previewButton.addEventListener('click', () => {
     showOverlay('发布预览', getValidation());

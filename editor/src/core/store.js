@@ -1,4 +1,4 @@
-import { defaults, newObject, newSequence, newTrigger, newNode, newChapter } from './schema.js'
+import { defaults, newObject, newSequence, newTrigger, newNode, newChapter, newAnchor } from './schema.js'
 
 const EVENTS = ['change', 'selection', 'mode', 'assets', 'log']
 
@@ -357,6 +357,47 @@ export const store = {
     return true
   },
 
+  addAnchor(props = {}) {
+    const anchor = newAnchor(props)
+    scene.anchors.push(anchor)
+    addHistory(anchor.id, `新增锚点「${anchor.name || anchor.id}」`)
+    markChanged(false)
+    return anchor
+  },
+
+  getAnchor(id) {
+    return findById(scene.anchors, id)
+  },
+
+  updateAnchor(id, patch, { transient = false } = {}) {
+    const anchor = this.getAnchor(id)
+    if (!anchor || !isObject(patch)) return null
+
+    const safePatch = clone(patch)
+    delete safePatch.id
+
+    const updated = deepMerge(anchor, safePatch)
+    updated.id = anchor.id
+    Object.assign(anchor, updated)
+
+    if (!transient) addHistory(id, `更新了锚点「${anchor.name || id}」`)
+    markChanged(transient, true)
+    return anchor
+  },
+
+  removeAnchor(id) {
+    const index = scene.anchors.findIndex(anchor => anchor?.id === id)
+    if (index < 0) return false
+
+    scene.anchors.splice(index, 1)
+    const hadSelection = selection.delete(id)
+
+    addHistory(id, `删除了锚点「${id}」`)
+    markChanged(false)
+    if (hadSelection) emit('selection', [...selection])
+    return true
+  },
+
   addChapter(title) {
     const chapter = newChapter(title)
     scene.story.chapters.push(chapter)
@@ -376,6 +417,32 @@ export const store = {
     return node
   },
 
+  updateChapter(chapterId, patch, { transient = false } = {}) {
+    const chapter = findById(scene.story.chapters, chapterId)
+    if (!chapter || !isObject(patch)) return null
+
+    const safePatch = clone(patch)
+    delete safePatch.id
+    delete safePatch.nodes
+    Object.assign(chapter, deepMerge(chapter, safePatch))
+    chapter.id = chapterId
+
+    markChanged(transient, true)
+    return chapter
+  },
+
+  removeChapter(chapterId) {
+    const index = scene.story.chapters.findIndex(chapter => chapter?.id === chapterId)
+    if (index < 0) return false
+
+    scene.story.chapters.splice(index, 1)
+    const hadSelection = selection.delete(chapterId)
+
+    markChanged(false)
+    if (hadSelection) emit('selection', [...selection])
+    return true
+  },
+
   updateNode(chapterId, nodeId, patch, { transient = false } = {}) {
     const chapter = findById(scene.story.chapters, chapterId)
     const node = chapter && findById(chapter.nodes || [], nodeId)
@@ -390,6 +457,21 @@ export const store = {
 
     markChanged(transient, true)
     return node
+  },
+
+  moveNode(chapterId, nodeId, toIndex) {
+    const chapter = findById(scene.story.chapters, chapterId)
+    if (!chapter || !Array.isArray(chapter.nodes)) return false
+
+    const index = chapter.nodes.findIndex(node => node?.id === nodeId)
+    if (index < 0) return false
+
+    const target = Math.max(0, Math.min(chapter.nodes.length - 1, Number(toIndex) || 0))
+    const [node] = chapter.nodes.splice(index, 1)
+    chapter.nodes.splice(target, 0, node)
+
+    markChanged(false)
+    return true
   },
 
   removeNode(chapterId, nodeId) {

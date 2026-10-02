@@ -49,6 +49,8 @@ let root = null;
 let activeTab = '基础';
 let uniformScale = true;
 let unsubscribe = [];
+// 交互编辑器的 UI 态挂在这里，不混进 scene 数据
+let editingAction = null; // {triggerId, index}
 
 function esc(value) {
   return String(value ?? '')
@@ -159,9 +161,9 @@ function renderHeader(obj) {
       <div class="t">${esc(obj.name || obj.id)}</div>
       <div class="chips">
         ${chip(assetOk ? '素材已加载' : '素材缺失', assetOk ? 'ok' : 'warn')}
-        ${chip(refOk ? '引用完整' : '悬挂引用', refOk ? 'ok' : 'warn')}
+        ${chip(refOk ? '引用完整' : '引用断链', refOk ? 'ok' : 'warn')}
         ${chip(node ? node.title || node.id : '未入节点', node ? 'ok' : 'warn')}
-        ${comments.length ? chip(`${comments.length} 项确认→可省`, 'warn') : ''}
+        ${comments.length ? chip(`${comments.length} 条待确认`, 'warn') : ''}
         ${lockedBy ? chip(`${lockedBy} 正在编辑`, 'warn') : ''}
       </div>
     </div>
@@ -284,7 +286,7 @@ function renderInteraction(obj) {
           <span class="muted">触发条件</span>
           ${CONDITION_IDS.map(id => `<button class="chip ${trigger.when === id ? 'active' : ''}" data-set-when="${id}" data-trigger="${trigger.id}">${CONDITION_LABELS[id] || id}</button>`).join('')}
         </div>
-        ${trigger._editingAction ? renderActionEditor(trigger, trigger._editingAction - 1) : ''}
+        ${editingAction?.triggerId === trigger.id ? renderActionEditor(trigger, editingAction.index) : ''}
       </div>
     `;
   }).join('') : `<div class="muted">尚未添加交互</div>`;
@@ -324,6 +326,84 @@ function getLockedBy(id) {
   return '';
 }
 
+function getSelectedNode() {
+  const ids = typeof store.selected === 'function' ? store.selected() : [];
+  if (!ids.length) return null;
+  return allNodes().find(node => node.id === ids[0]) || null;
+}
+
+function getSelectedAnchor() {
+  const ids = typeof store.selected === 'function' ? store.selected() : [];
+  if (!ids.length || typeof store.getAnchor !== 'function') return null;
+  return store.getAnchor(ids[0]) || null;
+}
+
+function anchorOptions(selected) {
+  const anchors = store.scene?.anchors || [];
+  return [
+    `<option value="">不绑定锚点</option>`,
+    ...anchors.map(anchor => `<option value="${esc(anchor.id)}" ${anchor.id === selected ? 'selected' : ''}>${esc(anchor.name || anchor.id)}</option>`)
+  ].join('');
+}
+
+function nextNodeOptions(selected, selfId) {
+  return [
+    `<option value="">（剧情终点）</option>`,
+    ...allNodes().filter(node => node.id !== selfId).map(node =>
+      `<option value="${esc(node.id)}" ${node.id === selected ? 'selected' : ''}>${esc(node.title || node.id)}</option>`)
+  ].join('');
+}
+
+function renderNodeEditor(node) {
+  const isStart = allNodes().length ? (store.scene.story?.chapters || []).some(ch => ch.nodes?.[0]?.id === node.id) : false;
+  return `
+    <div class="obj-head">
+      <div class="t">节点 · ${esc(node.title || node.id)}</div>
+      <div class="chips">
+        ${chip(isStart ? '入口节点' : '剧情节点', isStart ? 'ok' : '')}
+        ${chip(node.anchor ? '已绑锚点' : '未绑锚点', node.anchor ? 'ok' : 'warn')}
+      </div>
+    </div>
+    <div class="details-content">
+      ${card('节点内容', `
+        <label class="row field-row"><span>标题</span><input class="field" value="${esc(node.title || '')}" data-node-field="title"></label>
+        <label class="row field-row"><span>文案</span><textarea class="field" rows="3" data-node-field="text">${esc(node.text || '')}</textarea></label>
+      `)}
+      ${card('空间与流转', `
+        <label class="row field-row"><span>绑定锚点</span><select class="field" data-node-field="anchor">${anchorOptions(node.anchor)}</select></label>
+        <label class="row field-row"><span>进入播放</span><select class="field" data-node-field="on_enter">${sequenceOptions(node.on_enter)}</select></label>
+        <label class="row field-row"><span>下一节点</span><select class="field" data-node-field="next">${nextNodeOptions(node.next, node.id)}</select></label>
+        ${isStart ? '' : `<button class="btn" type="button" data-node-action="make-start">设为章节入口</button>`}
+      `)}
+      <div class="row readonly-row"><span>id</span><code>${esc(node.id)}</code></div>
+    </div>
+  `;
+}
+
+function renderAnchorEditor(anchor) {
+  const t = anchor.pose?.t || [0, 0, 0];
+  return `
+    <div class="obj-head">
+      <div class="t">锚点 · ${esc(anchor.name || anchor.id)}</div>
+      <div class="chips">
+        ${chip(anchor.kind === 'poster' ? '海报识别' : '空间定位', 'ok')}
+      </div>
+    </div>
+    <div class="details-content">
+      ${card('锚点', `
+        <label class="row field-row"><span>名称</span><input class="field" value="${esc(anchor.name || '')}" data-anchor-field="name"></label>
+        <label class="row field-row"><span>类型</span><select class="field" data-anchor-field="kind">
+          <option value="vps" ${anchor.kind !== 'poster' ? 'selected' : ''}>空间定位（vps）</option>
+          <option value="poster" ${anchor.kind === 'poster' ? 'selected' : ''}>海报识别（poster）</option>
+        </select></label>
+        ${anchor.kind === 'poster' ? `<label class="row field-row"><span>海报图</span><input class="field" placeholder="图片 URL" value="${esc(anchor.image_url || '')}" data-anchor-field="image_url"></label>` : ''}
+        <div class="row axis-row"><span class="axis-label">位置</span>${['X', 'Y', 'Z'].map((axis, i) => `<label>${axis}<input class="field" type="number" step="0.1" value="${esc(Number(t[i] ?? 0))}" data-anchor-pos="${i}"></label>`).join('')}</div>
+      `)}
+      <div class="row readonly-row"><span>id</span><code>${esc(anchor.id)}</code></div>
+    </div>
+  `;
+}
+
 function contentFor(obj) {
   if (activeTab === '材质') return renderMaterial(obj);
   if (activeTab === '显隐') return renderVisibility(obj);
@@ -336,7 +416,14 @@ function render() {
   const obj = getSelectedObject();
 
   if (!obj) {
-    root.innerHTML = '<div class="details-empty">在左侧或视口中选择对象</div>';
+    const node = getSelectedNode();
+    const anchor = getSelectedAnchor();
+    root.innerHTML = node
+      ? renderNodeEditor(node)
+      : anchor
+        ? renderAnchorEditor(anchor)
+        : '<div class="details-empty">在左侧或视口中选择对象</div>';
+    applyModeState();
     return;
   }
 
@@ -441,11 +528,8 @@ function bindEvents() {
 
     const actionButton = event.target.closest('[data-edit-action]');
     if (actionButton) {
-      const trigger = (store.scene.triggers || []).find(item => item.id === actionButton.dataset.editAction);
-      if (trigger) {
-        trigger._editingAction = 1;
-        render();
-      }
+      editingAction = { triggerId: actionButton.dataset.editAction, index: 0 };
+      render();
       return;
     }
 
@@ -455,9 +539,15 @@ function bindEvents() {
       if (trigger) {
         const actions = [...(trigger.do || []), { action: 'highlight', args: {} }];
         updateTrigger(trigger.id, { do: actions });
-        trigger._editingAction = actions.length;
+        editingAction = { triggerId: trigger.id, index: actions.length - 1 };
         render();
       }
+    }
+
+    const makeStart = event.target.closest('[data-node-action="make-start"]');
+    if (makeStart) {
+      const node = getSelectedNode();
+      if (node) store.moveNode?.(node.chapterId, node.id, 0);
     }
   });
 
@@ -486,6 +576,34 @@ function bindEvents() {
   });
 
   root.addEventListener('change', event => {
+    const storyNodeField = event.target.closest('[data-node-field]');
+    if (storyNodeField) {
+      const node = getSelectedNode();
+      if (!node) return;
+      const key = storyNodeField.dataset.nodeField;
+      const value = key === 'next' || key === 'anchor' || key === 'on_enter' ? (storyNodeField.value || null) : storyNodeField.value;
+      store.updateNode?.(node.chapterId, node.id, { [key]: value });
+      return;
+    }
+
+    const anchorField = event.target.closest('[data-anchor-field]');
+    if (anchorField) {
+      const anchor = getSelectedAnchor();
+      if (!anchor) return;
+      store.updateAnchor?.(anchor.id, { [anchorField.dataset.anchorField]: anchorField.value });
+      return;
+    }
+
+    const anchorPos = event.target.closest('[data-anchor-pos]');
+    if (anchorPos) {
+      const anchor = getSelectedAnchor();
+      if (!anchor) return;
+      const t = [...(anchor.pose?.t || [0, 0, 0])];
+      t[Number(anchorPos.dataset.anchorPos)] = Number(anchorPos.value) || 0;
+      store.updateAnchor?.(anchor.id, { pose: { ...(anchor.pose || {}), t } });
+      return;
+    }
+
     const obj = getSelectedObject();
     if (!obj) return;
 
@@ -533,7 +651,7 @@ function bindEvents() {
       const index = Number(actionKind.dataset.actionIndex);
       actions[index] = { action: actionKind.value, args: {} };
       updateTrigger(trigger.id, { do: actions });
-      trigger._editingAction = index + 1;
+      editingAction = { triggerId: trigger.id, index };
       render();
       return;
     }

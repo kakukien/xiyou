@@ -31,6 +31,9 @@ let playhead = 0;
 let selectedKey = null;
 let logItems = [];
 let renderQueued = false;
+let dockMaximized = false;
+let dockPrevHeight = null;
+let tlZoom = 140; // 时间线缩放：像素/秒
 
 function esc(value) {
   return String(value ?? '');
@@ -127,13 +130,38 @@ function renderTabs() {
   tabs.forEach(([id, label]) => {
     const tab = makeButton(label, `tab${activeTab === id ? ' active' : ''}`);
     tab.addEventListener('click', () => {
+      if (activeTab === 'timeline' && id !== 'timeline') player.endPreview?.();
       activeTab = id;
+      // 时间线是重度编辑面：面板过矮时自动抬到一半屏高
+      if (id === 'timeline' && root && root.getBoundingClientRect().height < 340) {
+        root.style.height = `${Math.round(window.innerHeight * 0.5)}px`;
+      }
       requestRender();
     });
     row.appendChild(tab);
   });
 
   row.appendChild(renderCardChips());
+
+  const spacer = document.createElement('span');
+  spacer.className = 'dock-tabs-spacer';
+  row.appendChild(spacer);
+
+  const maximize = makeButton(dockMaximized ? '⤡' : '⤢', 'tab dock-max');
+  maximize.title = dockMaximized ? '还原面板高度' : '放大编辑区';
+  maximize.addEventListener('click', () => {
+    if (!root) return;
+    if (dockMaximized) {
+      root.style.height = dockPrevHeight || localStorage.getItem('xiyou.dockH') || '';
+      dockMaximized = false;
+    } else {
+      dockPrevHeight = root.style.height || `${root.getBoundingClientRect().height}px`;
+      root.style.height = `${Math.round(window.innerHeight * 0.55)}px`;
+      dockMaximized = true;
+    }
+    requestRender();
+  });
+  row.appendChild(maximize);
   return row;
 }
 
@@ -285,6 +313,7 @@ function renderTimeline() {
     select.appendChild(option);
   });
   select.addEventListener('change', () => {
+    player.endPreview?.();
     selectedSequenceId = select.value;
     playhead = 0;
     selectedKey = null;
@@ -309,7 +338,31 @@ function renderTimeline() {
     requestRender();
   });
 
+  const renameSequence = makeButton('改名', 'btn');
+  renameSequence.addEventListener('click', () => {
+    const current = getSequence();
+    if (!current) return;
+    const name = window.prompt('时间线名称', current.name || current.id);
+    if (name === null) return;
+    updateSequencePatch(current, { name: name.trim() || current.name });
+  });
+
+  const deleteSequence = makeButton('删除', 'btn danger');
+  deleteSequence.addEventListener('click', () => {
+    const current = getSequence();
+    if (!current) return;
+    if (!window.confirm(`删除时间线「${current.name || current.id}」？触发器中的引用会悬空。`)) return;
+    player.stop();
+    player.endPreview?.();
+    store.removeSequence(current.id);
+    selectedSequenceId = null;
+    selectedKey = null;
+    requestRender();
+  });
+
   const seq = getSequence();
+  renameSequence.disabled = !seq;
+  deleteSequence.disabled = !seq;
   duration.value = seq?.duration ?? 2;
   duration.disabled = !seq;
   duration.addEventListener('change', () => {
@@ -325,7 +378,40 @@ function renderTimeline() {
     if (seq) player.play(seq.id);
   });
 
-  toolbar.append('时间线：', select, ' 时长 ', duration, ' 秒 ', play, addSequence);
+  const stop = makeButton('■ 停止', 'btn');
+  stop.disabled = !seq;
+  stop.addEventListener('click', () => {
+    player.stop(true);
+    player.endPreview?.();
+    playhead = 0;
+    requestRender();
+  });
+
+  const zoomOut = makeButton('－', 'btn');
+  zoomOut.title = '缩小时间刻度（Ctrl+滚轮也可）';
+  zoomOut.addEventListener('click', () => {
+    tlZoom = Math.max(20, tlZoom * 0.75);
+    requestRender();
+  });
+  const zoomIn = makeButton('＋', 'btn');
+  zoomIn.title = '放大时间刻度';
+  zoomIn.addEventListener('click', () => {
+    tlZoom = Math.min(800, tlZoom * 1.33);
+    requestRender();
+  });
+  const zoomFit = makeButton('适配', 'btn');
+  zoomFit.title = '缩放到整个时长刚好显示';
+  zoomFit.disabled = !seq;
+  zoomFit.addEventListener('click', () => {
+    const scrollEl = root?.querySelector('.tl-scroll');
+    const avail = (scrollEl?.clientWidth || 800) - 170;
+    if (seq && avail > 100) {
+      tlZoom = Math.max(20, Math.min(800, avail / (Number(seq.duration) || 1)));
+      requestRender();
+    }
+  });
+
+  toolbar.append('时间线：', select, ' 时长 ', duration, ' 秒 ', play, stop, zoomOut, zoomIn, zoomFit, renameSequence, deleteSequence, addSequence);
   panel.appendChild(toolbar);
 
   if (!seq) {
@@ -337,63 +423,107 @@ function renderTimeline() {
   }
 
   const durationValue = Number(seq.duration) || 1;
+  const NAME_W = 170;
+  const pxW = Math.max(200, durationValue * tlZoom);
+  const t2x = t => NAME_W + t * tlZoom;
+  const x2t = (lane, clientX) => {
+    const rect = lane.getBoundingClientRect();
+    return Math.max(0, Math.min(durationValue, (clientX - rect.left) / tlZoom));
+  };
+
+  const scroll = document.createElement('div');
+  scroll.className = 'tl-scroll';
+  scroll.addEventListener('wheel', event => {
+    if (!event.ctrlKey) return;
+    event.preventDefault();
+    tlZoom = Math.max(20, Math.min(800, tlZoom * (event.deltaY < 0 ? 1.25 : 0.8)));
+    requestRender();
+  });
+
+  const inner = document.createElement('div');
+  inner.className = 'tl-inner';
+  inner.style.width = `${NAME_W + pxW}px`;
+
+  // 标尺行（吸顶 + 点名吸左）
   const ruler = document.createElement('div');
   ruler.className = 'tl-ruler';
 
   const rulerLabel = document.createElement('div');
-  rulerLabel.className = 'tl-name';
-  rulerLabel.textContent = '时间';
+  rulerLabel.className = 'tl-name tl-name-sticky';
+  rulerLabel.textContent = `${tlZoom >= 100 ? '' : '缩放着刻度 '}时间`;
   ruler.appendChild(rulerLabel);
 
   const rulerLane = document.createElement('div');
   rulerLane.className = 'tl-lane tl-ruler-lane';
-  for (let frame = 0; frame <= Math.ceil(durationValue * 30); frame += 10) {
+  rulerLane.style.width = `${pxW}px`;
+  rulerLane.title = '点击定位播放头 · Ctrl+滚轮缩放';
+  rulerLane.addEventListener('click', event => {
+    playhead = x2t(rulerLane, event.clientX);
+    player.preview(seq.id, playhead);
+    requestRender();
+  });
+  const markStep = tlZoom >= 240 ? 0.25 : tlZoom >= 100 ? 0.5 : tlZoom >= 40 ? 1 : 2;
+  for (let t = 0; t <= durationValue + 1e-6; t += markStep) {
     const mark = document.createElement('span');
-    mark.className = 'tl-mark';
-    mark.style.left = `${Math.min(100, frame / 30 / durationValue * 100)}%`;
-    mark.textContent = `${(frame / 30).toFixed(1)}s`;
+    const major = Math.abs(t / markStep - Math.round(t / markStep)) < 1e-6 && (t % 1 === 0 || markStep >= 1);
+    mark.className = `tl-mark${t % 1 === 0 ? '' : ' minor'}`;
+    mark.style.left = `${t * tlZoom}px`;
+    if (t % 1 === 0 || markStep >= 1) mark.textContent = `${t.toFixed(t % 1 === 0 ? 0 : 1)}s`;
     rulerLane.appendChild(mark);
   }
   ruler.appendChild(rulerLane);
-  panel.appendChild(ruler);
+  inner.appendChild(ruler);
 
-  const tracks = document.createElement('div');
-  tracks.className = 'tl-tracks';
+  if (!(seq.tracks || []).length) {
+    const hint = document.createElement('div');
+    hint.className = 'tl-empty-hint';
+    hint.textContent = '还没有轨道——用下方「＋ 轨道」给对象加一条，轨道上双击空白处打关键帧';
+    inner.appendChild(hint);
+  }
 
   (seq.tracks || []).forEach((track, trackIndex) => {
     const row = document.createElement('div');
     row.className = 'tl-track';
 
     const name = document.createElement('div');
-    name.className = 'tl-name';
+    name.className = 'tl-name tl-name-sticky';
 
     const dot = document.createElement('span');
     dot.className = `kdot k-${KIND_COLORS[track.kind] || 'event'}`;
 
     const label = document.createElement('span');
+    label.className = 'tl-track-label';
     label.textContent = `${KIND_LABELS[track.kind] || track.kind} · ${objectName(track.target)}`;
+    label.title = '点击选中该对象';
+    name.addEventListener('click', () => {
+      if (track.target) store.select(track.target);
+    });
 
-    name.append(dot, label);
+    const removeTrack = makeButton('×', 'tl-track-del');
+    removeTrack.title = '删除轨道';
+    removeTrack.addEventListener('click', () => {
+      const nextTracks = (seq.tracks || []).filter((_, i) => i !== trackIndex);
+      store.updateSequence(seq.id, { tracks: nextTracks });
+      if (selectedKey?.trackIndex === trackIndex) selectedKey = null;
+    });
+
+    name.append(dot, label, removeTrack);
 
     const lane = document.createElement('div');
     lane.className = 'tl-lane';
-
-    const laneSeek = (event) => {
-      const rect = lane.getBoundingClientRect();
-      playhead = Math.max(0, Math.min(durationValue, ((event.clientX - rect.left) / rect.width) * durationValue));
-      player.preview(seq.id, playhead);
-      requestRender();
-    };
+    lane.style.width = `${pxW}px`;
+    lane.title = '单击定位播放头 · 双击添加关键帧';
 
     lane.addEventListener('click', event => {
       if (event.target !== lane) return;
-      laneSeek(event);
+      playhead = x2t(lane, event.clientX);
+      player.preview(seq.id, playhead);
+      requestRender();
     });
 
     lane.addEventListener('dblclick', event => {
       if (event.target !== lane) return;
-      const rect = lane.getBoundingClientRect();
-      const t = Math.max(0, Math.min(durationValue, ((event.clientX - rect.left) / rect.width) * durationValue));
+      const t = x2t(lane, event.clientX);
       const obj = store.getObject(track.target);
       let value;
 
@@ -424,13 +554,12 @@ function renderTimeline() {
       point.type = 'button';
       point.className = 'tl-key';
       point.title = `${Number(key.t || 0).toFixed(2)}s · 拖动调时间`;
-      point.style.left = `${Math.max(0, Math.min(100, Number(key.t || 0) / durationValue * 100))}%`;
+      point.style.left = `${Number(key.t || 0) * tlZoom}px`;
 
       // 关键帧可左右拖动调时间
       point.addEventListener('pointerdown', event => {
         event.stopPropagation();
         event.preventDefault();
-        const rect = lane.getBoundingClientRect();
         const startX = event.clientX;
         const startT = Number(key.t) || 0;
         let moved = false;
@@ -438,8 +567,8 @@ function renderTimeline() {
           const dx = e2.clientX - startX;
           if (Math.abs(dx) > 3) moved = true;
           if (!moved) return;
-          const nt = Math.max(0, Math.min(durationValue, startT + (dx / rect.width) * durationValue));
-          point.style.left = `${(nt / durationValue) * 100}%`;
+          const nt = Math.max(0, Math.min(durationValue, startT + dx / tlZoom));
+          point.style.left = `${nt * tlZoom}px`;
           point.title = `${nt.toFixed(2)}s`;
           playhead = nt;
           player.preview(seq.id, nt);
@@ -448,8 +577,7 @@ function renderTimeline() {
           window.removeEventListener('pointermove', onMove);
           window.removeEventListener('pointerup', onUp);
           if (moved) {
-            const dx = e2.clientX - startX;
-            const nt = Math.max(0, Math.min(durationValue, startT + (dx / rect.width) * durationValue));
+            const nt = Math.max(0, Math.min(durationValue, startT + (e2.clientX - startX) / tlZoom));
             const keys = [...(track.keys || [])];
             keys[keyIndex] = { ...keys[keyIndex], t: nt };
             keys.sort((a, b) => Number(a.t) - Number(b.t));
@@ -477,10 +605,16 @@ function renderTimeline() {
     });
 
     row.append(name, lane);
-    tracks.appendChild(row);
+    inner.appendChild(row);
   });
 
-  panel.appendChild(tracks);
+  const playheadBar = document.createElement('div');
+  playheadBar.className = 'tl-playhead';
+  playheadBar.style.left = `${t2x(playhead)}px`;
+  inner.appendChild(playheadBar);
+
+  scroll.appendChild(inner);
+  panel.appendChild(scroll);
 
   const addTrackRow = document.createElement('div');
   addTrackRow.className = 'timeline-add-track';
@@ -496,10 +630,12 @@ function renderTimeline() {
 
   const targetSelect = document.createElement('select');
   targetSelect.className = 'field';
+  const selObj = currentObject();
   (store.scene.objects || []).forEach(obj => {
     const option = document.createElement('option');
     option.value = obj.id;
     option.textContent = obj.name || obj.id;
+    if (selObj && obj.id === selObj.id) option.selected = true;
     targetSelect.appendChild(option);
   });
 
@@ -519,11 +655,6 @@ function renderTimeline() {
 
   addTrackRow.append(kindSelect, targetSelect, addTrack);
   panel.appendChild(addTrackRow);
-
-  const playheadBar = document.createElement('div');
-  playheadBar.className = 'tl-playhead';
-  playheadBar.style.left = `${playhead / durationValue * 100}%`;
-  panel.appendChild(playheadBar);
 
   return panel;
 }
@@ -545,9 +676,27 @@ function renderKeyEditor(seq, track, trackIndex, key, keyIndex) {
   time.addEventListener('change', () => {
     const keys = [...(track.keys || [])];
     keys[keyIndex] = { ...keys[keyIndex], t: Math.max(0, Number(time.value) || 0) };
+    keys.sort((a, b) => Number(a.t) - Number(b.t));
     store.updateSequence(seq.id, { tracks: replaceTrack(seq, trackIndex, { keys }) });
   });
   editor.appendChild(time);
+
+  const ease = document.createElement('select');
+  ease.className = 'field key-ease';
+  ease.title = '缓动';
+  [['linear', '线性'], ['in', '缓入'], ['out', '缓出'], ['inout', '缓入出']].forEach(([id, text]) => {
+    const option = document.createElement('option');
+    option.value = id;
+    option.textContent = text;
+    option.selected = (key.ease || 'linear') === id;
+    ease.appendChild(option);
+  });
+  ease.addEventListener('change', () => {
+    const keys = [...(track.keys || [])];
+    keys[keyIndex] = { ...keys[keyIndex], ease: ease.value };
+    store.updateSequence(seq.id, { tracks: replaceTrack(seq, trackIndex, { keys }) });
+  });
+  editor.appendChild(ease);
 
   if (track.kind === 'transform') {
     // 分轴编辑：位移 XYZ / 旋转 XYZ° / 缩放 XYZ
@@ -612,6 +761,15 @@ function renderKeyEditor(seq, track, trackIndex, key, keyIndex) {
     requestRender();
   });
   editor.appendChild(close);
+
+  const del = makeButton('删除此键', 'btn danger');
+  del.addEventListener('click', event => {
+    event.stopPropagation();
+    const keys = (track.keys || []).filter((_, i) => i !== keyIndex);
+    store.updateSequence(seq.id, { tracks: replaceTrack(seq, trackIndex, { keys }) });
+    selectedKey = null;
+  });
+  editor.appendChild(del);
 
   return editor;
 }
@@ -703,6 +861,33 @@ export function mount(el) {
   root = el;
   root.classList.add('dock');
 
+  // 顶边拖拽调高 + 上次高度记忆
+  const savedH = localStorage.getItem('xiyou.dockH');
+  if (savedH) root.style.height = savedH;
+
+  const grip = document.createElement('div');
+  grip.className = 'dock-resize';
+  grip.title = '上下拖动调整面板高度';
+  grip.innerHTML = '<span class="dock-grip-pill"></span>';
+  grip.addEventListener('pointerdown', event => {
+    event.preventDefault();
+    dockMaximized = false;
+    const startY = event.clientY;
+    const startH = root.getBoundingClientRect().height;
+    const onMove = e2 => {
+      const h = Math.max(140, Math.min(window.innerHeight * 0.8, startH + (startY - e2.clientY)));
+      root.style.height = `${Math.round(h)}px`;
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      localStorage.setItem('xiyou.dockH', root.style.height);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  });
+  root.prepend(grip);
+
   store.on('change', requestRender);
   store.on('selection', requestRender);
   store.on('assets', requestRender);
@@ -718,6 +903,30 @@ export function mount(el) {
     if (logItems.length > 300) logItems = logItems.slice(-300);
     if (activeTab === 'log') requestRender();
   });
+
+  // 播放中驱动播放头跟随（只动 DOM 不整页重渲）
+  const tickPlayhead = () => {
+    if (activeTab === 'timeline' && selectedSequenceId) {
+      const state = player.progress?.(selectedSequenceId);
+      if (state) {
+        playhead = state.time;
+        const bar = root?.querySelector('.tl-playhead');
+        if (bar) {
+          bar.style.left = `${170 + state.time * tlZoom}px`;
+          // 播放头跑出可视区时自动跟滚
+          const scrollEl = root?.querySelector('.tl-scroll');
+          if (scrollEl && !state.finished) {
+            const x = state.time * tlZoom;
+            const viewL = scrollEl.scrollLeft;
+            const viewR = viewL + scrollEl.clientWidth - 170;
+            if (x > viewR - 80 || x < viewL) scrollEl.scrollLeft = Math.max(0, x - 120);
+          }
+        }
+      }
+    }
+    requestAnimationFrame(tickPlayhead);
+  };
+  requestAnimationFrame(tickPlayhead);
 
   render();
 }

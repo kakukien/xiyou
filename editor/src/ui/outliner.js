@@ -48,6 +48,40 @@ function initials(name) {
     .toUpperCase() || '?';
 }
 
+function toast(text) {
+  const el = document.createElement('div');
+  el.className = 'story-toast';
+  el.textContent = text;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('in'));
+  setTimeout(() => { el.classList.remove('in'); setTimeout(() => el.remove(), 300); }, 2600);
+}
+
+// 双击行内改名：span → input，Enter/失焦提交，Esc 取消
+function inlineEdit(span, current, onCommit) {
+  const input = document.createElement('input');
+  input.className = 'field ol-inline-edit';
+  input.value = current;
+  span.replaceWith(input);
+  input.focus();
+  input.select();
+  let done = false;
+  const commit = (save) => {
+    if (done) return;
+    done = true;
+    const value = input.value.trim();
+    if (save && value && value !== current) onCommit(value);
+    input.replaceWith(span);
+  };
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') commit(true);
+    if (e.key === 'Escape') commit(false);
+    e.stopPropagation();
+  });
+  input.addEventListener('blur', () => commit(true));
+  input.addEventListener('click', e => e.stopPropagation());
+}
+
 function selectedId() {
   return store.selected?.()[0] || null;
 }
@@ -108,10 +142,10 @@ function renderNode(scene, node, chapter, worldOnly = false) {
   const selected = selectedId() === node.id;
   const isStart = chapter.nodes?.[0]?.id === node.id;
   const checks = [
-    ['文', stats.text],
-    ['摆', stats.placed],
-    ['触', stats.trigger],
-    ['位', stats.located]
+    ['文', stats.text, '已写文案'],
+    ['摆', stats.placed, '已摆放物件'],
+    ['触', stats.trigger, '已配触发'],
+    ['位', stats.located, '已绑锚点']
   ];
 
   if (worldOnly) {
@@ -134,7 +168,8 @@ function renderNode(scene, node, chapter, worldOnly = false) {
         <div class="s">${esc(node.text || '暂无节点描述')}</div>
       </div>
       <div class="node-checks">
-        ${checks.map(([label, done]) => `<span class="${done ? 'done' : ''}">${label}</span>`).join('')}
+        ${checks.map(([label, done, tip]) => `<span class="${done ? 'done' : ''}" title="${tip}">${label}</span>`).join('')}
+        ${isPlayMode() ? '' : `<button class="obj-delete node-del" type="button" data-delete-node="${esc(node.id)}" data-chapter="${esc(chapter.id)}" title="删除节点">×</button>`}
       </div>
     </div>
   `;
@@ -153,10 +188,11 @@ function renderChapter(scene, chapter, query, worldOnly = false) {
 
   return `
     <div class="ol-chapter" data-chapter-id="${esc(chapter.id)}">
-      <div class="ch-row${selected ? ' active' : ''}" data-chapter-toggle="${esc(chapter.id)}">
+      <div class="ch-row${selected ? ' active' : ''}" data-chapter-toggle="${esc(chapter.id)}" title="双击重命名章节">
         <span class="ch-arrow">${collapsed ? '▸' : '▾'}</span>
         <span class="ch-name">${esc(chapter.title || '未命名章节')}</span>
-        <span class="ch-count">${nodes.length}/${nodes.length}</span>
+        <span class="ch-count">${visibleNodes.length === nodes.length ? nodes.length : `${visibleNodes.length}/${nodes.length}`}</span>
+        ${isPlayMode() ? '' : `<button class="obj-delete ch-del" type="button" data-delete-chapter="${esc(chapter.id)}" title="删除章节">×</button>`}
       </div>
       <div class="ch-nodes">${nodeHtml}</div>
     </div>
@@ -207,6 +243,34 @@ function renderObjects(scene, query, readOnly) {
   `;
 }
 
+const ANCHOR_KIND = { vps: '📍', poster: '🖼' };
+
+function renderAnchors(scene, query, readOnly) {
+  const anchors = (scene.anchors || []).filter(anchor => {
+    if (!query) return true;
+    return [anchor.name, anchor.id, anchor.kind].join(' ').toLowerCase().includes(query);
+  });
+
+  const rows = anchors.map(anchor => {
+    const selected = selectedId() === anchor.id;
+    const pos = (anchor.pose?.t || []).map(v => Number(v).toFixed(1)).join(', ');
+    return `
+      <div class="tree-item obj-row${selected ? ' active' : ''}" data-anchor-id="${esc(anchor.id)}" title="${esc(anchor.name || anchor.id)} · (${pos})">
+        <span class="obj-icon">${ANCHOR_KIND[anchor.kind] || '⚓'}</span>
+        <span class="obj-name">${esc(anchor.name || '未命名锚点')}</span>
+        <span class="obj-actions">
+          ${readOnly ? '' : `<button class="obj-delete" type="button" data-delete-anchor="${esc(anchor.id)}" title="删除锚点">×</button>`}
+        </span>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="ol-section-title"><span>空间锚点</span></div>
+    <div class="ol-object-groups">${rows || '<div class="ol-empty">暂无锚点，顶栏「锚点」按钮放置</div>'}</div>
+  `;
+}
+
 const localCollapsed = new Set();
 
 export function mount(el) {
@@ -222,11 +286,11 @@ export function mount(el) {
 
     el.innerHTML = `
       <div class="ol-tabs">
-        <button class="tab${activeTab === 'content' ? ' active' : ''}" data-tab="content">内容</button>
-        <button class="tab${activeTab === 'world' ? ' active' : ''}" data-tab="world">世界大纲</button>
+        <button class="tab${activeTab === 'content' ? ' active' : ''}" data-tab="content">剧情</button>
+        <button class="tab${activeTab === 'world' ? ' active' : ''}" data-tab="world">空间</button>
       </div>
       <div class="ol-search">
-        <input class="field" type="search" placeholder="搜索章节、节点、对象" value="${esc(query)}">
+        <input class="field" type="search" placeholder="搜索章节、节点、对象、锚点" value="${esc(query)}">
       </div>
       <div class="ol-addrow">
         ${readOnly ? '' : `
@@ -239,7 +303,8 @@ export function mount(el) {
         <div class="ol-chapters">
           ${visibleChapters.map(chapter => renderChapter(scene, chapter, query, worldOnly)).join('') || '<div class="ol-empty">暂无匹配内容</div>'}
         </div>
-        ${worldOnly ? '' : renderObjects(scene, query, readOnly)}
+        ${worldOnly ? renderAnchors(scene, query, readOnly) : renderObjects(scene, query, readOnly)}
+        ${worldOnly ? '' : renderAnchors(scene, query, readOnly)}
       </div>
     `;
 
@@ -265,10 +330,62 @@ export function mount(el) {
 
     el.querySelectorAll('[data-chapter-toggle]').forEach(row => {
       row.addEventListener('click', event => {
+        if (event.target.closest('[data-delete-chapter]')) return;
         const id = row.dataset.chapterToggle;
         if (localCollapsed.has(id)) localCollapsed.delete(id);
         else localCollapsed.add(id);
         render();
+      });
+      row.addEventListener('dblclick', event => {
+        if (isPlayMode()) return;
+        const chapter = (store.scene.story?.chapters || []).find(item => item.id === row.dataset.chapterToggle);
+        const nameEl = row.querySelector('.ch-name');
+        if (!chapter || !nameEl) return;
+        event.stopPropagation();
+        inlineEdit(nameEl, chapter.title || '', title => {
+          store.updateChapter(chapter.id, { title });
+        });
+      });
+    });
+
+    el.querySelectorAll('[data-delete-chapter]').forEach(button => {
+      button.addEventListener('click', event => {
+        event.stopPropagation();
+        if (isPlayMode()) return;
+        const chapter = (store.scene.story?.chapters || []).find(item => item.id === button.dataset.deleteChapter);
+        if (!chapter) return;
+        const count = (chapter.nodes || []).length;
+        store.removeChapter(chapter.id);
+        toast(`已删除章节「${chapter.title || '未命名章节'}」${count ? `（含 ${count} 个节点）` : ''} · Ctrl+Z 撤销`);
+      });
+    });
+
+    el.querySelectorAll('[data-delete-node]').forEach(button => {
+      button.addEventListener('click', event => {
+        event.stopPropagation();
+        if (isPlayMode()) return;
+        const chapter = (store.scene.story?.chapters || []).find(item => item.id === button.dataset.chapter);
+        const node = chapter?.nodes?.find(item => item.id === button.dataset.deleteNode);
+        store.removeNode(button.dataset.chapter, button.dataset.deleteNode);
+        toast(`已删除节点「${node?.title || '未命名节点'}」· Ctrl+Z 撤销`);
+      });
+    });
+
+    el.querySelectorAll('[data-anchor-id]').forEach(row => {
+      row.addEventListener('click', event => {
+        if (event.target.closest('[data-delete-anchor]')) return;
+        store.select(row.dataset.anchorId);
+      });
+    });
+
+    el.querySelectorAll('[data-delete-anchor]').forEach(button => {
+      button.addEventListener('click', event => {
+        event.stopPropagation();
+        if (isPlayMode()) return;
+        const anchor = store.getAnchor?.(button.dataset.deleteAnchor);
+        if (!anchor) return;
+        store.removeAnchor(anchor.id);
+        toast(`已删除锚点「${anchor.name || anchor.id}」· Ctrl+Z 撤销`);
       });
     });
 
@@ -279,6 +396,19 @@ export function mount(el) {
         // 聚焦到该节点第一个对象，让视口跟着跳
         const target = (store.scene.objects || []).find(o => o.node_id === nodeId);
         if (target && viewport.focus) viewport.focus(target.id);
+      });
+      row.addEventListener('dblclick', event => {
+        if (isPlayMode()) return;
+        const titleEl = row.querySelector('.node-meta .t');
+        const nodeId = row.dataset.nodeId;
+        const chapter = (store.scene.story?.chapters || []).find(item =>
+          item.nodes?.some(node => node.id === nodeId));
+        const node = chapter?.nodes?.find(item => item.id === nodeId);
+        if (!chapter || !node || !titleEl) return;
+        event.stopPropagation();
+        inlineEdit(titleEl, node.title || '', title => {
+          store.updateNode(chapter.id, node.id, { title });
+        });
       });
     });
 
@@ -299,16 +429,16 @@ export function mount(el) {
         if (isPlayMode()) return;
         const object = store.getObject(button.dataset.deleteObject);
         if (!object) return;
-        if (!window.confirm(`删除对象“${object.name || '未命名对象'}”？`)) return;
         store.removeObject(object.id);
+        toast(`已删除对象「${object.name || '未命名对象'}」· Ctrl+Z 撤销`);
       });
     });
 
     el.querySelector('[data-action="add-chapter"]')?.addEventListener('click', () => {
       if (isPlayMode()) return;
-      const title = window.prompt('章节名称', '新章节');
-      if (title === null) return;
-      store.addChapter(title.trim() || '新章节');
+      const chapter = store.addChapter('新章节');
+      store.select(chapter.id);
+      toast('已添加章节 · 双击行改名');
     });
 
     el.querySelector('[data-action="add-node"]')?.addEventListener('click', () => {
@@ -325,9 +455,8 @@ export function mount(el) {
         : chapters[chapters.length - 1];
 
       if (!chapter) return;
-      const title = window.prompt('节点名称', '新节点');
-      if (title === null) return;
-      store.addNode(chapter.id, { title: title.trim() || '新节点' });
+      const created = store.addNode(chapter.id, { title: '新节点' });
+      if (created) store.select(created.id);
     });
 
     el.querySelector('[data-action="add-object"]')?.addEventListener('click', event => {

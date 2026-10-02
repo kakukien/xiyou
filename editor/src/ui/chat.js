@@ -246,6 +246,43 @@ function ensureStyle() {
       background: var(--bg3, #e5e5e0);
     }
 
+    .ai-chat-mic {
+      width: 31px;
+      height: 31px;
+      min-width: 31px;
+      padding: 0;
+      border: 1px solid var(--line2, #d8d8d2);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text2, #777);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 29px;
+      transition: all .15s ease;
+    }
+
+    .ai-chat-mic:hover:not(:disabled) {
+      border-color: #f5822c;
+      color: #f5822c;
+    }
+
+    .ai-chat-mic.is-rec {
+      color: #fff;
+      background: #f56d00;
+      border-color: #f56d00;
+      animation: ai-chat-rec 1s infinite ease-in-out;
+    }
+
+    .ai-chat-mic:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+
+    @keyframes ai-chat-rec {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 109, 0, .35); }
+      50% { box-shadow: 0 0 0 6px rgba(245, 109, 0, 0); }
+    }
+
     .ai-chat-send {
       height: 31px;
       padding: 0 12px;
@@ -433,7 +470,12 @@ export function mount() {
   const send = makeElement('button', 'ai-chat-send', '发送');
   send.type = 'button';
 
+  const mic = makeElement('button', 'ai-chat-mic', '🎙');
+  mic.type = 'button';
+  mic.title = '语音输入（说完自动发送）';
+
   inputArea.appendChild(input);
+  inputArea.appendChild(mic);
   inputArea.appendChild(send);
   panel.appendChild(header);
   panel.appendChild(messages);
@@ -586,6 +628,44 @@ export function mount() {
   collapse.addEventListener('click', closePanel);
   send.addEventListener('click', sendMessage);
   input.addEventListener('input', resizeInput);
+
+  // 语音输入：浏览器 SpeechRecognition（zh-CN），识别完成自动发送
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recActive = false;
+  if (SpeechRecognition) {
+    const rec = new SpeechRecognition();
+    rec.lang = 'zh-CN';
+    rec.continuous = false;
+    rec.interimResults = true;
+
+    rec.onresult = event => {
+      let interim = '';
+      let final = '';
+      for (const res of event.results) {
+        if (res.isFinal) final += res[0].transcript;
+        else interim += res[0].transcript;
+      }
+      input.value = (final || interim).trim();
+      resizeInput();
+      if (final && !sending && store.mode !== 'play') sendMessage();
+    };
+    const stopRec = () => { recActive = false; mic.classList.remove('is-rec'); };
+    rec.onend = stopRec;
+    rec.onerror = stopRec;
+
+    mic.addEventListener('click', () => {
+      if (recActive) { rec.stop(); return; }
+      try {
+        rec.start();
+        recActive = true;
+        mic.classList.add('is-rec');
+        input.placeholder = '正在听…';
+      } catch { /* 已启动 */ }
+    });
+    store.on('mode', () => { if (store.mode === 'play' && recActive) rec.stop(); });
+  } else {
+    mic.style.display = 'none';
+  }
 
   input.addEventListener('keydown', event => {
     if (event.key === 'Enter' && !event.shiftKey) {

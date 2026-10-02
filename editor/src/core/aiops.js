@@ -54,6 +54,11 @@ function hasChapter(id) {
     store.scene.story.chapters.some(chapter => chapter.id === id)
 }
 
+function hasAnchor(id) {
+  return !!id && Array.isArray(store.scene?.anchors) &&
+    store.scene.anchors.some(item => item.id === id)
+}
+
 function numberOr(value, fallback) {
   return Number.isFinite(Number(value)) ? Number(value) : fallback
 }
@@ -89,25 +94,25 @@ function cleanId(value) {
 
 function uniqueObjectProps(input) {
   const props = normalizeObjectProps(input)
-  if (hasObject(props.id)) delete props.id
+  if (!props.id || hasObject(props.id)) delete props.id
   return props
 }
 
 function uniqueSequenceProps(input) {
   const props = clone(input) || {}
-  if (hasSequence(props.id)) delete props.id
+  if (!props.id || hasSequence(props.id)) delete props.id
   return props
 }
 
 function uniqueTriggerProps(input) {
   const props = clone(input) || {}
-  if (hasTrigger(props.id)) delete props.id
+  if (!props.id || hasTrigger(props.id)) delete props.id
   return props
 }
 
 function uniqueNodeProps(input) {
   const props = clone(input) || {}
-  if (hasNode(props.id)) delete props.id
+  if (!props.id || hasNode(props.id)) delete props.id
   return props
 }
 
@@ -177,6 +182,15 @@ export function sceneSummary() {
     lines.push('触发器|无')
   }
 
+  const anchors = Array.isArray(scene.anchors) ? scene.anchors : []
+  if (anchors.length) {
+    lines.push(`锚点|${anchors.map(anchor =>
+      `${anchor.id || ''}|${anchor.name || ''}|${anchor.kind || anchor.type || ''}|p(${formatVector(anchor.pose?.t)})`
+    ).join(';')}`)
+  } else {
+    lines.push('锚点|无')
+  }
+
   return lines.join('\n').slice(0, 2000)
 }
 
@@ -194,6 +208,9 @@ export const SYSTEM_PROMPT = `你是「西游·虚境 AR 空间编辑器」的�
 6. {"op":"add_node","chapter_id":"","id":"","title":"","text":"≤40字","next":""}
 7. {"op":"update_node","chapter_id":"","id":"","patch":{}}
 8. {"op":"set_sky","top":"#hex","horizon":"#hex","bottom":"#hex","sun":[x,y,z],"sunColor":"#hex"} // 更换天空穹顶配色
+9. {"op":"add_anchor","id":"","name":"","kind":"vps|poster|image","pose":{"t":[x,y,z],"r":[0,0,0]}} // 放置空间定位锚点（vps=空间定位点, poster=海报/图锚点）
+10. {"op":"update_anchor","id":"","patch":{}} // 改锚点（name/pose.t 等）
+11. {"op":"remove_anchor","id":""} // 删锚点
 
 compound 组装体（实时生成任意 3D）：parts 是数组，每项 {"shape":"box|sphere|cylinder|cone|torus|icosa|octa|tetra|capsule|plane|ring","p":[x,y,z],"r":[deg,deg,deg],"s":[x,y,z],"color":"#hex","opacity":0-1,"emissive":"#hex","metalness":0-1,"roughness":0-1,"blend":"additive","flat":true,"shader":{"kind":""}}。
 例：生成莲花台 = 底部 cylinder 灰座 + 中层 6 个倾斜的 capsule 花瓣(粉色) + 顶部 sphere 莲心(金) + 环绕 ring(additive 金色光晕)。多思考物体的组成部分再动手。
@@ -206,7 +223,8 @@ material.shader 动态效果（quad/compound 部件可用）：{"kind":"nebula�
 - 粒子发射器：compound 的 parts 里放 {"shape":"points","count":300,"spread":[宽,高,深],"size":0.05,"speed":0.3,"drift":0.2,"material":{"color":"#hex","alpha":"fx:mote"}}——萤火虫/下雪/上升光尘/星尘都能做。
 - set_sky 可选 {"image":"fx/sky_dusk.jpg|fx/sky_night.jpg|fx/sky_dawn.jpg"} 用内置全景天空图，或传 top/horizon/bottom 纯色渐变。
 - 你只能编辑场景内容（对象、触发器、时间线、剧情节点）。底座(base)、素材库、编辑器界面不可修改——没有对应 op，被要求时 reply 说明超出权限，ops 给空数组。
-- 引用已有对象、节点和时间线时必须使用场景清单中的 id。
+- 引用已有对象、节点、时间线和锚点时必须使用场景清单中的 id。
+- 剧情节点的 anchor 字段绑定锚点 id（场景清单「锚点」行）；把内容落到物理空间时优先绑锚点。锚点坐标是米制、y 轴向上、地面 y=0。
 - 拿不准时先根据场景清单猜测，并在 reply 中说明。
 - 一次最多 8 个 op。
 - reply 不超过 60 字；节点 text 不超过 40 字。
@@ -337,6 +355,41 @@ function executeOp(op) {
       }
 
       return store.updateNode(op.chapter_id, op.id, patch)
+    }
+
+    case 'add_anchor': {
+      const props = {
+        id: cleanId(op.id),
+        name: typeof op.name === 'string' ? op.name : '',
+        kind: ['vps', 'poster', 'image'].includes(op.kind) ? op.kind : 'vps',
+        pose: {
+          t: vector(op.pose?.t, [0, 0, 0]),
+          r: vector(op.pose?.r, [0, 0, 0])
+        },
+        image_url: typeof op.image_url === 'string' ? op.image_url : null
+      }
+      if (!props.id || hasAnchor(props.id)) delete props.id
+      return store.addAnchor(props)
+    }
+
+    case 'update_anchor': {
+      if (!hasAnchor(op.id)) throw new Error('锚点不存在')
+      const patch = clone(op.patch)
+      if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+        throw new Error('锚点 patch 无效')
+      }
+      if (patch.pose !== undefined) {
+        patch.pose = {
+          t: vector(patch.pose?.t, [0, 0, 0]),
+          r: vector(patch.pose?.r, [0, 0, 0])
+        }
+      }
+      return store.updateAnchor(op.id, patch)
+    }
+
+    case 'remove_anchor': {
+      if (!hasAnchor(op.id)) throw new Error('锚点不存在')
+      return store.removeAnchor(op.id)
     }
 
     case 'set_sky': {

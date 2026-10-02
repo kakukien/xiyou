@@ -243,6 +243,19 @@ export function newChapter(title = '新章节', props = {}) {
   return merge(chapter, props);
 }
 
+export function newAnchor(props = {}) {
+  const anchor = {
+    id: makeId('anchor'),
+    name: '',
+    kind: 'vps',
+    pose: { t: [0, 0, 0], r: [0, 0, 0] },
+    image_url: null
+  };
+  const merged = merge(anchor, props);
+  if (props.type && !props.kind) merged.kind = props.type;
+  return merged;
+}
+
 function objectIds(scene) {
   return new Set((scene.objects || []).map((item) => item && item.id).filter(Boolean));
 }
