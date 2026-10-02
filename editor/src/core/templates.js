@@ -134,6 +134,16 @@ export function demoScene() {
     transform: { p: [1.4, 1, -3.6], r: [0, -30, 0], s: [0.95, 0.95, 0.95] }
   });
 
+  const world = newObject('glb', {
+    id: 'glb_虚境世界',
+    name: '虚境世界·体素环绕',
+    asset: 'a_world',
+    node_id: '',
+    visible: true,
+    transform: { p: [0, -0.45, 0], r: [0, 0, 0], s: [1, 1, 1] }
+  });
+  world.hitbox = { type: 'none', size: [1, 1, 1], center: [0, 0, 0] };
+
   const cliff = newObject('splat_segment', {
     id: 'seg_墙面01',
     name: '墙面分块_01',
@@ -456,6 +466,7 @@ export function demoScene() {
   });
 
   scene.objects = [
+    world,
     backdrop, stageFloor, speakers, ...photoArc,
     segGround, cliff, segPillar, segHill,
     videoA, videoB,
@@ -488,6 +499,7 @@ export function demoScene() {
       { id: 'a_floor', name: '舞台地面.png', url: 'site/floor.jpg', bytes: 15671, mime: 'image/jpeg' },
       { id: 'a_speakers', name: '线阵音箱.png', url: 'site/speakers.jpg', bytes: 90012, mime: 'image/jpeg' },
       { id: 'a_clip', name: '现场片段.mp4', url: 'site/clip.mp4', bytes: 709560, mime: 'video/mp4' },
+      { id: 'a_world', name: '虚境世界·体素.glb', url: 'assets/xiyou_world.glb', bytes: 1915952, mime: 'model/gltf-binary' },
       { id: 'a_wukong', name: '孙悟空.glb', url: 'local://孙悟空.glb', bytes: 356515840, mime: 'model/gltf-binary' },
       { id: 'a_va', name: '视频_A.mp4', url: 'local://视频_A.mp4', bytes: 188743680, mime: 'video/mp4' }
     ]
