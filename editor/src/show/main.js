@@ -508,7 +508,9 @@ async function startVpsMode() {
 
   const flip = new THREE.Matrix4().makeScale(1, -1, -1);
   const vpsCamP0 = new THREE.Vector3(), desQ = new THREE.Quaternion();
-  let busy = false, locFail = 0;
+  const _fp = new THREE.Vector3(), _fq = new THREE.Quaternion();
+  let busy = false, locFail = 0, pending = null;
+  const angBetween = (a, b) => 2 * Math.acos(Math.min(1, Math.abs(a.dot(b)))) * 180 / Math.PI;
   const arm = ms => { if (mode === 'vps') vpsTimer = setTimeout(locate, ms); };
   const locate = async () => {
     if (mode !== 'vps') return;
@@ -517,28 +519,47 @@ async function startVpsMode() {
     busy = true;
     let wait = 1300; // 失败快速重试，抓一帧清晰的
     try {
-      const blob = await capFrame(freeVideo, 1100);
-      const res = await fetch(`${VPS_URL}/locate?k=15&min=${vpsCamQ0 ? 8 : 10}`, { method: 'POST', body: blob });
+      const blob = await capFrame(freeVideo, 1280);
+      const res = await fetch(`${VPS_URL}/locate?k=15&min=8`, { method: 'POST', body: blob });
       const j = await res.json();
       if (j.ok) {
-        locFail = 0; wait = 4000;
         const m = new THREE.Matrix4().fromArray(j.cam2world).multiply(flip);
-        vpsCamQ0 = new THREE.Quaternion().setFromRotationMatrix(m);
-        vpsCamP0.setFromMatrixPosition(m);
-        vpsGyroQ0 = vpsGyroQ ? vpsGyroQ.clone() : null;
-        if (!sceneContent.visible) { // 首帧直接落位，之后靠平滑过渡
-          freeCamera.position.copy(vpsCamP0);
-          freeCamera.quaternion.copy(vpsCamQ0);
-          freeCamera.updateMatrix();
+        _fq.setFromRotationMatrix(m); _fp.setFromMatrixPosition(m);
+        // 置信闸门：低内点解只在与上帧一致时才采信；大跳变要两帧互相印证才认
+        const strong = j.inliers >= 25;
+        let accept = false, dropWhy = '';
+        if (!vpsCamQ0) {
+          accept = j.inliers >= 15;
+          if (!accept) dropWhy = `首定质量不足 内点${j.inliers}`;
+        } else {
+          const dp = _fp.distanceTo(vpsCamP0), da = angBetween(_fq, vpsCamQ0);
+          if (strong && dp < 3.5 && da < 50) accept = true;
+          else if (strong && pending && _fp.distanceTo(pending.p) < 1.2 && angBetween(_fq, pending.q) < 25) accept = true; // 连续两次一致的大位移=真实移动
+          else if (!strong && dp < 1.5 && da < 25) accept = true;
+          else { pending = { p: _fp.clone(), q: _fq.clone() }; dropWhy = `跳变/弱解已丢弃 内点${j.inliers}`; }
         }
-        sceneContent.visible = true;
-        setState(`已定位 · 内点 ${j.inliers} · ${j.ms}ms`);
+        if (accept) {
+          locFail = 0; wait = 2500; pending = null;
+          vpsCamQ0 = _fq.clone();
+          vpsCamP0.copy(_fp);
+          vpsGyroQ0 = vpsGyroQ ? vpsGyroQ.clone() : null;
+          if (!sceneContent.visible) { // 首帧直接落位，之后靠平滑过渡
+            freeCamera.position.copy(vpsCamP0);
+            freeCamera.quaternion.copy(vpsCamQ0);
+            freeCamera.updateMatrix();
+          }
+          sceneContent.visible = true;
+          setState(`已定位 · 内点 ${j.inliers} · ${j.ms}ms`);
+        } else {
+          locFail++;
+          setState((vpsCamQ0 ? '保持位姿 · ' : '定位中…') + dropWhy);
+        }
       } else {
         locFail++;
         console.warn('[vps] locate fail', j);
         const hint = j.max_inliers != null ? ` · 内点 ${j.max_inliers}` : (j.reason ? ` · ${j.reason}` : '');
         const weak = !vpsCamQ0 && (j.max_inliers || 0) < 5 && locFail > 4;
-        setState(weak ? '环境特征偏弱 · 对准大屏/舞台明亮区' + hint
+        setState(weak ? '此区域未收录或光线偏弱 · 请回到舞台/大屏方向' + hint
           : (vpsCamQ0 ? '定位偏移中 · 保持上帧位姿' : '定位中…对准舞台/大屏区域缓慢移动') + hint);
       }
     } catch (e) {
