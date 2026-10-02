@@ -539,9 +539,16 @@ async function startVpsMode() {
           else { pending = { p: _fp.clone(), q: _fq.clone() }; dropWhy = `跳变/弱解已丢弃 内点${j.inliers}`; }
         }
         if (accept) {
-          locFail = 0; wait = 2500; pending = null;
-          vpsCamQ0 = _fq.clone();
-          vpsCamP0.copy(_fp);
+          locFail = 0; wait = 1000; pending = null;
+          // 置信加权融合：内点越多话语权越大（>=60 全权），弱解只轻微修正——钉住不漂
+          const w = Math.min(1, Math.max(0.15, j.inliers / 60));
+          if (!vpsCamQ0) {
+            vpsCamQ0 = _fq.clone();
+            vpsCamP0.copy(_fp);
+          } else {
+            vpsCamP0.lerp(_fp, w);
+            vpsCamQ0.slerp(_fq, w);
+          }
           vpsGyroQ0 = vpsGyroQ ? vpsGyroQ.clone() : null;
           if (!sceneContent.visible) { // 首帧直接落位，之后靠平滑过渡
             freeCamera.position.copy(vpsCamP0);
