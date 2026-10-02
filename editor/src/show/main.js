@@ -462,6 +462,7 @@ function capFrame(video, maxW = 960) {
 
 async function startVpsMode() {
   setState('VPS · 启动相机…');
+  $('hud-actions').style.display = 'flex'; // 「允许相机」重试钮在按钮组里，先亮出来
   if (!navigator.mediaDevices?.getUserMedia) {
     setState(camErr(new DOMException('x', 'SecurityError'))); return;
   }
@@ -517,7 +518,7 @@ async function startVpsMode() {
     let wait = 1300; // 失败快速重试，抓一帧清晰的
     try {
       const blob = await capFrame(freeVideo, 1100);
-      const res = await fetch(`${VPS_URL}/locate?k=15&min=${vpsCamQ0 ? 10 : 15}`, { method: 'POST', body: blob });
+      const res = await fetch(`${VPS_URL}/locate?k=15&min=${vpsCamQ0 ? 8 : 10}`, { method: 'POST', body: blob });
       const j = await res.json();
       if (j.ok) {
         locFail = 0; wait = 4000;
@@ -536,7 +537,9 @@ async function startVpsMode() {
         locFail++;
         console.warn('[vps] locate fail', j);
         const hint = j.max_inliers != null ? ` · 内点 ${j.max_inliers}` : (j.reason ? ` · ${j.reason}` : '');
-        setState((vpsCamQ0 ? '定位偏移中 · 保持上帧位姿' : '定位中…对准舞台/大屏区域缓慢移动') + hint);
+        const weak = !vpsCamQ0 && (j.max_inliers || 0) < 5 && locFail > 4;
+        setState(weak ? '环境特征偏弱 · 对准大屏/舞台明亮区' + hint
+          : (vpsCamQ0 ? '定位偏移中 · 保持上帧位姿' : '定位中…对准舞台/大屏区域缓慢移动') + hint);
       }
     } catch (e) {
       locFail++;
@@ -593,7 +596,7 @@ async function startVpsMode() {
         : '当前浏览器不支持相机调用 · 请复制链接到系统浏览器（Safari/Chrome）打开';
       $('btn-enter').style.display = 'block';
     } else {
-      $('boot-status').textContent = '就绪 · 对准现场的「西游·虚境」海报';
+      $('boot-status').textContent = '就绪 · 对准现场环境（舞台/大屏方向）';
       $('btn-enter').style.display = 'block';
     }
   } catch (e) {
@@ -622,13 +625,8 @@ $('btn-mode').onclick = async () => {
 };
 $('btn-rescan').onclick = () => location.reload();
 
-$('btn-enter').onclick = () => {
+$('btn-enter').onclick = async () => {
   $('boot').style.display = 'none';
-  startPosterMode().catch(async e => {
-    console.warn('poster mode fail', e);
-    setState('海报模式不可用 · 已切自由漫游');
-    $('btn-mode').textContent = '海报定位';
-    mode = 'free';
-    await startFreeMode();
-  });
+  mode = 'vps'; // 现场无海报，进门直接 VPS 扫描定位
+  await startVpsMode();
 };
