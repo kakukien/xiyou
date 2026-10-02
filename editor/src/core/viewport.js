@@ -794,19 +794,30 @@ export const viewport = {
       this.scene.add(this.streamGroup);
     }
 
-    const sig = JSON.stringify(spec);
+    // axis:'auto' 或 autoDir 时跟随相机朝向（面向哪个轴就往哪铺）
+    let axis = spec.axis === 'x' ? 'x' : 'z';
+    let dir = spec.dir === -1 ? -1 : 1;
+    if (spec.axis === 'auto' || spec.autoDir) {
+      const fwd = this.camera.getWorldDirection(new THREE.Vector3());
+      axis = Math.abs(fwd.x) > Math.abs(fwd.z) ? 'x' : 'z';
+      dir = (axis === 'x' ? fwd.x : fwd.z) >= 0 ? 1 : -1;
+    }
+
+    const sig = `${JSON.stringify(spec)}|${axis}${dir}`;
     if (sig !== this.streamSig) {
       this.streamSegs.forEach(node => { this.streamGroup.remove(node); disposeNode(node); });
       this.streamSegs.clear();
       this.streamSig = sig;
+      // origin:'auto' → 以当下相机脚下为走廊起点（只取一次，转向重建时重取）
+      this.streamOriginAuto = spec.origin === 'auto'
+        ? [this.camera.position.x, 0, this.camera.position.z]
+        : null;
     }
 
-    const axis = spec.axis === 'x' ? 'x' : 'z';
-    const dir = spec.dir === -1 ? -1 : 1;
     const segLen = Math.max(0.5, Number(spec.segLen) || 6);
     const ahead = Math.max(0, Number(spec.ahead ?? 8));
     const behind = Math.max(0, Number(spec.behind ?? 1));
-    const origin = Array.isArray(spec.origin) ? spec.origin : [0, 0, 0];
+    const origin = this.streamOriginAuto || (Array.isArray(spec.origin) ? spec.origin : [0, 0, 0]);
 
     const camAx = this.camera.position[axis] * dir;
     const idx0 = Math.floor(camAx / segLen);
