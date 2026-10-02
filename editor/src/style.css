@@ -1301,3 +1301,21 @@ select.field,
 .vp-toolbar .navigation-mode-button > span { display:inline-block; }
 .vp-toolbar .navigation-mode-button > i { flex:none; }
 @media (max-width:1280px) { .vp-toolbar .navigation-mode-button { width:auto; min-width:62px; } }
+
+/* 内容浏览器工作目录（UE 式目录栏） */
+.cb-body { display:flex; flex:1; min-height:0; border-top:1px solid var(--line); }
+.cb-folders { width:150px; flex:none; border-right:1px solid var(--line); background:var(--bg2); display:flex; flex-direction:column; overflow-y:auto; padding:4px 0; }
+.cb-folders-head { font-size:11px; font-weight:700; color:var(--fg-dim); padding:4px 10px; letter-spacing:.05em; }
+.cb-folder { display:flex; align-items:center; gap:6px; border:0; background:transparent; padding:5px 8px; font-size:12px; color:var(--fg); cursor:pointer; text-align:left; border-radius:4px; margin:0 4px; }
+.cb-folder:hover { background:var(--accent-soft); }
+.cb-folder.active { background:var(--accent-soft); color:var(--accent); font-weight:600; }
+.cb-folder.drop { outline:1.5px dashed var(--accent); background:var(--accent-soft); }
+.cb-folder span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cb-folders-ops { margin-top:auto; display:flex; gap:4px; padding:6px 8px; border-top:1px solid var(--line); }
+.cb-strip-wrap { flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden; }
+.cb-strip-wrap .asset-strip { border-top:0; flex:1; }
+
+/* 顶栏：点云开关 + 回退步数 */
+.tb-undo-limit { display:flex; align-items:center; gap:4px; font-size:11px; color:var(--fg-dim); }
+.tb-undo-input { width:48px; padding:2px 4px; font-size:11px; }
+.mode-btn-splat.active, .btn.btn-sm.active { outline:1.5px solid var(--accent); }

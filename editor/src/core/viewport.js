@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DropInViewer, SceneFormat } from '@mkkellogg/gaussian-splats-3d';
+import { buildProxyGroup } from './proxyrender.js';
 import { store } from './store.js';
 import { createNode, applyTransform, placeholderTexture } from './objects.js';
 import { player, triggers } from './playback.js';
@@ -803,6 +804,7 @@ export const viewport = {
     this.baseLoadToken += 1
     this.baseGroup = null
     this.splatViewer = null
+    this.proxyGroup = null
     this.colliderGroup = null
     this.colliderCache = null
     this.baseHelpers = []
@@ -843,6 +845,24 @@ export const viewport = {
     const requestedLod = base?.lod?.current || this.baseLodLevel || 'high'
     const sourceUrl = base?.lod?.urls?.[requestedLod] || base?.sog_url || ''
     const chunks = Array.isArray(base?.chunks) ? base.chunks : []
+
+    // 结构代理（编辑用）：面片墙 + box 站位。有代理时默认只渲染它，
+    // 70 万级高斯不进编辑器，卡顿源头切断；viewMode 可随时切回真高斯。
+    const proxy = base?.proxy
+    const hasProxy = proxy?.v === 1 && ((proxy.planes?.length || 0) + (proxy.boxes?.length || 0)) > 0
+    this.baseViewMode = ['proxy', 'splat', 'both'].includes(base?.viewMode)
+      ? base.viewMode
+      : (hasProxy ? 'proxy' : 'splat')
+    this.proxyGroup = null
+    if (hasProxy) {
+      try {
+        this.proxyGroup = buildProxyGroup(proxy)
+        this.baseGroup.add(this.proxyGroup)
+      } catch (error) {
+        log(`结构代理渲染失败：${error?.message || error}`, 'warn')
+        this.baseViewMode = 'splat'
+      }
+    }
     const resolveUrl = url => String(url || '').startsWith('local://')
       ? (window.__xiyouBlobMap?.get(url) || url)
       : url
@@ -868,7 +888,12 @@ export const viewport = {
     if (!loadEntries.length && sourceUrl) loadEntries.push({ id: 'base', name: '主底座', url: resolveUrl(sourceUrl), format: sceneFormatFor(sourceUrl) })
     this.baseLodLevel = requestedLod
 
-    if (!loadEntries.length) {
+    // 代理模式下跳过整个高斯加载；切回 splat/both 时才按需拉取
+    // editor_load=false（底座面板/顶栏开关）：连下载都不发，只留占位底座
+    const wantSplat = (this.baseViewMode !== 'proxy' || !this.proxyGroup) && base?.editor_load !== false
+    if (!wantSplat) loadEntries.length = 0
+
+    if (!loadEntries.length && !this.proxyGroup) {
       const grid = new THREE.GridHelper(
         20,
         20,
@@ -922,7 +947,8 @@ export const viewport = {
     } else {
       // DropInViewer 的内部 Viewer 不允许并发 add/remove；按队列异步加载，
       // 单个分块失败只标记本块，后续分块继续加载。
-      const viewer = new DropInViewer();
+      // sharedMemoryForWorkers:false —— 静态托管无 COOP/COEP 头，SAB postMessage 会炸
+      const viewer = new DropInViewer({ sharedMemoryForWorkers: false });
       this.baseGroup.add(viewer);
       this.splatViewer = viewer;
       this.baseLoadState = {
@@ -978,6 +1004,7 @@ export const viewport = {
 
     // Sim3 对齐：base.transform = {s(标量), R(3x3 行主序), t(米)}
     this.applyBaseTransform(base);
+
 
     const colliderUrl = base?.collider_url
       ? (String(base.collider_url).startsWith('local://') ? (window.__xiyouBlobMap?.get(base.collider_url) || base.collider_url) : base.collider_url)
@@ -1083,6 +1110,64 @@ export const viewport = {
 
     this.scene.add(this.baseGroup);
     this.helpersVisible(store.mode !== 'play');
+    this._syncBaseView();
+  },
+
+  // 底座显示切换：proxy=结构代理（编辑用）/ splat=真高斯 / both=叠加
+  setBaseView(mode) {
+    if (!['proxy', 'splat', 'both'].includes(mode)) return
+    const base = store.scene?.base
+    if (!base) return
+    const needSplat = mode !== 'proxy'
+    if (needSplat && !this.splatViewer && (base.sog_url || (base.chunks || []).length)) {
+      // 代理还没拉过高斯：整底座走一遍加载管线
+      store.setBase({ viewMode: mode })
+      return
+    }
+    // 轻量切换：直写字段，避开 setBase 的整底座重建
+    this.baseViewMode = mode
+    store.scene.base.viewMode = mode
+    this._syncBaseView()
+    store.save()
+  },
+
+  _syncBaseView() {
+    const mode = this.baseViewMode || 'splat'
+    const playing = store.mode === 'play'
+    const base = store.scene?.base
+    // 试玩态只用真高斯：代理模式下没拉过就先拉一次
+    // editor_load=false 时尊重用户关闭选择，否则 setBase→_syncBaseView 会无限递归
+    if (playing && !this.splatViewer && base && base.editor_load !== false && (base.sog_url || (base.chunks || []).length)) {
+      const m = this.baseViewMode
+      this.setBase({ ...base, viewMode: m === 'proxy' ? 'both' : m })
+      return
+    }
+    if (this.proxyGroup) {
+      this.proxyGroup.visible = !playing && mode !== 'splat'
+    }
+    if (this.splatViewer) {
+      this.splatViewer.visible = mode !== 'proxy' && this.baseGroup?.visible !== false
+    }
+  },
+
+  // Sim3 对齐：base.transform = { s 标量缩放, R 3x3 行主序旋转, t 平移(米) }
+  // 组合矩阵 M = [s·R | t]，未给 transform 时退化为单位阵
+  applyBaseTransform(base) {
+    if (!this.baseGroup) return;
+    const t = base && base.transform ? base.transform : {};
+    const s = Number.isFinite(t.s) ? t.s : 1;
+    const R = Array.isArray(t.R) && t.R.length === 9 ? t.R : [1, 0, 0, 0, 1, 0, 0, 0, 1];
+    const tv = Array.isArray(t.t) && t.t.length === 3 ? t.t : [0, 0, 0];
+    const m = new THREE.Matrix4();
+    m.set(
+      R[0] * s, R[1] * s, R[2] * s, tv[0],
+      R[3] * s, R[4] * s, R[5] * s, tv[1],
+      R[6] * s, R[7] * s, R[8] * s, tv[2],
+      0, 0, 0, 1
+    );
+    this.baseGroup.matrixAutoUpdate = false;
+    this.baseGroup.matrix.copy(m);
+    this.baseGroup.matrixWorldNeedsUpdate = true;
   },
 
   helpersVisible(visible) {
@@ -1116,6 +1201,8 @@ export const viewport = {
     if (this.gizmo) {
       this.gizmo.visible = Boolean(visible) && store.mode !== 'play';
     }
+
+    this._syncBaseView?.()
   },
 
   pointInsideCollider(point) {

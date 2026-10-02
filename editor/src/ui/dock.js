@@ -38,6 +38,8 @@ let tlZoom = 140; // 时间线缩放：像素/秒
 let assetQuery = '';
 let assetKind = 'all';
 let selectedAssetId = null;
+// 内容浏览器工作目录：'' = 根目录「内容」，null = 未初始化（首次渲染落到个人目录）
+let assetFolder = null;
 let keyPopoverCleanup = null;
 
 // 行内改名：把 el 换成 input，Enter/失焦提交，Esc 取消
@@ -244,6 +246,95 @@ function renderAssets() {
   toolbar.append(search, kind, importButton);
   panel.appendChild(toolbar);
 
+  // ---- 工作目录树（UE 式内容浏览器）----
+  const personalId = store.ensureWorkspaceFolders?.() || ''
+  if (assetFolder === null) assetFolder = personalId
+  const folders = store.folders || []
+  if (assetFolder !== '' && !folders.some(item => item.id === assetFolder)) assetFolder = ''
+
+  const body = document.createElement('div')
+  body.className = 'cb-body'
+
+  const rail = document.createElement('div')
+  rail.className = 'cb-folders'
+
+  const railHead = document.createElement('div')
+  railHead.className = 'cb-folders-head'
+  railHead.textContent = '内容'
+  rail.appendChild(railHead)
+
+  const folderRows = [{ id: '', name: '全部内容', icon: 'folder-open-line', depth: 0 }]
+  // 递归铺平目录树
+  const pushChildren = parent => {
+    folders.filter(item => (item.parent || '') === parent).forEach(item => {
+      const depth = (() => { let d = 1, p = item.parent; while (p) { d += 1; p = folders.find(f => f.id === p)?.parent } return Math.min(d, 4) })()
+      folderRows.push({ ...item, icon: 'folder-2-line', depth })
+      pushChildren(item.id)
+    })
+  }
+  pushChildren('')
+
+  folderRows.forEach(item => {
+    const row = document.createElement('button')
+    row.type = 'button'
+    row.className = `cb-folder${assetFolder === item.id ? ' active' : ''}`
+    row.style.paddingLeft = `${6 + item.depth * 12}px`
+    row.innerHTML = `${iconMarkup(item.icon)}<span>${item.name}</span>`
+    row.title = item.id ? `目录：${item.name}` : '显示所有目录'
+    row.addEventListener('click', () => { assetFolder = item.id; requestRender() })
+    // 素材卡拖上目录行 = 移动素材到该目录
+    row.addEventListener('dragover', event => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; row.classList.add('drop') })
+    row.addEventListener('dragleave', () => row.classList.remove('drop'))
+    row.addEventListener('drop', event => {
+      event.preventDefault()
+      row.classList.remove('drop')
+      const assetId = event.dataTransfer?.getData('text/x-xiyou-asset')
+      if (assetId && store.moveAssetToFolder?.(assetId, item.id)) {
+        log(`已移动到「${item.name}」`)
+        requestRender()
+      }
+    })
+    rail.appendChild(row)
+  })
+
+  const railOps = document.createElement('div')
+  railOps.className = 'cb-folders-ops'
+  const mkOp = (icon, title, fn) => {
+    const b = document.createElement('button')
+    b.type = 'button'
+    b.className = 'btn icon-btn btn-xs'
+    b.title = title
+    b.innerHTML = iconMarkup(icon)
+    b.addEventListener('click', fn)
+    return b
+  }
+  railOps.append(
+    mkOp('folder-add-line', '在当前目录下新建文件夹', () => {
+      const name = window.prompt('文件夹名称', '新建文件夹')
+      if (name !== null) { const f = store.addFolder?.(name, assetFolder); if (f) { assetFolder = f.id; requestRender() } }
+    }),
+    mkOp('edit-line', '重命名当前文件夹', () => {
+      if (!assetFolder) { log('根目录不可重命名', 'warn'); return }
+      const cur = folders.find(item => item.id === assetFolder)
+      const name = window.prompt('文件夹名称', cur?.name || '')
+      if (name !== null) { store.renameFolder?.(assetFolder, name); requestRender() }
+    }),
+    mkOp('delete-bin-6-line', '删除当前文件夹（素材上移到父目录）', () => {
+      if (!assetFolder) { log('根目录不可删除', 'warn'); return }
+      const cur = folders.find(item => item.id === assetFolder)
+      if (window.confirm(`删除文件夹「${cur?.name}」？其中素材会上移到父目录。`)) {
+        store.removeFolder?.(assetFolder)
+        assetFolder = cur?.parent || ''
+        requestRender()
+      }
+    })
+  )
+  rail.appendChild(railOps)
+  body.appendChild(rail)
+
+  const stripWrap = document.createElement('div')
+  stripWrap.className = 'cb-strip-wrap'
+
   const strip = document.createElement('div');
   strip.className = 'asset-strip';
 
@@ -252,7 +343,8 @@ function renderAssets() {
     const haystack = [asset.name, asset.id, asset.kind, asset.type, category, ...(asset.tags || [])].join(' ').toLowerCase();
     const matchesQuery = !assetQuery.trim() || haystack.includes(assetQuery.trim().toLowerCase());
     const matchesKind = assetKind === 'all' || category === assetKind || asset.kind === assetKind || asset.type === assetKind || asset.subtype === assetKind;
-    return matchesQuery && matchesKind;
+    const matchesFolder = assetFolder === '' || (asset.folder || '') === assetFolder;
+    return matchesQuery && matchesKind && matchesFolder;
   });
   assets.forEach(asset => {
     const card = document.createElement('div');
@@ -352,6 +444,7 @@ function renderAssets() {
         name: file.name,
         kind: type === 'glb' ? 'model' : type,
         type,
+        folder: assetFolder || '',
         size: file.size,
         bytes: file.size,
         mime,
@@ -370,7 +463,9 @@ function renderAssets() {
   importCard.appendChild(input);
   strip.appendChild(importCard);
 
-  panel.appendChild(strip)
+  stripWrap.appendChild(strip)
+  body.appendChild(stripWrap)
+  panel.appendChild(body)
 
   const selectedAsset = (store.scene.meta?.assets || []).find(asset => asset.id === selectedAssetId)
   if (selectedAsset) {
@@ -383,7 +478,9 @@ function renderAssets() {
     const refSummary = references.total
       ? `${references.total} 处引用 · ${refNames.length ? `对象：${refNames.join('、')}` : ''}${baseRefs.length ? `${refNames.length ? '；' : ''}底座：${baseRefs.map(item => item.name).join('、')}` : ''}`
       : '暂无引用'
-    detail.innerHTML = `<div class="asset-detail-head"><div><strong>${selectedAsset.name || selectedAsset.id}</strong><span>${selectedAsset.kind || selectedAsset.type || '资源'} · v${selectedAsset.version || '1.0.0'}</span></div><button class="btn icon-btn asset-detail-close" title="关闭" aria-label="关闭">${iconMarkup('close-line')}</button></div><div class="asset-detail-grid"><label>标签<input class="field" data-asset-field="tags" value="${(selectedAsset.tags || []).join(', ')}"></label><label>授权<select class="field" data-asset-field="license"><option value="project" ${selectedAsset.license === 'project' ? 'selected' : ''}>项目</option><option value="site" ${selectedAsset.license === 'site' ? 'selected' : ''}>景区</option><option value="organization" ${selectedAsset.license === 'organization' ? 'selected' : ''}>组织</option></select></label></div><div class="asset-detail-refs"><strong>影响范围</strong><br>${refSummary}</div><div class="asset-detail-actions"><button class="btn btn-secondary btn-sm asset-replace">${iconMarkup('refresh-line')}<span>替换文件</span></button><input type="file" class="asset-replace-input" hidden></div>`
+    const folderOptions = [['', '内容（根目录）'], ...(store.folders || []).map(f => [f.id, f.name])]
+      .map(([value, label]) => `<option value="${value}" ${(selectedAsset.folder || '') === value ? 'selected' : ''}>${label}</option>`).join('')
+    detail.innerHTML = `<div class="asset-detail-head"><div><strong>${selectedAsset.name || selectedAsset.id}</strong><span>${selectedAsset.kind || selectedAsset.type || '资源'} · v${selectedAsset.version || '1.0.0'}</span></div><button class="btn icon-btn asset-detail-close" title="关闭" aria-label="关闭">${iconMarkup('close-line')}</button></div><div class="asset-detail-grid"><label>目录<select class="field" data-asset-field="folder">${folderOptions}</select></label><label>标签<input class="field" data-asset-field="tags" value="${(selectedAsset.tags || []).join(', ')}"></label><label>授权<select class="field" data-asset-field="license"><option value="project" ${selectedAsset.license === 'project' ? 'selected' : ''}>项目</option><option value="site" ${selectedAsset.license === 'site' ? 'selected' : ''}>景区</option><option value="organization" ${selectedAsset.license === 'organization' ? 'selected' : ''}>组织</option></select></label></div><div class="asset-detail-refs"><strong>影响范围</strong><br>${refSummary}</div><div class="asset-detail-actions"><button class="btn btn-secondary btn-sm asset-replace">${iconMarkup('refresh-line')}<span>替换文件</span></button><input type="file" class="asset-replace-input" hidden></div>`
     detail.querySelector('.asset-detail-close').addEventListener('click', () => { selectedAssetId = null; requestRender() })
     const replaceInput = detail.querySelector('.asset-replace-input')
     detail.querySelector('.asset-replace').addEventListener('click', () => replaceInput.click())

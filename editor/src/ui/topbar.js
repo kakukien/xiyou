@@ -172,9 +172,29 @@ export function mount(el) {
   baseLoad.className = 'tb-base-load';
   baseLoad.title = '高斯底座加载状态';
 
+  // 点云加载开关：同步线上后底座动辄几十 MB，关掉即只留占位底座，编辑不受下载阻塞
+  const splatToggle = document.createElement('button');
+  splatToggle.className = 'btn btn-sm';
+  splatToggle.type = 'button';
+  splatToggle.title = '编辑器内加载/卸载点云底座（不影响发布的 AR 端）';
+
+  // 撤销步数可调（默认 30）
+  const undoWrap = document.createElement('label');
+  undoWrap.className = 'tb-undo-limit';
+  undoWrap.title = '撤销/回退步数上限（1–500）';
+  undoWrap.innerHTML = '<span>回退</span>';
+  const undoInput = document.createElement('input');
+  undoInput.type = 'number';
+  undoInput.min = '1';
+  undoInput.max = '500';
+  undoInput.className = 'field tb-undo-input';
+  undoWrap.appendChild(undoInput);
+
   bar.append(
     logo,
     baseLoad,
+    splatToggle,
+    undoWrap,
     modeToggle,
     spacer,
     draftChip,
@@ -208,6 +228,19 @@ export function mount(el) {
     editModeButton.classList.toggle('active', editorMode === 'scene' && mode === 'edit');
     playModeButton.classList.toggle('active', editorMode === 'scene' && mode === 'play');
     splatModeButton.classList.toggle('active', editorMode === 'splat-studio');
+  }
+
+  function renderSplatToggle() {
+    const on = store.scene?.base?.editor_load !== false;
+    splatToggle.textContent = on ? '点云:开' : '点云:关';
+    splatToggle.classList.toggle('active', !on);
+    splatToggle.title = on
+      ? '点云底座正在编辑器加载——点击关闭，编辑时不再下载/渲染大文件'
+      : '点云底座已关闭——点击恢复加载';
+  }
+
+  function renderUndoLimit() {
+    undoInput.value = String(store.historyLimit || 30);
   }
 
   function renderSaved() {
@@ -593,10 +626,27 @@ export function mount(el) {
 
   noticeButton.addEventListener('click', showHistory);
 
+  splatToggle.addEventListener('click', () => {
+    const next = store.scene?.base?.editor_load === false;
+    store.setBase?.({ editor_load: next });
+    renderSplatToggle();
+    log(next ? '点云底座已开启加载' : '点云底座已关闭，只显示占位底座');
+  });
+
+  undoInput.addEventListener('change', () => {
+    const next = store.setHistoryLimit?.(undoInput.value);
+    undoInput.value = String(next || 30);
+    log(`撤销步数已设为 ${next} 步`);
+  });
+
+  renderSplatToggle();
+  renderUndoLimit();
+
   store.on('mode', renderMode);
   store.on('editor-mode', renderMode);
   store.on('change', ({ transient } = {}) => {
     renderSceneName();
+    renderSplatToggle();
 
     if (!transient) {
       scheduleSave();
