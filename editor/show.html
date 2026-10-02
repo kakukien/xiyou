@@ -7,7 +7,16 @@
 <style>
   html, body { margin:0; padding:0; height:100%; overflow:hidden; background:#000; touch-action:none; -webkit-user-select:none; user-select:none; font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; }
   #ar-root { position:fixed; inset:0; }
-  #ar-root video, #ar-root canvas { position:absolute !important; inset:0; width:100% !important; height:100% !important; object-fit:cover; }
+  #ar-root, #ar-root * { box-sizing:border-box; }
+  /* 视频/画布硬铺满动态视口：移动浏览器工具栏伸缩会改变可视宽度，100% 会留黑边 */
+  #ar-root video, #ar-root canvas, #ar-root > div { position:absolute; inset:0; }
+  /* 视频可能挂在 #ar-root 外（MindAR 某些版本直接 append 到 body），用全局选择器 */
+  video, #ar-root canvas {
+    width:100vw !important; height:100vh !important;
+    width:100dvw !important; height:100dvh !important;
+    object-fit:cover !important;
+  }
+  body > video { position:fixed !important; left:0 !important; top:0 !important; }
 
   .hud-top { position:fixed; top:0; left:0; right:0; padding:calc(env(safe-area-inset-top) + 12px) 16px 12px; display:flex; align-items:center; justify-content:space-between; z-index:20; pointer-events:none; }
   .hud-title { color:#f5e9d0; font-size:15px; font-weight:600; text-shadow:0 1px 4px rgba(0,0,0,.6); }
@@ -43,6 +52,8 @@
   <div class="hud-state" id="hud-state">初始化…</div>
 </div>
 <div class="hud-actions" id="hud-actions" style="display:none">
+  <button id="btn-cam" style="display:none">允许相机</button>
+  <button id="btn-vps">扫描定位</button>
   <button id="btn-rescan" class="ghost">重新定位</button>
   <button id="btn-mode" class="ghost">自由漫游</button>
 </div>

@@ -12,6 +12,24 @@ const $ = id => document.getElementById(id);
 const hudState = $('hud-state');
 const setState = t => { hudState.textContent = t; };
 
+// 动态视口自适应：地址栏/工具栏伸缩时同步相机与渲染尺寸
+function syncViewport() {
+  const w = visualViewport?.width || innerWidth, h = visualViewport?.height || innerHeight;
+  if (freeCamera) { freeCamera.aspect = w / h; freeCamera.updateProjectionMatrix(); }
+  freeRenderer?.setSize(w, h);
+}
+visualViewport?.addEventListener('resize', syncViewport);
+addEventListener('resize', syncViewport);
+
+// MindAR 注入的 <video> 可能带行内尺寸或挂到 body 下——观测 DOM 强制铺满
+function pinVideos() {
+  document.querySelectorAll('video').forEach(v => {
+    v.style.cssText = 'position:fixed;left:0;top:0;width:100vw;height:100dvh;object-fit:cover;z-index:0';
+  });
+}
+new MutationObserver(pinVideos).observe(document.body, { childList: true, subtree: true });
+setInterval(pinVideos, 2000);
+
 // ---------- 场景数据 ----------
 let sceneData = null;
 async function loadScene() {
@@ -26,8 +44,10 @@ const nodeMap = new Map();
 function buildScene() {
   const base = sceneData.base || {};
 
-  // 3GS 底座
-  if (base.sog_url) {
+  // 3GS 底座：定位走 locdb（与泼溅无关），泼溅只作视觉底座。
+  // 手机端默认不加载（70万高斯会把帧率压垮），调试时用 ?splat=1 打开。
+  const wantSplat = new URLSearchParams(location.search).get('splat') === '1';
+  if (base.sog_url && wantSplat) {
     const viewer = new DropInViewer({ sharedMemoryForWorkers: false });
     const baseGroup = new THREE.Group();
     const bt = base.transform;
@@ -202,13 +222,61 @@ let mindar = null;
 let freeRenderer = null, freeScene = null, freeCamera = null, freeVideo = null;
 let raycaster = new THREE.Raycaster();
 
+function camErr(e) {
+  const m = {
+    NotAllowedError: '相机权限被拒绝 · 点地址栏左侧图标允许相机后刷新',
+    NotFoundError: '未检测到相机设备',
+    NotReadableError: '相机被其他应用占用 · 关闭占用程序后重试',
+    OverconstrainedError: '相机参数不支持',
+    SecurityError: '当前环境不允许相机（需 HTTPS）',
+  };
+  return m[e?.name] || ('相机启动失败：' + [e?.name, e?.message, String(e)].filter(Boolean).join(' ').slice(0, 80) || '未知错误');
+}
+
+// MindAR 失败后的裸相机探测：区分「相机本身不通」和「MindAR 内部初始化失败」
+async function probeCam() {
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    s.getTracks().forEach(t => t.stop());
+    return null;
+  } catch (e) { return e; }
+}
+
+// 相机失败时亮「允许相机」按钮：点一次=以新手势重发系统授权框，能弹出来就不用进设置
+function showCamRetry() { $('btn-cam').style.display = 'block'; }
+
+$('btn-cam').onclick = async () => {
+  setState('请求相机权限…（弹窗点「允许」）');
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    s.getTracks().forEach(t => t.stop());
+    location.reload();
+  } catch (e) {
+    setState(camErr(e));
+    showCard('该浏览器已记住「拒绝」。<br>① 点地址栏左侧锁形图标 → 权限 → 相机 → 允许<br>② 或换系统浏览器（Chrome/Safari）打开本链接<br>③ 微信内打开需点右上角「…」→ 浏览器打开');
+  }
+};
+
 async function startPosterMode() {
   setState('启动相机与图像追踪…');
   $('scanline').classList.add('on');
   $('reticle').classList.add('on');
+  try {
+    if (!MindARThree) {
+      const url = `${import.meta.env.BASE_URL}vendor/mindar/mindar-image-three.prod.js`;
+      const mod = await import(/* @vite-ignore */ url);
+      MindARThree = mod.MindARThree || window.MINDAR?.IMAGE?.MindARThree;
+    }
+  } catch (e) {
+    setState('追踪组件加载失败 · 可切「自由漫游」');
+    $('hud-actions').style.display = 'flex';
+    console.error('[show] mindar import failed', e);
+    return;
+  }
   if (!MindARThree) {
-    const mod = await import(/* @vite-ignore */ '/xiyou/vendor/mindar/mindar-image-three.prod.js');
-    MindARThree = mod.MindARThree || window.MINDAR?.IMAGE?.MindARThree;
+    setState('追踪组件加载失败 · 可切「自由漫游」');
+    $('hud-actions').style.display = 'flex';
+    return;
   }
   mindar = new MindARThree({
     container: rootEl,
@@ -248,9 +316,43 @@ async function startPosterMode() {
     $('reticle').classList.add('on');
   };
 
-  await mindar.start();
+  try {
+    await mindar.start();
+  } catch (e) {
+    console.error('[show] mindar.start failed', e);
+    const probe = await probeCam();
+    if (probe) {
+      setState(camErr(probe) + ' · 可切「自由漫游」');
+      showCamRetry();
+    } else {
+      setState('追踪引擎初始化失败：' + String(e?.message || e).slice(0, 60) + ' · 可切「自由漫游」');
+    }
+    $('scanline').classList.remove('on');
+    $('reticle').classList.remove('on');
+    $('hud-actions').style.display = 'flex';
+    return;
+  }
   setState('对准海报定位…');
   $('hud-actions').style.display = 'flex';
+
+  // 相机/追踪看门狗：MindAR 内部 getUserMedia 失败时 start() 可能不抛错，黑屏静默
+  setTimeout(async () => {
+    if (mode !== 'poster' || anchor.group.visible) return;
+    const v = mindar?.video;
+    const alive = v && v.srcObject && (v.srcObject.getVideoTracks?.() || []).some(t => t.readyState === 'live');
+    if (!alive) {
+      const probe = await probeCam();
+      if (probe) { setState(camErr(probe)); showCamRetry(); }
+      else setState('相机画面未就绪 · 检查权限/占用后刷新，或切「自由漫游」');
+    }
+  }, 12000);
+
+  // 相机活着但 20s 没识别到海报 → 引导去 VPS
+  setTimeout(() => {
+    if (mode === 'poster' && !anchor.group.visible) {
+      setState('未识别到海报 · 点「扫描定位」用环境定位');
+    }
+  }, 20000);
 
   // 点击触发
   rootEl.addEventListener('pointerup', e => {
@@ -278,10 +380,11 @@ async function startFreeMode() {
   freeVideo.autoplay = true; freeVideo.muted = true; freeVideo.playsInline = true;
   freeVideo.setAttribute('playsinline', '');
   try {
+    if (!navigator.mediaDevices?.getUserMedia) throw new DOMException('unsupported', 'SecurityError');
     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
     freeVideo.srcObject = stream;
     rootEl.appendChild(freeVideo);
-  } catch { setState('相机不可用 · 拖动查看'); }
+  } catch (e) { setState(camErr(e) + ' · 拖动查看'); showCamRetry(); }
 
   freeScene = new THREE.Scene();
   freeCamera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 300);
@@ -340,31 +443,164 @@ async function startFreeMode() {
   });
 }
 
+// ---------- VPS 视觉定位 ----------
+// 帧 -> hloc 服务 (DINOv2 检索 -> SuperPoint+LightGlue -> PnP) -> AR 坐标系位姿。
+// 位姿是 COLMAP 约定（相机 +Z 向前、+Y 向下），转 three 需右乘 diag(1,-1,-1)。
+const VPS_FALLBACK = 'https://rest-ann-home-chrome.trycloudflare.com'; // 演示隧道，变了就改这里
+let VPS_URL = new URLSearchParams(location.search).get('vps')
+  || VPS_FALLBACK;
+let vpsTimer = null, vpsGyroQ = null, vpsCamQ0 = null, vpsGyroQ0 = null;
+
+function capFrame(video, maxW = 960) {
+  const w = video.videoWidth || 640, h = video.videoHeight || 480;
+  const s = Math.min(1, maxW / w);
+  const c = document.createElement('canvas');
+  c.width = Math.round(w * s); c.height = Math.round(h * s);
+  c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
+  return new Promise(res => c.toBlob(res, 'image/jpeg', 0.72));
+}
+
+async function startVpsMode() {
+  setState('VPS · 启动相机…');
+  if (!navigator.mediaDevices?.getUserMedia) {
+    setState(camErr(new DOMException('x', 'SecurityError'))); return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    freeVideo = document.createElement('video');
+    freeVideo.autoplay = true; freeVideo.muted = true; freeVideo.playsInline = true;
+    freeVideo.setAttribute('playsinline', '');
+    freeVideo.srcObject = stream;
+    rootEl.appendChild(freeVideo);
+  } catch (e) { setState(camErr(e)); showCamRetry(); return; }
+
+  freeScene = new THREE.Scene();
+  freeCamera = new THREE.PerspectiveCamera(66, innerWidth / innerHeight, 0.05, 300);
+  freeCamera.matrixAutoUpdate = false;
+  freeRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  freeRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  freeRenderer.setSize(innerWidth, innerHeight);
+  rootEl.appendChild(freeRenderer.domElement);
+
+  // VPS 模式：场景就站在 AR 世界原点（locdb sfm 已与泼溅/对象同坐标系）
+  // 首次定位成功前先隐藏，避免在原点视角下看到错位的对象
+  sceneContent.position.set(0, 0, 0);
+  sceneContent.quaternion.identity(); sceneContent.matrixAutoUpdate = true;
+  sceneContent.visible = false;
+  streamGroup.position.set(0, 0, 0);
+  freeScene.add(sceneContent, streamGroup);
+
+  const q1 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+  const onOrient = e => {
+    if (e.alpha == null) return;
+    const euler = new THREE.Euler(e.beta * Math.PI / 180, e.alpha * Math.PI / 180, -e.gamma * Math.PI / 180, 'YXZ');
+    const q = new THREE.Quaternion().setFromEuler(euler).multiply(q1);
+    const o = screen.orientation?.angle ?? window.orientation ?? 0;
+    if (o) q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -o * Math.PI / 180));
+    vpsGyroQ = q;
+  };
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') addEventListener('deviceorientation', onOrient); });
+  } else {
+    addEventListener('deviceorientation', onOrient);
+  }
+
+  const flip = new THREE.Matrix4().makeScale(1, -1, -1);
+  let busy = false;
+  const locate = async () => {
+    if (busy || mode !== 'vps' || !freeVideo.videoWidth) return;
+    busy = true;
+    try {
+      const blob = await capFrame(freeVideo);
+      const res = await fetch(`${VPS_URL}/locate`, { method: 'POST', body: blob });
+      const j = await res.json();
+      if (j.ok) {
+        const m = new THREE.Matrix4().fromArray(j.cam2world).multiply(flip);
+        vpsCamQ0 = new THREE.Quaternion().setFromRotationMatrix(m);
+        vpsGyroQ0 = vpsGyroQ ? vpsGyroQ.clone() : null;
+        freeCamera.position.setFromMatrixPosition(m);
+        freeCamera.quaternion.copy(vpsCamQ0);
+        freeCamera.updateMatrix();
+        sceneContent.visible = true;
+        setState(`已定位 · 内点 ${j.inliers} · ${j.ms}ms`);
+      } else {
+        console.warn('[vps] locate fail', j);
+        const hint = j.max_inliers != null ? ` · 最佳匹配内点 ${j.max_inliers}` : (j.reason ? ` · ${j.reason}` : '');
+        setState((vpsCamQ0 ? '定位刷新失败 · 保持上帧位姿' : '定位中…对准舞台/大屏区域缓慢移动') + hint);
+      }
+    } catch (e) {
+      setState('定位服务不可达 · ' + VPS_URL);
+    }
+    busy = false;
+  };
+  setState('VPS · 对准环境，首次定位…');
+  await locate();
+  vpsTimer = setInterval(locate, 4000);
+
+  rootEl.addEventListener('pointerup', e => {
+    const x = (e.clientX / innerWidth) * 2 - 1, y = -(e.clientY / innerHeight) * 2 + 1;
+    raycaster.setFromCamera({ x, y }, freeCamera);
+    const hits = raycaster.intersectObjects([...nodeMap.values()], true);
+    if (hits.length) {
+      let o = hits[0].object;
+      while (o && !o.userData?.id) o = o.parent;
+      if (o?.userData?.id) fireTap(o.userData.id);
+    }
+  });
+
+  const dq = new THREE.Quaternion();
+  freeRenderer.setAnimationLoop(() => {
+    // 两次 VPS 修正之间，用陀螺仪旋转增量维持姿态（位置等下次定位）
+    if (vpsGyroQ && vpsGyroQ0 && vpsCamQ0) {
+      dq.copy(vpsGyroQ0).invert().premultiply(vpsGyroQ);
+      freeCamera.quaternion.copy(dq).multiply(vpsCamQ0);
+      freeCamera.updateMatrix();
+    }
+    tickStream(freeCamera);
+    tickPlayer(1 / 60);
+    freeRenderer.render(freeScene, freeCamera);
+  });
+}
+
 // ---------- 启动 ----------
 (async () => {
+  // 相机能力前置体检：微信/QQ 内置浏览器等环境通常禁 getUserMedia
+  const camOK = !!(navigator.mediaDevices?.getUserMedia) && window.isSecureContext;
   try {
     await loadScene();
     buildScene();
-    $('boot-status').textContent = '就绪 · 对准现场的「西游·虚境」海报';
-    $('btn-enter').style.display = 'block';
+    if (!camOK) {
+      $('boot-status').textContent = navigator.mediaDevices?.getUserMedia
+        ? '当前页面环境不允许相机（需 HTTPS）'
+        : '当前浏览器不支持相机调用 · 请复制链接到系统浏览器（Safari/Chrome）打开';
+      $('btn-enter').style.display = 'block';
+    } else {
+      $('boot-status').textContent = '就绪 · 对准现场的「西游·虚境」海报';
+      $('btn-enter').style.display = 'block';
+    }
   } catch (e) {
     $('boot-status').textContent = '场景加载失败：' + e.message;
   }
 })();
 
+$('btn-vps').onclick = async () => {
+  if (mode === 'vps') return; // 已在定位中；手动重扫用「重新定位」
+  if (mindar) { try { mindar.stop(); } catch {} }
+  clearInterval(vpsTimer);
+  [...rootEl.children].forEach(c => c.remove());
+  mode = 'vps';
+  await startVpsMode();
+};
 $('btn-mode').onclick = async () => {
-  if (mode === 'poster') {
-    mode = 'free';
-    if (mindar) { mindar.stop(); }
-    // 清掉 mindar 容器内容
-    [...rootEl.children].forEach(c => c.remove());
-    sceneContent.position.set(0, -1.6, -2);
-    sceneContent.quaternion.identity(); sceneContent.matrixAutoUpdate = true;
-    $('btn-mode').textContent = '海报定位';
-    await startFreeMode();
-  } else {
-    location.reload(); // 回海报模式最干净
-  }
+  if (mode === 'free') { location.reload(); return; }
+  if (mindar) { try { mindar.stop(); } catch {} }
+  clearInterval(vpsTimer);
+  [...rootEl.children].forEach(c => c.remove());
+  mode = 'free';
+  sceneContent.position.set(0, -1.6, -2);
+  sceneContent.quaternion.identity(); sceneContent.matrixAutoUpdate = true;
+  $('btn-mode').textContent = '海报定位';
+  await startFreeMode();
 };
 $('btn-rescan').onclick = () => location.reload();
 
