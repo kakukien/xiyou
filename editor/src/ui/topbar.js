@@ -130,6 +130,12 @@ export function mount(el) {
   demoButton.title = '创建空白故事场景';
   demoButton.textContent = '新建';
 
+  const syncButton = document.createElement('button');
+  syncButton.className = 'btn';
+  syncButton.type = 'button';
+  syncButton.title = '载入线上正式场景 show/scene.json（覆盖当前草稿）';
+  syncButton.textContent = '同步线上';
+
   const arButton = document.createElement('button');
   arButton.className = 'btn';
   arButton.type = 'button';
@@ -173,6 +179,7 @@ export function mount(el) {
     spacer,
     draftChip,
     demoButton,
+    syncButton,
     arButton,
     anchorButton,
     previewButton,
@@ -531,6 +538,21 @@ export function mount(el) {
     if (!window.confirm('创建空白场景会清除当前场景内容，确定继续？')) return;
     store.newScene();
     log('已创建空白故事场景');
+  });
+
+  syncButton.addEventListener('click', async () => {
+    if (!window.confirm('载入线上正式场景会覆盖当前草稿，确定继续？')) return;
+    try {
+      syncButton.textContent = '同步中…';
+      const res = await fetch('show/scene.json?v=' + Date.now());
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      store.newScene(await res.json());
+      store.save?.();
+      log('已载入线上正式场景（虚境世界/钟楼等新对象一并带入）');
+    } catch (e) {
+      log(`载入线上场景失败：${e?.message || e}`, 'error');
+    }
+    syncButton.textContent = '同步线上';
   });
 
   arButton.addEventListener('click', () => {
