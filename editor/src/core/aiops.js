@@ -208,6 +208,11 @@ export function sceneSummary() {
     lines.push('锚点|无')
   }
 
+  const stream = scene.stream
+  lines.push(stream
+    ? `流式走廊|${stream.enabled === false ? '关' : '开'}|${stream.axis || 'z'}${stream.dir === -1 ? '-' : '+'}|段长${numberOr(stream.segLen, 6)}m|前${numberOr(stream.ahead, 8)}段|parts${Array.isArray(stream.parts) ? stream.parts.length : 0}件`
+    : '流式走廊|无')
+
   return lines.join('\n').slice(0, 2000)
 }
 
@@ -455,6 +460,29 @@ function executeOp(op) {
       if (!Object.keys(sky).length) throw new Error('set_sky 参数无效')
       store.setBase({ env: { sky } })
       return store.scene.base.env
+    }
+
+    case 'set_stream': {
+      if (op.enabled === false) {
+        store.setStream(null)
+        return null
+      }
+      if (!Array.isArray(op.parts) || !op.parts.length) {
+        throw new Error('流式走廊缺 parts（每段的 compound 基元配方）')
+      }
+      const spec = {
+        enabled: true,
+        axis: op.axis === 'x' || op.axis === 'auto' ? op.axis : 'z',
+        dir: op.dir === -1 ? -1 : 1,
+        segLen: Math.max(0.5, numberOr(op.segLen, 6)),
+        ahead: Math.min(24, Math.max(1, numberOr(op.ahead, 8))),
+        behind: Math.min(6, Math.max(0, numberOr(op.behind, 1))),
+        origin: op.origin === 'auto' ? 'auto' : vector(op.origin, [0, 0, 0]),
+        jitter: numberOr(op.jitter, 0.1),
+        palette: Array.isArray(op.palette) ? op.palette.filter(c => typeof c === 'string') : undefined,
+        parts: clone(op.parts).slice(0, 64)
+      }
+      return store.setStream(spec)
     }
 
     case 'set_base':

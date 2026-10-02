@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>西游·虚境 · AR 体验</title>
+<style>
+  html, body { margin:0; padding:0; height:100%; overflow:hidden; background:#000; touch-action:none; -webkit-user-select:none; user-select:none; font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; }
+  #ar-root { position:fixed; inset:0; }
+  #ar-root, #ar-root * { box-sizing:border-box; }
+  /* 视频/画布硬铺满动态视口：移动浏览器工具栏伸缩会改变可视宽度，100% 会留黑边 */
+  #ar-root video, #ar-root canvas, #ar-root > div { position:absolute; inset:0; }
+  /* 视频可能挂在 #ar-root 外（MindAR 某些版本直接 append 到 body），用全局选择器 */
+  video, #ar-root canvas {
+    width:100vw !important; height:100vh !important;
+    width:100dvw !important; height:100dvh !important;
+    object-fit:cover !important;
+  }
+  body > video { position:fixed !important; left:0 !important; top:0 !important; }
+
+  .hud-top { position:fixed; top:0; left:0; right:0; padding:calc(env(safe-area-inset-top) + 12px) 16px 12px; display:flex; align-items:center; justify-content:space-between; z-index:20; pointer-events:none; }
+  .hud-title { color:#f5e9d0; font-size:15px; font-weight:600; text-shadow:0 1px 4px rgba(0,0,0,.6); }
+  .hud-state { color:#ffd9a0; font-size:12px; background:rgba(20,16,10,.55); border:1px solid rgba(232,165,75,.4); border-radius:14px; padding:4px 12px; backdrop-filter:blur(6px); }
+
+  .hud-actions { position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 16px); display:flex; justify-content:center; gap:10px; z-index:20; }
+  .hud-actions button { border:none; border-radius:22px; padding:12px 20px; font-size:14px; font-weight:600; background:rgba(232,165,75,.92); color:#1c130a; box-shadow:0 4px 16px rgba(0,0,0,.4); }
+  .hud-actions button.ghost { background:rgba(20,20,28,.7); color:#e8e4dc; border:1px solid rgba(255,255,255,.25); backdrop-filter:blur(6px); }
+  .hud-actions button:disabled { opacity:.45; }
+
+  .ar-card { position:fixed; left:16px; right:16px; bottom:calc(env(safe-area-inset-bottom) + 80px); background:rgba(14,18,28,.82); color:#f0ead8; border:1px solid rgba(232,165,75,.35); border-radius:14px; padding:16px 18px; font-size:14px; line-height:1.7; z-index:21; backdrop-filter:blur(8px); display:none; }
+  .ar-card.show { display:block; }
+  .ar-card .close { position:absolute; top:8px; right:12px; color:#e8a54b; font-size:18px; cursor:pointer; }
+
+  #boot { position:fixed; inset:0; background:radial-gradient(ellipse at center, #1c2a4a, #0a0d18); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; z-index:50; color:#f5e9d0; }
+  #boot .logo { font-size:34px; font-weight:700; letter-spacing:6px; }
+  #boot .sub { color:#e8a54b; font-size:14px; letter-spacing:2px; }
+  #boot .status { color:#8a97a8; font-size:12px; }
+  #boot button { margin-top:14px; border:none; border-radius:24px; padding:14px 40px; font-size:16px; font-weight:700; background:linear-gradient(135deg,#e8a54b,#d05a4a); color:#fff; }
+  .scanline { position:fixed; inset:0; z-index:15; pointer-events:none; display:none; }
+  .scanline.on { display:block; background:linear-gradient(transparent 45%, rgba(232,165,75,.15) 50%, transparent 55%); animation:sweep 2.4s linear infinite; }
+  @keyframes sweep { from{transform:translateY(-100%)} to{transform:translateY(100%)} }
+  .reticle { position:fixed; left:50%; top:50%; width:180px; height:180px; transform:translate(-50%,-50%); border:2px dashed rgba(232,165,75,.7); border-radius:12px; z-index:15; pointer-events:none; display:none; }
+  .reticle.on { display:block; }
+</style>
+</head>
+<body>
+<div id="ar-root"></div>
+<div class="scanline" id="scanline"></div>
+<div class="reticle" id="reticle"></div>
+<div class="hud-top">
+  <div class="hud-title">西游·虚境 · 花果山觉醒</div>
+  <div class="hud-state" id="hud-state">初始化…</div>
+</div>
+<div class="hud-actions" id="hud-actions" style="display:none">
+  <button id="btn-cam" style="display:none">允许相机</button>
+  <button id="btn-vps">扫描定位</button>
+  <button id="btn-rescan" class="ghost">重新定位</button>
+  <button id="btn-mode" class="ghost">自由漫游</button>
+</div>
+<div class="ar-card" id="ar-card"><span class="close" id="ar-card-close">×</span><div id="ar-card-text"></div></div>
+<div id="boot">
+  <div class="logo">西游·虚境</div>
+  <div class="sub">花果山觉醒 · AR 空间体验</div>
+  <div class="status" id="boot-status">加载场景中…</div>
+  <button id="btn-enter" style="display:none">进入体验</button>
+</div>
+<script type="importmap">
+{
+  "imports": {
+    "three": "/xiyou/vendor/three-legacy/three.module.js",
+    "three/addons/renderers/CSS3DRenderer.js": "/xiyou/vendor/three-legacy/CSS3DRenderer.js"
+  }
+}
+</script>
+<script type="module" src="./src/show/main.js"></script>
+</body>
+</html>

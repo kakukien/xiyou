@@ -10,6 +10,14 @@ import { log } from '../ui/log.js';
 
 const DEG = Math.PI / 180;
 
+// 底座加载状态，details 面板订阅 xiyou:base-status 事件刷新芯片
+export const baseStatus = { state: 'idle', msg: '' };
+function setBaseStatus(state, msg = '') {
+  baseStatus.state = state;
+  baseStatus.msg = msg;
+  window.dispatchEvent(new CustomEvent('xiyou:base-status'));
+}
+
 function cloneTransform(node) {
   return {
     p: [node.position.x, node.position.y, node.position.z],
@@ -151,6 +159,17 @@ function objectSignature(obj) {
   });
 }
 
+// 确定性随机：同一段序号永远长出同样的段落
+function seededRand(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6D2B79F5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function anchorLabelSprite(text, color) {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
@@ -190,6 +209,9 @@ export const viewport = {
   gizmo: null,
   nodes: new Map(),
   nodeSignatures: new Map(),
+  streamGroup: null,
+  streamSegs: new Map(),
+  streamSig: '',
   baseGroup: null,
   baseHelpers: [],
   zoneGroup: null,
@@ -811,6 +833,7 @@ export const viewport = {
 
     const token = ++this.baseLoadToken
     this.baseGroup = new THREE.Group();
+    this.baseGroup.visible = base?.visible !== false;
     this.baseGroup.userData.isBase = true;
     this.baseHelpers = [];
     this.colliderCache = null
@@ -954,20 +977,7 @@ export const viewport = {
     }
 
     // Sim3 对齐：base.transform = {s(标量), R(3x3 行主序), t(米)}
-    const bt = base?.transform;
-    if (bt) {
-      if (Array.isArray(bt.R) && bt.R.length === 9) {
-        const m = new THREE.Matrix4().set(
-          bt.R[0], bt.R[1], bt.R[2], 0,
-          bt.R[3], bt.R[4], bt.R[5], 0,
-          bt.R[6], bt.R[7], bt.R[8], 0,
-          0, 0, 0, 1
-        );
-        this.baseGroup.quaternion.setFromRotationMatrix(m);
-      }
-      this.baseGroup.scale.setScalar(Number(bt.s) > 0 ? Number(bt.s) : 1);
-      if (Array.isArray(bt.t)) this.baseGroup.position.fromArray(bt.t.map(Number));
-    }
+    this.applyBaseTransform(base);
 
     const colliderUrl = base?.collider_url
       ? (String(base.collider_url).startsWith('local://') ? (window.__xiyouBlobMap?.get(base.collider_url) || base.collider_url) : base.collider_url)

@@ -39,13 +39,18 @@ export function demoScene() {
   const scene = defaults();
 
   scene.base = {
-    sog_url: '',
+    // 花果山拍摄点 3GS 底座（hks204606，708k 高斯 compressed.ply 41MB，AR 坐标经 Sim3 对齐）
+    sog_url: 'assets/hks204606.compressed.ply',
     collider_url: null,
     transform: {
-      s: 1,
-      R: [1, 0, 0, 0, 1, 0, 0, 0, 1],
-      t: [0, 0, 0],
-      scale_source: 'manual'
+      s: 0.6405792403036242,
+      R: [
+        0.9666439262936674, -0.006198977271578077, -0.2560490039823422,
+        0.006198977271578077, -0.9988479663538381, 0.04758479580273278,
+        -0.2560490039823422, -0.04758479580273278, -0.9654918926475056
+      ],
+      t: [0.00618069, 0.995901, 0.0474444],
+      scale_source: 'camera_height:1.55 (inv)'
     },
     env: {
       sky: { image: 'fx/sky_dusk.jpg' }
@@ -128,6 +133,16 @@ export function demoScene() {
     visible: true,
     transform: { p: [1.4, 1, -3.6], r: [0, -30, 0], s: [0.95, 0.95, 0.95] }
   });
+
+  const world = newObject('glb', {
+    id: 'glb_虚境世界',
+    name: '虚境世界·体素环绕',
+    asset: 'a_world',
+    node_id: '',
+    visible: true,
+    transform: { p: [0, -0.45, 0], r: [0, 0, 0], s: [1, 1, 1] }
+  });
+  world.hitbox = { type: 'none', size: [1, 1, 1], center: [0, 0, 0] };
 
   const cliff = newObject('splat_segment', {
     id: 'seg_墙面01',
@@ -451,6 +466,7 @@ export function demoScene() {
   });
 
   scene.objects = [
+    world,
     backdrop, stageFloor, speakers, ...photoArc,
     segGround, cliff, segPillar, segHill,
     videoA, videoB,
@@ -467,8 +483,8 @@ export function demoScene() {
     chapters: [chapter, ch2, ch3, ch4, ch5]
   };
   scene.anchors = [
-    { id: 'anchor_入口', name: '入口定位点', kind: 'vps' },
-    { id: 'anchor_殿门', name: '殿门定位点', kind: 'poster' }
+    { id: 'anchor_入口', name: '入口定位点', kind: 'vps', pose: { t: [0, 0, 0], r: [0, 0, 0] } },
+    { id: 'anchor_殿门', name: '殿门定位点', kind: 'poster', pose: { t: [0, 1.3, -3.2], r: [0, 0, 0] }, image_url: 'assets/poster.png' }
   ];
   scene.zones = [
     { id: 'zone_入口', name: '入口互动区', kind: 'trigger', shape: 'box', transform: { p: [0, 1, -2], r: [0, 0, 0], s: [3, 2, 3] }, color: '#f97316', visible: true, locked: false, description: '入口进入后可触发互动内容' },
@@ -489,6 +505,7 @@ export function demoScene() {
       { id: 'a_floor', name: '舞台地面.png', url: 'site/floor.jpg', bytes: 15671, mime: 'image/jpeg' },
       { id: 'a_speakers', name: '线阵音箱.png', url: 'site/speakers.jpg', bytes: 90012, mime: 'image/jpeg' },
       { id: 'a_clip', name: '现场片段.mp4', url: 'site/clip.mp4', bytes: 709560, mime: 'video/mp4' },
+      { id: 'a_world', name: '虚境世界·体素.glb', url: 'assets/xiyou_world.glb', bytes: 1915952, mime: 'model/gltf-binary' },
       { id: 'a_wukong', name: '孙悟空.glb', url: 'local://孙悟空.glb', bytes: 356515840, mime: 'model/gltf-binary' },
       { id: 'a_va', name: '视频_A.mp4', url: 'local://视频_A.mp4', bytes: 188743680, mime: 'video/mp4' }
     ]

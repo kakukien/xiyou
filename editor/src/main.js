@@ -13,7 +13,7 @@ import { mount as mountSplatStudio } from './ui/splat-studio.js'
 import { collab } from './core/collab.js'
 
 // ---- bootstrap ----
-window.__xiyou = { viewport }
+window.__xiyou = { viewport, store, player }
 const params = new URLSearchParams(location.search)
 const ROOM = params.get('room') || 'demo'
 store.setStorageKey(`xiyou.scene.v2.${ROOM}`)

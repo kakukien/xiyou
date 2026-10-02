@@ -49,15 +49,6 @@ function initials(name) {
     .toUpperCase() || '?';
 }
 
-function toast(text) {
-  const el = document.createElement('div');
-  el.className = 'story-toast';
-  el.textContent = text;
-  document.body.appendChild(el);
-  requestAnimationFrame(() => el.classList.add('in'));
-  setTimeout(() => { el.classList.remove('in'); setTimeout(() => el.remove(), 300); }, 2600);
-}
-
 // 双击行内改名：span → input，Enter/失焦提交，Esc 取消
 function inlineEdit(span, current, onCommit) {
   const input = document.createElement('input');

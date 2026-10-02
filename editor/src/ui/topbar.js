@@ -519,15 +519,14 @@ export function mount(el) {
     url.searchParams.set('room', getRoomCode());
     url.searchParams.delete('draft');
 
-    try {
-      await navigator.clipboard.writeText(url.toString());
-      draftChip.textContent = '已复制房间链接';
-      setTimeout(renderDraft, 1400);
-    } catch {
-      window.prompt('复制房间链接', url.toString());
-    }
+    copyText(url.toString(), '已复制房间链接');
+    draftChip.textContent = '已复制房间链接';
+    setTimeout(renderDraft, 1400);
   });
 
+  // 演示场景会覆盖当前场景：两步确认（第一次点击进入待确认态，3s 内再点执行）
+  let demoArmed = false;
+  let demoTimer = null;
   demoButton.addEventListener('click', () => {
     if (!window.confirm('创建空白场景会清除当前场景内容，确定继续？')) return;
     store.newScene();

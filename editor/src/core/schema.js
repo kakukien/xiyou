@@ -128,6 +128,7 @@ export function defaults() {
     siteId: '',
     base: {
       sog_url: '',
+      visible: true,
       collider_url: null,
       collider: { type: 'box', size: [20, 2, 20], center: [0, 1, 0], visible: false },
       lod: { enabled: false, levels: ['high', 'medium', 'low'], current: 'high', urls: { high: '', medium: '', low: '' }, thresholds: { near: 12, far: 30 } },

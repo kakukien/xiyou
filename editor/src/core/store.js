@@ -83,6 +83,7 @@ function normalizeScene(input) {
   const editing = isObject(base.editing) ? base.editing : {}
   source.base = {
     sog_url: typeof base.sog_url === 'string' ? base.sog_url : '',
+    visible: base.visible !== false,
     collider_url: base.collider_url ?? null,
     collider: isObject(base.collider) ? base.collider : { type: 'box', size: [20, 2, 20], center: [0, 1, 0], visible: false },
     lod: isObject(base.lod) ? { enabled: Boolean(base.lod.enabled), levels: Array.isArray(base.lod.levels) ? base.lod.levels : ['high', 'medium', 'low'], current: base.lod.current || 'high', urls: isObject(base.lod.urls) ? base.lod.urls : { high: '', medium: '', low: '' }, thresholds: isObject(base.lod.thresholds) ? base.lod.thresholds : { near: 12, far: 30 } } : { enabled: false, levels: ['high', 'medium', 'low'], current: 'high', urls: { high: '', medium: '', low: '' }, thresholds: { near: 12, far: 30 } },
@@ -629,12 +630,18 @@ export const store = {
     return true
   },
 
-  setBase(patch) {
+  setBase(patch, { transient = false } = {}) {
     if (!isObject(patch)) return scene.base
 
     scene.base = deepMerge(scene.base, patch)
-    markChanged(false)
+    markChanged(transient)
     return scene.base
+  },
+
+  setStream(spec) {
+    scene.stream = spec === null ? null : clone(spec)
+    markChanged(false)
+    return scene.stream
   },
 
   undo() {
