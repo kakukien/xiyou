@@ -1,4 +1,4 @@
-# 西游·虚境：商用化账号、工作空间与多人协作开发方案
+# 造梦 · 故事空间：商用化账号、工作空间与多人协作开发方案
 
 > 版本：v1.0
 >
@@ -112,7 +112,7 @@ https://app.example.com/invite/inv_xxxxxxxxx
 - 线上协作地址已经存在：
 
 ```text
-wss://agentpay.xx.kg/xiyou-yjs
+wss://<部署域名>/xiyou-yjs
 ```
 
 ### 2.2 当前实现的连接方式
@@ -937,8 +937,8 @@ Ticket 可以存 Redis，也可以在第一版使用带签名的短期 token。�
 当前代码中存在根据 hostname 判断线上地址的逻辑：
 
 ```js
-location.hostname === 'agentpay.xx.kg'
-  ? 'wss://agentpay.xx.kg/xiyou-yjs'
+location.hostname !== 'localhost' && location.hostname !== '127.0.0.1'
+  ? 'wss://<部署域名>/xiyou-yjs'
   : `ws://${location.hostname}:8022`
 ```
 

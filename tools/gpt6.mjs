@@ -1,18 +1,18 @@
-// gpt-6 driver: sends a prompt (file or stdin) to sub.88api.ai, writes reply to stdout/file.
+// gpt-6 driver: sends a prompt (file or stdin) through the configured model relay.
 // Usage: node tools/gpt6.mjs <promptFile> [outFile] [--sys <systemFile>] [--continue <prevReplyFile>] [--auto]
-// Env:   API88_KEY (required for relay lanes), API88_BASE (default https://sub.88api.ai/v1),
-//        API88_MODEL (default gpt-6), API88_ROUTE=auto 等同 --auto
+// Env:   relay credentials and model endpoint are read from the local runtime environment,
+//        MODEL_RELAY_MODEL (default gpt-6), MODEL_RELAY_ROUTE=auto 等同 --auto
 // --auto 分流留痕（前置 laya_router.py @127.0.0.1:8123）：
-//   当前口径 = 所有请求一律调 API88_MODEL（默认 gpt-6），laya 只做 lane 分类与留痕
+//   当前口径 = 所有请求一律调 MODEL_RELAY_MODEL（默认 gpt-6），laya 只做 lane 分类与留痕
 //   （tools/route-log.jsonl），路由器不可达时静默按 heavy 记。
 //   将来要恢复跨档分流：在路由结果处按 lane 改 BASE/MODEL 即可。
 import { readFileSync, writeFileSync, appendFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
-let BASE = process.env.API88_BASE || 'https://sub.88api.ai/v1'
-let MODEL = process.env.API88_MODEL || 'gpt-6'
-let KEY = process.env.API88_KEY
+let BASE = process.env.MODEL_RELAY_BASE || ''
+let MODEL = process.env.MODEL_RELAY_MODEL || 'gpt-6'
+let KEY = process.env.MODEL_RELAY_KEY
 
 const LAYA_URL = process.env.LAYA_URL || 'http://127.0.0.1:8123'
 const ROUTE_LOG = join(dirname(fileURLToPath(import.meta.url)), 'route-log.jsonl')
@@ -24,7 +24,7 @@ const sysIdx = args.indexOf('--sys')
 const sysFile = sysIdx >= 0 ? args[sysIdx + 1] : null
 const contIdx = args.indexOf('--continue')
 const prevFile = contIdx >= 0 ? args[contIdx + 1] : null
-const auto = args.includes('--auto') || process.env.API88_ROUTE === 'auto'
+const auto = args.includes('--auto') || process.env.MODEL_RELAY_ROUTE === 'auto'
 
 const messages = []
 if (sysFile) messages.push({ role: 'system', content: readFileSync(sysFile, 'utf8') })
@@ -49,7 +49,7 @@ if (auto) {
   // laya 分类仍留痕（route-log.jsonl），以后要开快档分组改这里一行即可。
   console.error(`[route] lane=${lane} → ${MODEL} @ ${BASE}`)
 }
-if (!KEY) { console.error('API88_KEY env required'); process.exit(2) }
+if (!BASE || !KEY) { console.error('MODEL_RELAY_BASE and MODEL_RELAY_KEY are required in the local runtime environment'); process.exit(2) }
 
 async function call(base, model, key) {
   const body = { model, messages, stream: true }

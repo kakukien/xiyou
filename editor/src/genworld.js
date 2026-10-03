@@ -1,4 +1,4 @@
-// 体素「西游·虚境」世界生成器 → GLB
+// 体素「造梦 · 故事空间」世界生成器 → GLB
 // 跑法: npx vite dev → 开 /xiyou/genworld.html → window.__export() 拿 ArrayBuffer
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';

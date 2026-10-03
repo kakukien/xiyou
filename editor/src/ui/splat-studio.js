@@ -10,6 +10,7 @@ import { log } from './log.js'
 const ACCEPTED_SPLATS = '.ply,.sog,.spz,.splat,.ksplat'
 const ACCEPTED_VIDEO = 'video/mp4,video/quicktime,video/webm,.mov,.mp4,.webm'
 const ACCEPTED_IMAGES = 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp'
+const MAX_PENDING_JOBS = 3
 const QUALITY_LABELS = { fast: '快速', balanced: '均衡', high: '精细' }
 const STAGES = [
   ['created', '准备'],
@@ -217,7 +218,10 @@ export function mount(root) {
     footerHeight: loadFooterHeight(),
     providerHealthRetry: 0,
     providerHealthTimer: null,
-    sourceObjectUrls: []
+    sourceObjectUrls: [],
+    history: [],
+    activeJobId: '',
+    selectedHistoryId: ''
   }
 
   const api = { enter, exit, dispose }
@@ -273,10 +277,64 @@ export function mount(root) {
     event.preventDefault()
   }
 
+  function loadHistory() {
+    try {
+      const raw = JSON.parse(localStorage.getItem('xiyou.splatStudio.jobs.v1') || '[]')
+      state.history = Array.isArray(raw) ? raw.slice(0, 20) : []
+    } catch { state.history = [] }
+  }
+
+  function saveHistory() {
+    try { localStorage.setItem('xiyou.splatStudio.jobs.v1', JSON.stringify(state.history.slice(0, 20))) } catch {}
+  }
+
+  function upsertHistory(job, patch = {}) {
+    if (!job?.id) return
+    const current = state.history.find(item => item.id === job.id) || {
+      id: job.id,
+      provider: state.provider,
+      sourceName: job.sourceName || state.source?.name || '未命名素材',
+      sourceCount: job.sourceCount || state.sources.length || 1,
+      inputType: job.inputType || state.inputType,
+      quality: job.quality || state.quality,
+      createdAt: job.createdAt || new Date().toISOString()
+    }
+    Object.assign(current, patch, { id: job.id, updatedAt: new Date().toISOString() })
+    state.history = [current, ...state.history.filter(item => item.id !== job.id)].slice(0, 20)
+    saveHistory()
+  }
+
+  function selectHistory(id) {
+    const item = state.history.find(entry => entry.id === id)
+    if (!item) return
+    state.selectedHistoryId = id
+    state.activeJobId = id
+    state.provider = item.provider || state.provider
+    state.job = { ...item.job, id, sourceName: item.sourceName, sourceCount: item.sourceCount, inputType: item.inputType, quality: item.quality, status: item.status, stage: item.stage, progress: item.progress, message: item.message, logs: item.logs || [] }
+    state.step = ['ready', 'completed', 'done'].includes(item.status) ? 'edit' : 'job'
+    state.busy = ['queued', 'running'].includes(item.status)
+    state.notice = null
+    render()
+    if (state.busy) {
+      stopPolling()
+      startPolling()
+      pollJob()
+    }
+  }
+
   function enter() {
+    loadHistory()
+    refreshHistoryFromProviders().then(() => render())
     render()
     refreshProviders()
-    if (state.asset) requestAnimationFrame(() => loadPreview())
+    if (state.job?.id && ['queued', 'running'].includes(state.job.status)) {
+      startPolling()
+      pollJob()
+    } else if (state.asset) requestAnimationFrame(() => loadPreview())
+    if (state.history.some(item => ['queued', 'running'].includes(item.status))) {
+      startPolling()
+      pollHistoryJobs()
+    }
   }
 
   function exit({ apply = false } = {}) {
@@ -401,6 +459,15 @@ export function mount(root) {
       showAsset(splats[0])
       return
     }
+    // 正在运行的任务继续留在任务记录；新素材作为下一条任务输入，不覆盖旧任务。
+    if (state.job && ['queued', 'running'].includes(state.job.status)) {
+      upsertHistory(state.job, { status: state.job.status, stage: state.job.stage, progress: state.job.progress, message: state.job.message, logs: state.job.logs })
+      state.job = null
+      state.activeJobId = ''
+      state.busy = false
+      stopPolling()
+      if (state.history.some(item => ['queued', 'running'].includes(item.status))) startPolling()
+    }
     state.sources = files
     state.source = files[0]
     state.inputType = files.length > 1 || files.every(file => file.type.startsWith('image/')) ? 'images' : 'video'
@@ -433,6 +500,11 @@ export function mount(root) {
 
   async function createJob() {
     if (!state.source || !state.sources.length) return
+    const pending = state.history.filter(item => ['queued', 'running'].includes(item.status)).length
+    if (pending >= MAX_PENDING_JOBS) {
+      setNotice(`任务队列已达到 ${MAX_PENDING_JOBS} 个，请等待已有任务完成后再提交。`, 'warn')
+      return
+    }
     const provider = providers[state.provider]
     const options = { plannerEnabled: true }
     if (isGenSpaceRoute()) options.jobType = 'gen-space'
@@ -452,6 +524,8 @@ export function mount(root) {
     state.job.status = 'running'
     state.job.message = options.jobType === 'gen-space' ? '正在连接本地生成通道（ml-sharp）' : '正在连接重建 Provider'
     state.job.logs = [{ at: new Date().toISOString(), stage: 'analyzing', message: state.job.message }]
+    state.activeJobId = state.job.id
+    upsertHistory(state.job, { job: state.job, status: state.job.status, stage: state.job.stage, progress: state.job.progress, message: state.job.message, logs: state.job.logs })
     state.step = 'job'
     state.notice = null
     render()
@@ -467,13 +541,16 @@ export function mount(root) {
           state.job.message = `正在上传素材（${progress}%）`
           state.job.progress = Math.min(8, Math.round(progress / 100 * 8))
           state.job.logs = [...(state.job.logs || []).slice(-20), { at: new Date().toISOString(), stage: 'analyzing', message: state.job.message }]
+          upsertHistory(state.job, { status: state.job.status, stage: state.job.stage, progress: state.job.progress, message: state.job.message, logs: state.job.logs })
           renderStatusOnly()
         }
       })
       if (!result || typeof result !== 'object') throw new Error('重建服务返回了无效任务响应')
       state.job = { ...state.job, ...result, id: result.id || result.jobId || state.job.id }
+      state.activeJobId = state.job.id
+      upsertHistory(state.job, { job: state.job, status: state.job.status, stage: state.job.stage, progress: state.job.progress, message: state.job.message, logs: state.job.logs })
       state.job.message = result.message || '任务已创建，等待 GPU Worker'
-      state.polling = window.setInterval(() => pollJob(), 900)
+      startPolling()
       await pollJob()
     } catch (error) {
       state.busy = false
@@ -482,6 +559,7 @@ export function mount(root) {
       state.job.message = error?.message || String(error)
       state.job.logs = [...(state.job.logs || []), { at: new Date().toISOString(), stage: 'failed', message: state.job.message }]
       state.notice = { message: state.job.message, level: 'danger' }
+      upsertHistory(state.job, { status: state.job.status, stage: state.job.stage, progress: state.job.progress, message: state.job.message, logs: state.job.logs })
       render()
     }
   }
@@ -503,11 +581,56 @@ export function mount(root) {
     return { ...artifact, url, persistentUrl: ref, bytes: blob.size, temporary: true }
   }
 
+  async function refreshHistoryFromProviders() {
+    for (const [providerId, provider] of Object.entries(providers)) {
+      try {
+        const jobs = await provider.listJobs?.()
+        const entries = Array.isArray(jobs) ? jobs : Array.isArray(jobs?.jobs) ? jobs.jobs : []
+        if (!entries.length) continue
+        entries.slice(-20).forEach(job => upsertHistory(job, {
+          provider: providerId,
+          sourceName: job.payload?.name || job.payload?.input?.split?.('/').pop?.() || job.sourceName || '未命名任务',
+          inputType: job.payload?.inputType || job.inputType || 'video',
+          status: job.status,
+          stage: job.stage,
+          progress: job.progress,
+          message: job.message,
+          logs: job.logs || [],
+          job
+        }))
+      } catch {}
+    }
+  }
+
+  function startPolling() {
+    stopPolling()
+    state.polling = window.setInterval(() => {
+      pollJob()
+      pollHistoryJobs()
+    }, 900)
+  }
+
+  async function pollHistoryJobs() {
+    const pending = state.history.filter(item => ['queued', 'running'].includes(item.status) && item.id !== state.job?.id)
+    await Promise.all(pending.map(async item => {
+      try {
+        const next = await providers[item.provider || 'local'].getJob(item.id)
+        item.job = { ...(item.job || {}), ...next }
+        Object.assign(item, { status: next.status, stage: next.stage, progress: next.progress, message: next.message, logs: next.logs || item.logs, updatedAt: new Date().toISOString() })
+      } catch (error) {
+        item.message = item.message || `查询任务失败：${error?.message || error}`
+      }
+    }))
+    if (pending.length) saveHistory()
+    if (pending.length && !state.job) render()
+  }
+
   async function pollJob() {
     if (!state.job?.id) return
     try {
       const next = await providers[state.provider].getJob(state.job.id)
       state.job = { ...state.job, ...next }
+      upsertHistory(state.job, { job: state.job, status: state.job.status, stage: state.job.stage, progress: state.job.progress, message: state.job.message, logs: state.job.logs })
       const result = next.result || {}
       state.outputs = (result.artifacts || (result.artifact ? [result.artifact] : [])).map(item => {
         if (item?.url?.startsWith('/')) item.url = `${providers[state.provider].baseUrl || ''}${item.url}`
@@ -534,6 +657,7 @@ export function mount(root) {
         stopPolling()
         state.busy = false
         state.notice = { message: next.error || next.message || '重建任务失败', level: next.status === 'failed' ? 'danger' : 'warn' }
+        upsertHistory(state.job, { status: state.job.status, stage: state.job.stage, progress: state.job.progress, message: state.job.message, logs: state.job.logs })
         render()
       } else renderStatusOnly()
     } catch (error) {
@@ -549,7 +673,7 @@ export function mount(root) {
       state.busy = true
       state.job.status = 'running'
       state.notice = null
-      state.polling = window.setInterval(() => pollJob(), 900)
+      startPolling()
       render()
     } catch (error) {
       setNotice(`恢复任务失败：${error?.message || error}`, 'danger')
@@ -713,7 +837,7 @@ export function mount(root) {
       capture_id: captureId,
       capture,
       sog_url: url,
-      transform: { s: state.transform.scale, R: r, t: [...state.transform.position], scale_source: 'splat-studio' },
+      transform: { s: state.transform.scale, R: r, euler: [...state.transform.rotation], t: [...state.transform.position], scale_source: 'splat-studio' },
       coordinate_system: { up: 'Y', forward: '-Z', handedness: 'right', units: 'meters', origin: 'capture' },
       artifacts,
       editing: { revision: revision + 1, transform: state.transform, crop: state.crop, deletion_mask: null },
@@ -806,6 +930,7 @@ export function mount(root) {
     const countLabel = state.sources.length > 1 ? `${state.sources.length} 帧` : state.source ? formatBytes(state.source.size) : '从真实空间素材开始'
     return `<div class="studio-section-title"><span>工作流</span><span class="studio-live-dot"></span></div>
       <div class="studio-mini-stepper" aria-label="场景工作流程">${[['input','输入素材'],['job','生成任务'],['edit','编辑场景'],['apply','应用场景']].map(([id,label], index) => `<span class="studio-mini-step ${state.step === id ? 'active' : state.step === 'edit' && index < 3 || state.step === 'apply' && index < 4 ? 'done' : ''}"><i>${index + 1}</i>${label}</span>`).join('')}</div>
+      ${historyMarkup()}
       <div class="studio-source-card"><div class="studio-source-icon">${iconMarkup(state.source && state.inputType === 'video' ? 'video-line' : 'image-2-line')}</div><div><strong>${state.source ? esc(state.source.name) : '选择视频或序列帧'}</strong><span>${state.source ? `${countLabel} · ${state.inputType === 'video' ? '视频' : isGenSpaceRoute() ? '单图 · ml-sharp 速生' : '图片序列'}` : '从真实空间素材开始'}</span></div></div>
       <div class="studio-workflow-actions"><div class="studio-input-actions"><label class="btn btn-secondary">${iconMarkup('upload-2-line')} <span>选择视频 / 文件</span><input hidden type="file" accept="${ACCEPTED_VIDEO},${ACCEPTED_IMAGES},${ACCEPTED_SPLATS}" data-studio-file></label><label class="btn">${iconMarkup('folder-upload-line')} <span>选择序列帧目录</span><input hidden type="file" multiple webkitdirectory accept="${ACCEPTED_IMAGES}" data-studio-directory></label></div><button class="btn studio-reset-action" data-studio-reset ${state.source || state.asset ? '' : 'disabled'}>${iconMarkup('refresh-line')} <span>重新开始</span></button></div>
       ${state.source && !state.asset ? `<div class="studio-source-meta">${metaMarkup()}</div>` : ''}
@@ -814,6 +939,16 @@ export function mount(root) {
       ${state.step === 'job' && state.busy ? `<button class="btn studio-cancel-btn" data-studio-cancel>${iconMarkup('close-line')} 取消重建</button>` : ''}
       ${state.job && !state.busy && ['cancelled', 'failed'].includes(state.job.status) ? `<div class="studio-job-actions"><button class="btn" data-studio-resume>${iconMarkup('play-line')} 恢复任务</button><button class="btn" data-studio-retry>${iconMarkup('refresh-line')} 重新提交</button></div>` : ''}
       <div class="studio-workflow-note" tabindex="0" role="note" title="查看 Provider 说明"><i>${iconMarkup('information-line')}</i><span>本地 Companion 接收浏览器 multipart 文件；远程 Provider 使用同一任务契约。未配置真实重建器时只生成输入包，不会伪装成已完成 Gaussian 训练。</span></div>`
+  }
+
+  function historyMarkup() {
+    if (!state.history.length) return ''
+    const items = state.history.slice(0, 6).map(item => {
+      const active = item.id === state.activeJobId ? ' active' : ''
+      const status = item.status === 'ready' || item.status === 'completed' ? '已完成' : item.status === 'failed' ? '失败' : item.status === 'cancelled' ? '已取消' : `${Math.round(Number(item.progress) || 0)}%`
+      return `<button type="button" class="studio-history-item${active}" data-history-id="${esc(item.id)}"><span class="studio-history-main"><strong>${esc(item.sourceName || '未命名任务')}</strong><small>${esc(item.inputType === 'images' ? '序列帧' : '视频')} · ${esc(status)}</small></span><i style="--history-progress:${Math.max(0, Math.min(100, Number(item.progress) || 0))}%"></i></button>`
+    }).join('')
+    return `<section class="studio-history"><div class="studio-history-head"><strong>任务记录</strong><span>${state.history.length} 个</span></div><div class="studio-history-list">${items}</div></section>`
   }
 
   function metaMarkup() {
@@ -845,6 +980,7 @@ export function mount(root) {
 
   function bind() {
     root.querySelector('[data-studio-back]')?.addEventListener('click', () => store.setEditorMode?.('scene'))
+    root.querySelectorAll('[data-history-id]').forEach(button => button.addEventListener('click', () => selectHistory(button.dataset.historyId)))
     root.querySelector('[data-studio-apply]')?.addEventListener('click', () => applyToScene())
     root.querySelector('[data-studio-file]')?.addEventListener('change', pickSource)
     root.querySelector('[data-studio-directory]')?.addEventListener('change', pickSource)

@@ -8,7 +8,7 @@ import { store } from './store.js'; import { OBJECT_TYPES } from './schema.js'
 
 ### `export const SYSTEM_PROMPT`
 中文 system prompt，内容要点：
-- 你是「西游·虚境 AR 空间编辑器」的内置助手，帮合作伙伴用自然语言编辑三维 AR 场景
+- 你是「造梦 · 故事空间 AR 空间编辑器」的内置助手，帮合作伙伴用自然语言编辑三维 AR 场景
 - 输出必须是**一个 JSON 对象**（无 markdown 围栏）：`{"reply":"给用户的中文回复（≤60字）","ops":[...]}`
 - 支持的 ops（白名单，字段严格）：
   - `{"op":"add_object","type":"quad|video_quad|glb|light|splat_segment","name":"","transform":{"p":[x,y,z],"r":[0,0,0],"s":[1,1,1]},"node_id":"","material":{},"asset":""}`

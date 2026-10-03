@@ -17,7 +17,7 @@ const REGISTRY_ROOM = 'xiyou-projects'
 // id/结构必须与 main.js 播种的 BUILTIN_SHARED 一致，避免连上后出现两份
 const BUILTIN_SHARED_FOLDER = { id: 'fld_shared', name: '共享素材', parent: '' }
 const BUILTIN_SHARED_ASSETS = [
-  { id: 'a_world', name: '虚境世界·体素.glb', url: 'assets/xiyou_world.glb', kind: 'model', type: 'glb', folder: 'fld_shared', tags: ['环境', '体素', '场景'], bytes: 1915952, mime: 'model/gltf-binary', builtin: true },
+  { id: 'a_world', name: '故事空间·体素.glb', url: 'assets/xiyou_world.glb', kind: 'model', type: 'glb', folder: 'fld_shared', tags: ['环境', '体素', '场景'], bytes: 1915952, mime: 'model/gltf-binary', builtin: true },
   { id: 'a_belltower', name: '西安钟楼·体块.glb', url: 'assets/xiyou_belltower.glb', kind: 'model', type: 'glb', folder: 'fld_shared', tags: ['建筑', '钟楼', '西安'], bytes: 782288, mime: 'model/gltf-binary', builtin: true },
   { id: 'a_nongyao', name: '王者峡谷.glb', url: 'assets/nongyao.glb', kind: 'model', type: 'glb', folder: 'fld_shared', tags: ['游戏', '场景'], bytes: 19235268, mime: 'model/gltf-binary', builtin: true },
   { id: 'a_obj_temple', name: '寺庙模型.glb', url: 'assets/obj_temple.glb', kind: 'model', type: 'glb', folder: 'fld_shared', tags: ['建筑', '模型'], bytes: 14152912, mime: 'model/gltf-binary', builtin: true },
@@ -50,9 +50,9 @@ function parseJSON(value, fallback) {
 function wsUrl() {
   const override = new URLSearchParams(location.search).get('ws')
   if (override) return override
-  return location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-    ? `ws://${location.hostname}:8022`
-    : 'wss://agentpay.xx.kg/xiyou-yjs'
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return `ws://${location.hostname}:8022`
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${location.host}/xiyou-yjs`
 }
 
 export const projects = {

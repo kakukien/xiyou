@@ -19,7 +19,7 @@
 | 类型 | 当前资产 | 状态 |
 |---|---|---|
 | Gaussian / PLY | `assets/hks204606.compressed.ply` | 已在仓库，可作为高斯底座候选 |
-| GLB | `assets/xiyou_world.glb` | 已在仓库，体素虚境世界 |
+| GLB | `assets/xiyou_world.glb` | 已在仓库，体素故事空间 |
 | AR 图像 | `assets/poster.mind`、`assets/poster.png` | 已在仓库，可用于图像锚点演示 |
 | 现场图片 | `site/f01.jpg`、`f05.jpg`、`f09.jpg`、`f13.jpg`、`f17.jpg`、`f21.jpg`、`f25.jpg`、`f28.jpg`、`floor.jpg`、`speakers.jpg` | 已在仓库 |
 | 视频 | `site/clip.mp4` | 已在仓库 |

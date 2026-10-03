@@ -1,6 +1,6 @@
 # xiyou-ar/editor 架构契约（所有模块必须遵守）
 
-项目：西游·虚境 AR 空间编辑器（黑客松版）。Vite + Three.js，纯 ES module，无框架，无 TypeScript。
+项目：造梦 · 故事空间 AR 空间编辑器（黑客松版）。Vite + Three.js，纯 ES module，无框架，无 TypeScript。
 UI 风格：UE5 深色编辑器主题（CSS 变量在 style.css 已定义，直接用 var(--xxx)）。
 
 ## 场景数据（唯一数据源，对齐 PRD §5.2）

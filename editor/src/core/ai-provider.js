@@ -3,7 +3,7 @@ let sessionApiKey = ''
 
 const DEFAULT_CONFIG = {
   protocol: 'relay',
-  endpoint: 'https://agentpay.xx.kg/xiyou-ai/chat',
+  endpoint: '/xiyou-ai/chat',
   model: '',
   apiKey: '',
   timeoutMs: 120000
@@ -57,7 +57,7 @@ export function resetAiConfig() {
 
 function assertEndpoint(endpoint) {
   try {
-    const url = new URL(endpoint)
+    const url = new URL(endpoint, typeof location !== 'undefined' ? location.href : 'http://127.0.0.1')
     if (!['http:', 'https:'].includes(url.protocol)) throw new Error('AI 服务地址必须使用 HTTP 或 HTTPS')
     return url.toString()
   } catch (error) {

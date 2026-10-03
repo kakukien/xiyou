@@ -246,8 +246,13 @@ function renderAssets() {
 
   const importButton = makeButton('', 'btn btn-secondary btn-sm');
   importButton.innerHTML = `${iconMarkup('upload-2-line')}<span>导入资源</span>`;
-  importButton.addEventListener('click', () => root?.querySelector('.cb-import input')?.click());
-  toolbar.append(search, kind, importButton);
+  importButton.addEventListener('click', () => importInput.click());
+  const importInput = document.createElement('input');
+  importInput.type = 'file';
+  importInput.multiple = true;
+  importInput.accept = 'image/*,video/*,audio/*,.glb,.gltf,.sog,.ply,.spz,.splat,.ksplat,model/gltf-binary,model/gltf+json';
+  importInput.hidden = true;
+  toolbar.append(search, kind, importButton, importInput);
   panel.appendChild(toolbar);
   // ---- 工作目录树：共享素材库（全员同步）+ 项目素材（仅本工程）----
   store.ensureWorkspaceFolders?.()
@@ -407,11 +412,10 @@ function renderAssets() {
   const sharedScope = assetFolder.startsWith('s:')
   const stripWrap = document.createElement('div')
   stripWrap.className = 'cb-strip-wrap'
+  const currentFolderId = assetFolder.slice(2)
   const strip = document.createElement('div');
   strip.className = 'asset-strip';
-  if (sharedScope) stripWrap.appendChild(renderSharedElementLibrary())
-
-  const currentFolderId = assetFolder.slice(2)
+  if (sharedScope && currentFolderId === '') stripWrap.appendChild(renderSharedElementLibrary())
   // fld_shared 是旧项目目录里的归档：显示并入共享素材库，不再出现在项目区
   const registryAssets = projects.sharedAssets?.() || []
   const registryIds = new Set(registryAssets.map(item => item.id))
@@ -430,17 +434,7 @@ function renderAssets() {
       : currentFolderId === '' || (asset.folder || '') === currentFolderId;
     return matchesQuery && matchesKind && matchesFolder;
   });
-  const importCard = document.createElement('button');
-  importCard.type = 'button';
-  importCard.className = 'cb-card cb-import';
-  importCard.innerHTML = `${iconMarkup('upload-2-line', '导入素材')}<span>导入素材</span>`;
-  importCard.title = '导入图片、视频、音频、GLB 或高斯泼溅 PLY / SOG / SPZ 文件';
-
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.multiple = true;
-  input.accept = 'image/*,video/*,audio/*,.glb,.gltf,.sog,.ply,.spz,.splat,.ksplat,model/gltf-binary,model/gltf+json';
-  input.hidden = true;
+  const input = importInput;
 
   input.addEventListener('change', async () => {
     for (const file of Array.from(input.files || [])) {
@@ -493,9 +487,6 @@ function renderAssets() {
     input.value = '';
   });
 
-  importCard.addEventListener('click', () => input.click());
-  importCard.appendChild(input);
-  strip.appendChild(importCard)
   assets.forEach(asset => {
     const card = document.createElement('div');
     card.className = `cb-card${selectedAssetId === asset.id ? ' active' : ''}`;
@@ -635,7 +626,7 @@ function renderAssets() {
 function renderSharedElementLibrary() {
   const panel = document.createElement('section')
   panel.className = 'shared-element-library'
-  panel.innerHTML = `<div class="shared-element-library-head"><div><strong>共享素材库</strong><span>常用家具、游戏素材和空间效果</span></div><span class="shared-element-library-count">${listElements({}).length} 个</span></div>`
+  panel.innerHTML = `<div class="shared-element-library-head"><div><strong>模块元素</strong><span>带标签的家具、环境、游戏道具和互动组件</span></div><span class="shared-element-library-count">${listElements({}).length} 个</span></div>`
   const categories = document.createElement('div')
   categories.className = 'shared-element-categories'
   const visibleCategories = ['furniture', 'environment', 'game', 'toy', 'fx', 'interactive']

@@ -52,7 +52,9 @@ function buildScene() {
     const baseGroup = new THREE.Group();
     const bt = base.transform;
     if (bt) {
-      if (Array.isArray(bt.R) && bt.R.length === 9) {
+      if (Array.isArray(bt.euler) && bt.euler.length === 3 && bt.euler.some(Boolean)) {
+        baseGroup.rotation.set(...bt.euler.map(value => Number(value || 0) * Math.PI / 180));
+      } else if (Array.isArray(bt.R) && bt.R.length === 9) {
         const m = new THREE.Matrix4().set(...bt.R, 0, 0, 0, 1);
         baseGroup.quaternion.setFromRotationMatrix(m);
       }

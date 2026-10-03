@@ -12,7 +12,7 @@ import { store } from '../core/store.js'; { sceneSummary, SYSTEM_PROMPT, applyOp
 
 ## 逻辑
 - history 内存维护 [{role,content}]（最多留 20 条），每次请求发 [system(sceneSummary 动态拼进 SYSTEM_PROMPT 尾部「当前场景：…」), ...history]
-- POST `${location.origin==='https://agentpay.xx.kg' ? '' : 'https://agentpay.xx.kg'}/xiyou-ai/chat`，body {messages}，120s AbortController 超时
+- POST `${location.origin}/xiyou-ai/chat`，body {messages}，120s AbortController 超时
 - 响应 {content} → 解析 JSON（宽容：找首个 { 到末个 }，失败→整段当 reply，ops=[]）→ 显示 reply → applyOps(ops) → 反馈行
 - 网络/超时/解析失败都给出友好错误气泡，不崩
 - store.mode='play' 时面板禁用输入并提示「试玩模式下不可编辑」

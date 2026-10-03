@@ -1730,3 +1730,34 @@ body.studio-footer-resizing .studio-viewport canvas { pointer-events:none; }
 .presence-role, .presence-owner { font-size:11px; color:var(--fg-dim); white-space:nowrap; }
 .presence-owner { color:var(--accent2); font-weight:600; }
 .btn.btn-sm.presence-save { padding:2px 8px; font-size:11px; }
+
+/* 在线协作者：保持顶栏占用可控，超过四人用叠放头像和悬浮列表承载。 */
+.presence-avatars { gap:0; padding-left:6px; }
+.presence-avatar { position:relative; margin-left:-6px; border:2px solid #fff; box-shadow:0 1px 2px rgba(35,49,60,.14); }
+.presence-avatar:first-child { margin-left:0; }
+.presence-more { position:relative; z-index:3; display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; margin-left:-6px; border:2px solid #fff; border-radius:50%; background:#eef2f6; color:#586878; font-size:10px; font-weight:700; cursor:default; box-shadow:0 1px 2px rgba(35,49,60,.14); }
+.presence-more-popover { position:absolute; top:calc(100% + 9px); right:0; display:flex; flex-direction:column; gap:5px; min-width:132px; padding:9px 10px; border:1px solid var(--ui-line); border-radius:7px; background:#fff; color:var(--ui-ink); box-shadow:0 8px 22px rgba(35,49,60,.16); opacity:0; visibility:hidden; pointer-events:none; transform:translateY(-3px); transition:opacity 140ms ease, transform 140ms ease, visibility 140ms ease; }
+.presence-more-popover::before { content:''; position:absolute; right:8px; top:-5px; width:8px; height:8px; border-top:1px solid var(--ui-line); border-left:1px solid var(--ui-line); background:#fff; transform:rotate(45deg); }
+.presence-more-popover strong { padding-bottom:4px; border-bottom:1px solid var(--ui-line-soft); font-size:10px; }
+.presence-more-popover span { overflow:hidden; color:var(--ui-muted); font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
+.presence-more:hover .presence-more-popover, .presence-more:focus-within .presence-more-popover { opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
+
+/* 任务记录：生成任务离开工作台后仍保留队列状态和进度。 */
+.studio-history { margin:0 14px 12px; padding:10px; border:1px solid var(--ui-line-soft); border-radius:8px; background:#f7f9fa; }
+.studio-history-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; color:var(--ui-muted); font-size:10px; }
+.studio-history-head strong { color:var(--ui-ink); font-size:11px; }
+.studio-history-list { display:flex; flex-direction:column; gap:4px; max-height:154px; overflow:auto; }
+.studio-history-item { position:relative; display:flex; align-items:center; min-height:36px; padding:6px 8px; overflow:hidden; border:1px solid transparent; border-radius:6px; background:#fff; color:var(--ui-ink); text-align:left; cursor:pointer; }
+.studio-history-item:hover, .studio-history-item.active { border-color:#f6c49e; background:#fffaf4; }
+.studio-history-main { display:flex; min-width:0; flex:1; flex-direction:column; gap:2px; }
+.studio-history-main strong { overflow:hidden; font-size:10px; font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
+.studio-history-main small { color:var(--ui-muted); font-size:9px; }
+.studio-history-item > i { position:relative; width:36px; height:4px; margin-left:8px; overflow:hidden; border-radius:999px; background:#e4eaf0; flex:none; }
+.studio-history-item > i::before { content:''; display:block; width:var(--history-progress); height:100%; border-radius:inherit; background:var(--ui-accent); }
+@media (prefers-reduced-motion:reduce) { .presence-more-popover { transition:none; } }
+
+
+/* 右键飞行导航键反馈 */
+.vp-key-feedback { position:absolute; left:14px; bottom:14px; z-index:32; padding:7px 10px; border:1px solid rgba(196,208,219,.9); border-radius:7px; background:rgba(255,255,255,.94); color:var(--ui-ink,#25313d); box-shadow:0 5px 16px rgba(35,49,60,.14); font-size:11px; font-weight:650; opacity:0; transform:translateY(5px); pointer-events:none; transition:opacity 140ms ease, transform 140ms ease; }
+.vp-key-feedback.show { opacity:1; transform:translateY(0); }
+@media (prefers-reduced-motion:reduce) { .vp-key-feedback { transition:none; } }

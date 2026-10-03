@@ -1,4 +1,4 @@
-# 西游·虚境：黑客松现场多人协作演示手册
+# 造梦 · 故事空间：黑客松现场多人协作演示手册
 
 > 版本：v1.0
 >
@@ -51,7 +51,7 @@
 现场演示应该使用已经部署好的线上地址：
 
 ```text
-https://agentpay.xx.kg/xiyou/
+https://<部署域名>/xiyou/
 ```
 
 协作连接由远程服务负责：
@@ -184,20 +184,20 @@ Awareness 同步在线状态、角色、颜色和鼠标位置
 现场访问地址示例：
 
 ```text
-https://agentpay.xx.kg/xiyou/?room=hackathon-demo&key=现场令牌
+https://<部署域名>/xiyou/?room=hackathon-demo
 ```
 
 如果使用角色参数，也可以是：
 
 ```text
 管理者：
-https://agentpay.xx.kg/xiyou/?room=hackathon-demo&key=现场令牌&role=manager
+https://<部署域名>/xiyou/?room=hackathon-demo&role=manager
 
 编辑者：
-https://agentpay.xx.kg/xiyou/?room=hackathon-demo&key=现场令牌&role=editor
+https://<部署域名>/xiyou/?room=hackathon-demo&role=editor
 
 预览者：
-https://agentpay.xx.kg/xiyou/?room=hackathon-demo&key=现场令牌&role=previewer
+https://<部署域名>/xiyou/?room=hackathon-demo&role=previewer
 ```
 
 角色参数只是现场展示用途，不是正式权限控制。
@@ -227,7 +227,7 @@ https://agentpay.xx.kg/xiyou/?room=hackathon-demo&key=现场令牌&role=previewe
 在一台不运行本地开发服务的电脑上打开：
 
 ```text
-https://agentpay.xx.kg/xiyou/
+https://<部署域名>/xiyou/
 ```
 
 确认：
@@ -274,7 +274,7 @@ docker ps
 当前线上 WebSocket 地址是：
 
 ```text
-wss://agentpay.xx.kg/xiyou-yjs
+wss://<部署域名>/xiyou-yjs
 ```
 
 ### 5.3 准备现场专用房间
@@ -412,7 +412,7 @@ Safari 或另一台电脑：预览者
 打开完整链接：
 
 ```text
-https://agentpay.xx.kg/xiyou/?room=hackathon-demo&key=现场令牌
+https://<部署域名>/xiyou/?room=hackathon-demo
 ```
 
 如果界面提供角色选择，选择：
@@ -452,7 +452,7 @@ key
 例如：
 
 ```text
-https://agentpay.xx.kg/xiyou/?room=hackathon-demo&key=现场令牌&role=editor
+https://<部署域名>/xiyou/?room=hackathon-demo&role=editor
 ```
 
 ### 步骤 4：确认在线人数
@@ -952,7 +952,7 @@ const ROLE_META = {
 先让第二个用户刷新完整链接，再检查：
 
 ```text
-wss://agentpay.xx.kg/xiyou-yjs
+wss://<部署域名>/xiyou-yjs
 ```
 
 是否能在浏览器 Network 面板看到 WebSocket 连接。

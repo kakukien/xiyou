@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="西游·虚境黑客松现场多人协作、手机游客 Runtime 与发布生效演示手册">
-  <title>黑客松现场演示手册 · 西游·虚境</title>
+  <meta name="description" content="造梦 · 故事空间黑客松现场多人协作、手机游客 Runtime 与发布生效演示手册">
+  <title>黑客松现场演示手册 · 造梦 · 故事空间</title>
   <style>
     :root {
       --canvas: #f3f5f7;
@@ -392,7 +392,7 @@
     <aside class="sidebar" aria-label="文档导航">
       <div class="brand">
         <div class="brand-mark">西</div>
-        <div><strong>西游·虚境</strong><small>Live collaboration runbook</small></div>
+        <div><strong>造梦 · 故事空间</strong><small>Live collaboration runbook</small></div>
       </div>
       <div class="nav-kicker">现场手册</div>
       <nav class="side-nav">
@@ -412,7 +412,7 @@
 
     <main>
       <div class="topline">
-        <div class="crumb"><b>黑客松现场多人协作演示手册</b>　/　西游·虚境</div>
+        <div class="crumb"><b>黑客松现场多人协作演示手册</b>　/　造梦 · 故事空间</div>
         <div class="top-actions">
           <span class="status-pill"><span class="dot"></span>线上演示路径</span>
           <button class="btn" id="printBtn">打印 / 导出 PDF</button>
@@ -493,7 +493,7 @@
               </div>
             </div>
           </div>
-          <div class="codebox" style="margin-top:20px;"><button class="btn copy-code" data-copy="https://agentpay.xx.kg/xiyou/?room=hackathon-demo&key=现场临时令牌">复制</button><span class="comment">// 现场所有人打开同一条完整链接；不要漏掉 key</span><br><span class="blue-code">https://agentpay.xx.kg/xiyou/</span><span class="accent-code">?room=hackathon-demo&amp;key=现场临时令牌</span></div>
+          <div class="codebox" style="margin-top:20px;"><button class="btn copy-code" data-copy="https://<部署域名>/xiyou/?room=hackathon-demo">复制</button><span class="comment">// 现场所有人打开同一工程链接；凭证由部署环境注入</span><br><span class="blue-code">https://<部署域名>/xiyou/</span><span class="accent-code">?room=hackathon-demo</span></div>
           <div class="callout warn"><div class="callout-bar"></div><div class="callout-body"><strong>安全边界：</strong>现场共享 key 只用于演示。活动结束后更换或撤销它，不要把生产项目的长期 key 投影到大屏或发到公开群。</div></div>
         </section>
 
@@ -513,7 +513,7 @@
             <div class="timeline-node"><div class="point">06:30</div><b>收束</b><span>说明 Draft、Release、Runtime 的边界。</span></div>
           </div>
           <div class="steps" style="margin-top:28px;">
-            <article class="step"><div class="step-no">01</div><div><h3>主持人打开线上地址</h3><p>打开 <code>https://agentpay.xx.kg/xiyou/?room=hackathon-demo&amp;key=现场令牌</code>，选择“管理者”，确认状态显示“已连接”。</p></div><div class="step-code">主持人 / 管理者</div></article>
+            <article class="step"><div class="step-no">01</div><div><h3>主持人打开线上地址</h3><p>打开 <code>https://<部署域名>/xiyou/?room=hackathon-demo</code>，选择“管理者”，确认状态显示“已连接”。</p></div><div class="step-code">主持人 / 管理者</div></article>
             <article class="step"><div class="step-no">02</div><div><h3>确认演示场景没有被本地缓存覆盖</h3><p>确认左侧 Outliner、中间 Viewport、底部时间线都出现“花果山觉醒”内容。不要在此时打开 <code>?reset=1</code>。</p></div><div class="step-code">场景准备</div></article>
             <article class="step"><div class="step-no">03</div><div><h3>其他人打开相同完整链接</h3><p>每个人的 <code>room</code> 和 <code>key</code> 必须相同，只有角色可以不同。建议使用不同设备、不同浏览器或无痕窗口。</p></div><div class="step-code">2～4 人加入</div></article>
             <article class="step"><div class="step-no">04</div><div><h3>编辑者 A 移动悟空</h3><p>选择悟空模型，使用移动工具把它向左移动。主持人和其他浏览器应看到位置变化，并看到在线状态或软锁提示。</p></div><div class="step-code">Yjs update</div></article>
@@ -594,14 +594,14 @@
           <p class="section-intro">这是一个离线的页面内模拟器，用来具象化现场演示：左侧是在线参与者，中间是预览区，右侧是同步日志。它不会真的连接线上服务器，但可以先用来排练讲解和操作顺序。</p>
           <div class="simulator-shell">
             <div class="sim-head">
-              <div class="sim-title"><i>LIVE</i><span>西游·虚境 / hackathon-demo</span></div>
+              <div class="sim-title"><i>LIVE</i><span>造梦 · 故事空间 / hackathon-demo</span></div>
               <div class="sim-toolbar">
                 <label for="roomInput">房间</label><input class="field" id="roomInput" value="hackathon-demo" aria-label="模拟房间名">
                 <button class="btn" id="joinAll">让所有人进入</button>
                 <button class="btn primary" id="resetSim">重置模拟</button>
               </div>
             </div>
-            <div class="sim-url"><input class="field" id="simUrl" readonly value="https://agentpay.xx.kg/xiyou/?room=hackathon-demo&key=现场临时令牌"><button class="btn" id="copySimUrl">复制完整链接</button></div>
+            <div class="sim-url"><input class="field" id="simUrl" readonly value="https://<部署域名>/xiyou/?room=hackathon-demo"><button class="btn" id="copySimUrl">复制完整链接</button></div>
             <div class="sim-body">
               <aside class="sim-side left">
                 <div class="sim-label">Participants / 在线参与者</div>
@@ -681,7 +681,7 @@
         <section class="section" id="troubleshoot">
           <div class="section-head"><div><div class="section-kicker">08 / Recovery</div><h2>故障排查</h2></div></div>
           <p class="section-intro">现场不要反复刷新所有设备。先判断是 HTTP 网站问题、WebSocket 连接问题、房间参数问题，还是本地缓存覆盖问题。</p>
-          <details open><summary>网页能打开，但显示“未连接”</summary><div class="details-body"><p>先检查完整链接是否包含正确的 <code>room</code> 和 <code>key</code>，再检查浏览器 Network 面板中的 WebSocket 是否使用 <code>wss://agentpay.xx.kg/xiyou-yjs</code>。如果 HTTP 正常而 WSS 不通，通常是代理 Upgrade、Cloudflare Tunnel 或现场网络问题。</p><div class="codebox"><span class="comment">排查顺序</span><br>1. room / key　→　2. wss 地址　→　3. 协作容器　→　4. 反向代理　→　5. 现场网络</div></div></details>
+          <details open><summary>网页能打开，但显示“未连接”</summary><div class="details-body"><p>先检查完整链接是否包含正确的 <code>room</code> 和 <code>key</code>，再检查浏览器 Network 面板中的 WebSocket 是否使用 <code>wss://<部署域名>/xiyou-yjs</code>。如果 HTTP 正常而 WSS 不通，通常是代理 Upgrade、Cloudflare Tunnel 或现场网络问题。</p><div class="codebox"><span class="comment">排查顺序</span><br>1. room / key　→　2. wss 地址　→　3. 协作容器　→　4. 反向代理　→　5. 现场网络</div></div></details>
           <details><summary>在线人数增加，但场景不一致</summary><div class="details-body"><p>先确认所有浏览器使用完全相同的房间名；然后检查是否有人打开了 <code>?reset=1</code>，以及旧的 <code>localStorage</code> 是否覆盖了云端场景。暂停操作后，由主持人导入备份 <code>scene.json</code>，再让其他人刷新。</p></div></details>
           <details><summary>鼠标能显示，但挡住了本地点击</summary><div class="details-body"><p>光标层和每个协作者鼠标都必须使用 <code>pointer-events: none</code>。它们是视觉 Overlay，不能参与交互命中。</p><div class="codebox">.collab-cursors, .collab-cursor { <span class="accent-code">pointer-events: none;</span> }</div></div></details>
           <details><summary>所有人显示同一个随机名称</summary><div class="details-body"><p>通常是多个标签页共用了同一个浏览器的 <code>localStorage</code>。改用不同浏览器、无痕窗口或不同设备；也可以清除 <code>xiyou.guest.name</code> 后重新进入。</p></div></details>
@@ -715,7 +715,7 @@
           </div>
         </section>
 
-        <footer class="footer"><strong>西游·虚境 / 黑客松现场端到端演示手册</strong><br>现场要展示的不只是“多人同时编辑”，还要展示“发布版本如何被手机游客加载”：Draft 用于协作，Release 用于交付，Runtime 用于运行。</footer>
+        <footer class="footer"><strong>造梦 · 故事空间 / 黑客松现场端到端演示手册</strong><br>现场要展示的不只是“多人同时编辑”，还要展示“发布版本如何被手机游客加载”：Draft 用于协作，Release 用于交付，Runtime 用于运行。</footer>
       </div>
     </main>
   </div>
@@ -749,7 +749,7 @@
     }
 
     qs('#printBtn').addEventListener('click', () => window.print())
-    qs('#copyQuickLink').addEventListener('click', () => copyText('https://agentpay.xx.kg/xiyou/?room=hackathon-demo&key=现场临时令牌', '演示链接已复制'))
+    qs('#copyQuickLink').addEventListener('click', () => copyText('https://<部署域名>/xiyou/?room=hackathon-demo', '演示链接已复制'))
     qsa('[data-copy]').forEach(button => button.addEventListener('click', () => copyText(button.dataset.copy, '代码已复制')))
 
     qsa('.checklist input[type="checkbox"]').forEach(input => {
@@ -984,7 +984,7 @@
     })
     qs('#roomInput').addEventListener('input', event => {
       const room = encodeURIComponent(event.target.value.trim() || 'hackathon-demo')
-      qs('#simUrl').value = `https://agentpay.xx.kg/xiyou/?room=${room}&key=现场临时令牌`
+      qs('#simUrl').value = `https://<部署域名>/xiyou/?room=${room}`
     })
     qs('#copySimUrl').addEventListener('click', () => copyText(qs('#simUrl').value, '模拟演示链接已复制'))
     renderParticipants()

@@ -1169,6 +1169,13 @@ export const viewport = {
       R[6] * s, R[7] * s, R[8] * s, tv[2],
       0, 0, 0, 1
     );
+    const euler = Array.isArray(t.euler) ? t.euler.map(value => Number(value) || 0) : [0, 0, 0];
+    if (euler.some(Boolean)) {
+      const rotation = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(...euler.map(value => value * DEG), 'XYZ'));
+      const rotationWithScale = new THREE.Matrix4().makeScale(s, s, s).premultiply(rotation);
+      rotationWithScale.setPosition(tv[0], tv[1], tv[2]);
+      m.copy(rotationWithScale);
+    }
     this.baseGroup.matrixAutoUpdate = false;
     this.baseGroup.matrix.copy(m);
     this.baseGroup.matrixWorldNeedsUpdate = true;

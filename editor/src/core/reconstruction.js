@@ -135,6 +135,12 @@ export class HttpGaussianReconstructionProvider extends GaussianReconstructionPr
     return uploadMultipart(`${this.baseUrl}/reconstruction/jobs`, form, { onProgress })
   }
 
+  async listJobs() {
+    if (!this.baseUrl) return []
+    const response = await fetch(`${this.baseUrl}/reconstruction/jobs`, { headers: jsonHeaders() })
+    return readResponse(response)
+  }
+
   async getJob(jobId) {
     const response = await fetch(`${this.baseUrl}/reconstruction/jobs/${encodeURIComponent(jobId)}`, { headers: jsonHeaders() })
     return readResponse(response)
@@ -197,6 +203,11 @@ export class LocalGpuWorkerProvider extends GaussianReconstructionProvider {
       headers: { ...jsonHeaders(), 'content-type': 'application/json' },
       body: JSON.stringify({ type: options.jobType || 'reconstruct', payload: { input: inputPath, inputType, quality, prompt: options.prompt || '', options } })
     })
+    return readResponse(response)
+  }
+
+  async listJobs() {
+    const response = await fetch(`${this.baseUrl}/jobs`, { headers: jsonHeaders() })
     return readResponse(response)
   }
 

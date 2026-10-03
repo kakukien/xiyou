@@ -28,6 +28,7 @@ export function mount(el) {
 
   const avatars = document.createElement('div');
   avatars.className = 'presence-avatars';
+  avatars.setAttribute('aria-label', '在线协作者');
 
   const lockHint = document.createElement('div');
   lockHint.className = 'presence-lock-hint';
@@ -83,11 +84,11 @@ export function mount(el) {
     }
     return localStorage.getItem(`xiyou.role.${room || 'demo'}`) || 'editor';
   }
-  const hasExplicitCollab = params.has('ws') || params.has('collab') || location.hostname === 'agentpay.xx.kg';
+  const hasExplicitCollab = params.has('ws') || params.has('collab') || !['localhost', '127.0.0.1'].includes(location.hostname);
   const wsUrl = params.get('ws') ||
-    (location.hostname === 'agentpay.xx.kg'
-      ? 'wss://agentpay.xx.kg/xiyou-yjs'
-      : `ws://${location.hostname}:8022`);
+    (['localhost', '127.0.0.1'].includes(location.hostname)
+      ? `ws://${location.hostname}:8022`
+      : `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/xiyou-yjs`);
 
   function getRole() {
     const requested = new URLSearchParams(location.search).get('role') || localStorage.getItem('xiyou.role') || 'editor'
@@ -130,6 +131,10 @@ export function mount(el) {
     return peer.color || peer.user?.color || 'var(--accent,#4e9eff)';
   }
 
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+  }
+
   function renderStatus() {
     const colors = {
       connected: 'var(--success,#55c878)',
@@ -159,7 +164,8 @@ export function mount(el) {
     saveBtn.style.display = connectionState === 'connected' && collab.isOwner ? '' : 'none';
 
     avatars.replaceChildren();
-    peers.forEach(peer => {
+    const visiblePeers = peers.slice(0, 4);
+    visiblePeers.forEach(peer => {
       const avatar = document.createElement('span');
       avatar.className = 'presence-avatar';
       avatar.textContent = peerName(peer).charAt(0) || '?';
@@ -167,6 +173,18 @@ export function mount(el) {
       avatar.style.background = peerColor(peer);
       avatars.append(avatar);
     });
+    const hiddenPeers = peers.slice(4);
+    if (hiddenPeers.length) {
+      const more = document.createElement('span');
+      more.className = 'presence-more';
+      more.textContent = `+${hiddenPeers.length}`;
+      more.title = `还有 ${hiddenPeers.length} 位协作者`;
+      const popover = document.createElement('span');
+      popover.className = 'presence-more-popover';
+      popover.innerHTML = `<strong>其他协作者</strong>${hiddenPeers.map(peer => `<span>${escapeHtml(peerName(peer))}</span>`).join('')}`;
+      more.append(popover);
+      avatars.append(more);
+    }
 
     renderLock();
   }

@@ -1,7 +1,7 @@
 生成文件 `src/ui/topbar.js`。`export function mount(el)`，顶部工具栏 + 发布检查弹窗 + toast 容器 + 桌面试玩 HUD。
 
 要点：
-- 左：logo「西游·虚境」+ 场景名 input（meta.name 同步）｜菜单按钮组：新建（确认后 store.newScene(demoScene())）、打开（file input .json→importJSON）、导出（Blob 下载 scene.json）、保存（store.save→toast）
+- 左：logo「造梦 · 故事空间」+ 场景名 input（meta.name 同步）｜菜单按钮组：新建（确认后 store.newScene(demoScene())）、打开（file input .json→importJSON）、导出（Blob 下载 scene.json）、保存（store.save→toast）
 - 中：模式切换「编辑|试玩」.btn 组（store.setMode）；gizmo 组 W/E/R（translate/rotate/scale，快捷键联动 active 态，监听 keydown 仅更新 UI）、吸附开关（snap 0.1/15°/0.1）、锁地面开关
 - 右：预算条 .budget（字节MB/视频路数/tris/预估fps，来自 budget(scene)，over 项加 .over 红）→ 每 'change' 重算；「已替换 x/y」计数（objects 里 asset 非空占需素材对象的比例，quad/video_quad/glb 算需素材）；「发布」.btn.primary → 弹 modal：publishCheck 结果 blocks 红 warns 黄（.check-item，可点 jump→store.select(target)）；blocks>0 时确认按钮禁用；确认 → store.emit('published') + toast「已发布快照 v{n}」（版本号存 localStorage 计数）
 - toast：页面 append #toasts div；store.on('card') → 剧情卡 toast（.toast 5s 自动消失）；export 也出 toast

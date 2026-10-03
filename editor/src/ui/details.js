@@ -586,6 +586,7 @@ function renderBaseEditor() {
       ${card('空间对齐', `
         <label class="row field-row"><span>缩放</span><input class="field" type="number" min="0.001" step="0.001" value="${esc(transform.s ?? 1)}" data-base-transform="s"></label>
         <div class="row axis-row"><span class="axis-label">平移</span>${['X', 'Y', 'Z'].map((axis, i) => axisField(axis, `<input class="field" type="number" step="0.01" value="${esc(Number(t[i] ?? 0))}" data-base-position="${i}">`)).join('')}</div>
+        <div class="row axis-row"><span class="axis-label">旋转°</span>${['X', 'Y', 'Z'].map((axis, i) => axisField(axis, `<input class="field" type="number" step="1" value="${esc(Number(transform.euler?.[i] ?? 0))}" data-base-rotation="${i}">`)).join('')}</div>
         <div class="row readonly-row"><span>来源</span><code>${esc(transform.scale_source || 'manual')}</code></div>
         <label class="row field-row"><span>LOD 自动</span><button class="toggle ${base.lod?.enabled ? 'on' : ''}" data-base-action="lod-enabled" aria-pressed="${Boolean(base.lod?.enabled)}"><i></i></button></label>
         <label class="row field-row"><span>当前 LOD</span><select class="field" data-base-lod="current"><option value="high" ${base.lod?.current === 'high' ? 'selected' : ''}>高质量</option><option value="medium" ${base.lod?.current === 'medium' ? 'selected' : ''}>均衡</option><option value="low" ${base.lod?.current === 'low' ? 'selected' : ''}>轻量</option></select></label>
@@ -955,6 +956,13 @@ function bindEvents() {
       const current = [...(store.scene?.base?.transform?.t || [0, 0, 0])];
       current[Number(basePosition.dataset.basePosition)] = Number(basePosition.value) || 0;
       store.setBase?.({ transform: { t: current } });
+      return;
+    }
+    const baseRotation = event.target.closest('[data-base-rotation]');
+    if (baseRotation) {
+      const current = [...(store.scene?.base?.transform?.euler || [0, 0, 0])];
+      current[Number(baseRotation.dataset.baseRotation)] = Number(baseRotation.value) || 0;
+      store.setBase?.({ transform: { euler: current } });
       return;
     }
 

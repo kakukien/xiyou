@@ -103,7 +103,8 @@ function normalizeScene(input) {
       s: Number.isFinite(baseTransform.s) ? baseTransform.s : 1,
       R: Array.isArray(baseTransform.R) ? baseTransform.R : [1, 0, 0, 0, 1, 0, 0, 0, 1],
       t: Array.isArray(baseTransform.t) ? baseTransform.t : [0, 0, 0],
-      scale_source: baseTransform.scale_source || 'manual'
+      scale_source: baseTransform.scale_source || 'manual',
+      euler: Array.isArray(baseTransform.euler) && baseTransform.euler.length === 3 ? baseTransform.euler.map(value => Number(value) || 0) : [0, 0, 0]
     },
     capture_id: typeof base.capture_id === 'string' ? base.capture_id : '',
     capture,

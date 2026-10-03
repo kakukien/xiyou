@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 西游·虚境离线 GPU/媒体 Worker。
+ * 造梦 · 故事空间离线 GPU/媒体 Worker。
  *
  * 目标：把高耗时媒体任务统一成可重试的 job；真正的 Gaussian Splat 重建
  * 可通过 XIYOU_RECONSTRUCTOR_BIN 接入外部 GPU 重建器，当前内置的 prepare
@@ -22,6 +22,7 @@ const queue = []
 const cancelled = new Set()
 let running = 0
 const concurrency = Math.max(1, Number(process.env.XIYOU_WORKER_CONCURRENCY || 1))
+const maxPending = Math.max(concurrency, Number(process.env.XIYOU_WORKER_MAX_PENDING || 3))
 
 function arg(name, fallback = '') {
   const index = process.argv.indexOf(`--${name}`)
@@ -42,7 +43,8 @@ function help() {
   XIYOU_ENGINE_DIR 本地 FFmpeg / COLMAP / Brush 引擎根目录
   XIYOU_ENABLE_BUNDLED_ENGINES=1 使用本地 COLMAP + Brush 完成重建
   XIYOU_RECONSTRUCTOR_BIN 兼容重建器可执行文件路径（优先于本地内置引擎）
-  XIYOU_WORKER_CONCURRENCY 任务并发数，默认 1`)
+  XIYOU_WORKER_CONCURRENCY 任务并发数，默认 1
+  XIYOU_WORKER_MAX_PENDING 待处理任务上限，默认 3，可按机器性能调整`)
 }
 
 function json(res, status, value) {
@@ -393,6 +395,7 @@ async function execute(type, payload) {
 }
 
 function enqueue(type, payload) {
+  if (running + queue.length >= maxPending) throw new Error(`任务队列已满（最多 ${maxPending} 个待处理任务）`)
   const id = randomUUID()
   const job = { id, type, payload, status: 'queued', stage: 'created', message: '排队中', createdAt: new Date().toISOString(), progress: 0, warnings: [], logs: [] }
   jobs.set(id, job); queue.push(job); pump(); return job
@@ -477,7 +480,7 @@ function serve(port) {
     }
     if (req.method === 'GET' && url.pathname === '/health') {
       const local = localEngineHealth()
-      return json(res, 200, { ok: true, running, queued: queue.length, concurrency, local })
+      return json(res, 200, { ok: true, running, queued: queue.length, concurrency, maxPending, local })
     }
     if (req.method === 'GET' && url.pathname === '/jobs') return json(res, 200, [...jobs.values()])
     if (req.method === 'GET' && url.pathname.startsWith('/jobs/')) {
@@ -511,7 +514,7 @@ function serve(port) {
       return json(res, 200, job)
     }
     if (req.method === 'POST' && url.pathname === '/jobs') {
-      try { const request = await parseJobRequest(req); return json(res, 202, enqueue(request.body.type, request.body.payload || {})) } catch (error) { return json(res, 400, { error: error.message }) }
+      try { const request = await parseJobRequest(req); return json(res, 202, enqueue(request.body.type, request.body.payload || {})) } catch (error) { return json(res, 429, { error: error.message }) }
     }
     json(res, 404, { error: 'not found' })
   })

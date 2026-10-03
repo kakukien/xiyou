@@ -28,11 +28,15 @@ export function mount(wrap, viewport) {
   hud.className = 'vp-hud-play';
   hud.style.display = 'none';
 
+  const keyFeedback = document.createElement('div');
+  keyFeedback.className = 'vp-key-feedback';
+  keyFeedback.setAttribute('aria-live', 'polite');
+
   const selectionRect = document.createElement('div');
   selectionRect.className = 'sel-rect';
   selectionRect.style.display = 'none';
 
-  wrap.append(toolbar, rail, labels, minimap, hud, selectionRect);
+  wrap.append(toolbar, rail, labels, minimap, hud, keyFeedback, selectionRect);
 
   const state = {
     view: 'perspective',
@@ -46,7 +50,9 @@ export function mount(wrap, viewport) {
     savedCamera: null,
     labels: new Map(),
     dirtyMap: true,
-    mapBounds: null
+    mapBounds: null,
+    keyFeedbackTimer: null,
+    heldKeys: new Set()
   };
 
   const getCamera = () => viewport.camera || viewport._camera;
@@ -594,6 +600,25 @@ export function mount(wrap, viewport) {
     wrap.releasePointerCapture?.(event.pointerId);
   });
 
+  const keyLabels = { KeyW: 'W', KeyA: 'A', KeyS: 'S', KeyD: 'D', KeyQ: 'Q', KeyE: 'E', ShiftLeft: 'Shift', ShiftRight: 'Shift' };
+  const showKeyFeedback = (code, repeated = false) => {
+    const label = keyLabels[code];
+    if (!label || !viewport.rightMouseDown || repeated) return;
+    const name = localStorage.getItem('xiyou.user') || '当前用户';
+    keyFeedback.textContent = `${name} 刚才按了 ${label}`;
+    keyFeedback.classList.add('show');
+    if (state.keyFeedbackTimer) clearTimeout(state.keyFeedbackTimer);
+    state.keyFeedbackTimer = setTimeout(() => keyFeedback.classList.remove('show'), 900);
+  };
+  const onKeyDown = event => {
+    if (!keyLabels[event.code] || event.target?.matches?.('input,textarea,select,[contenteditable="true"]')) return;
+    state.heldKeys.add(event.code);
+    showKeyFeedback(event.code, event.repeat);
+  };
+  const onKeyUp = event => state.heldKeys.delete(event.code);
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', onKeyUp);
+
   let hudNodeId = null;
   store.on('node-goto', ({ nodeId } = {}) => { hudNodeId = nodeId || null; });
 
@@ -693,6 +718,10 @@ export function mount(wrap, viewport) {
       labels.remove();
       minimap.remove();
       hud.remove();
+      keyFeedback.remove();
+      if (state.keyFeedbackTimer) clearTimeout(state.keyFeedbackTimer);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
       selectionRect.remove();
     }
   };

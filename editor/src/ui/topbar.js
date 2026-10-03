@@ -159,8 +159,8 @@ export function mount(el) {
   const demoButton = document.createElement('button');
   demoButton.className = 'btn';
   demoButton.type = 'button';
-  demoButton.title = '创建空白互动场景';
-  demoButton.textContent = '新建';
+  demoButton.title = '创建空白互动场景（不会新建工程）';
+  demoButton.textContent = '新建场景';
 
   const syncButton = document.createElement('button');
   syncButton.className = 'btn';
@@ -692,7 +692,7 @@ export function mount(el) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         store.newScene(await res.json());
         store.save?.();
-        log('已载入线上正式场景（虚境世界/钟楼等新对象一并带入）');
+        log('已载入线上正式场景（故事空间/钟楼等新对象一并带入）');
       } catch (e) {
         log(`载入线上场景失败：${e?.message || e}`, 'error');
       }

@@ -2,7 +2,7 @@
   "$schema": "https://design-tokens.github.io/community-group/format/",
   "name": "xujing-editor-design-tokens",
   "version": "3.1.0",
-  "description": "西游·虚境 AR 空间编辑器 Design Token 源文件｜浅色专业空间编辑器 v3.1",
+  "description": "造梦 · 故事空间 AR 空间编辑器 Design Token 源文件｜浅色专业空间编辑器 v3.1",
   "color": {
     "brand": {
       "primary": {

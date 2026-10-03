@@ -1,7 +1,7 @@
 重写 `src/ui/topbar.js`（覆盖现有）。`export function mount(el)`，顶栏按设计稿（瓷白）：
 
 ## 结构（左→右，均 flex 居中）
-- `.tb-logo`：橙渐变方块 .mark + 「西游·虚境」+ 竖线分隔 + 场景名 store.scene.meta.name
+- `.tb-logo`：橙渐变方块 .mark + 「造梦 · 故事空间」+ 竖线分隔 + 场景名 store.scene.meta.name
 - `.tb-saved`：「已保存 HH:MM」灰小字——store.save 后更新（订阅 'change' 非 transient 节流 2s；meta.dirty 时显示「编辑中」）
 - `.mode-toggle`：创作/试玩 两钮切换 store.setMode
 - 中段空（presence 组件由 main.js 追加在右侧前）
