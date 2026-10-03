@@ -444,7 +444,6 @@ function serveStatic(res, path, contentType = 'application/javascript') {
   res.writeHead(200, { 'content-type': `${contentType}; charset=utf-8`, 'cache-control': 'no-store', 'access-control-allow-origin': '*', 'access-control-allow-private-network': 'true' })
   createReadStream(path).on('error', () => res.end()).pipe(res)
 }
-}
 
 function serve(port) {
   const server = createServer(async (req, res) => {
