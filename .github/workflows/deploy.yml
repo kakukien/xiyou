@@ -28,12 +28,30 @@ jobs:
       - name: pack
         run: tar -czf site.tgz --exclude='*.ply' -C editor/dist .
 
+      # 54MB 包走 CF 回源常超 100s 网关超时：服务端其实已完成部署，响应被 CF 吃掉回 504
+      # 所以不拿 curl 退出码当成败——POST 后轮询 status，last_success 时间戳变了才算真部署
       - name: publish
         env:
           XIYOU_PUBLISH_TOKEN: ${{ secrets.XIYOU_PUBLISH_TOKEN }}
         run: |
-          curl -fsS --retry 3 -X POST "https://agentpay.xx.kg/publish/xiyou" \
+          status_ts() {
+            curl -fsS "https://agentpay.xx.kg/publish/xiyou/status" \
+              -H "User-Agent: agentpay-publish-client/1.2" \
+              -H "X-Publish-Token: $XIYOU_PUBLISH_TOKEN" \
+            | python3 -c "import json,sys; print(((json.load(sys.stdin).get('last_success') or {}).get('ts') or ''))" 2>/dev/null || echo ""
+          }
+          BEFORE=$(status_ts)
+          echo "last_success before: ${BEFORE:-<none>}"
+          curl -sS -X POST "https://agentpay.xx.kg/publish/xiyou" \
             -H "User-Agent: agentpay-publish-client/1.2" \
             -H "X-Publish-Token: $XIYOU_PUBLISH_TOKEN" \
             -H "X-Publish-Filename: site.tgz" \
-            --data-binary @site.tgz
+            --data-binary @site.tgz || echo "POST ended non-2xx (CF timeout is expected for large packs)"
+          for i in $(seq 1 24); do
+            sleep 5
+            AFTER=$(status_ts)
+            if [ -n "$AFTER" ] && [ "$AFTER" != "$BEFORE" ]; then
+              echo "deploy confirmed: $AFTER"; exit 0
+            fi
+          done
+          echo "publish not confirmed within 120s"; exit 1
