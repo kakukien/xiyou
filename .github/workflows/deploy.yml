@@ -28,30 +28,61 @@ jobs:
       - name: pack
         run: tar -czf site.tgz --exclude='*.ply' --exclude='*.glb' -C editor/dist .
 
-      # 54MB 包走 CF 回源常超 100s 网关超时：服务端其实已完成部署，响应被 CF 吃掉回 504
-      # 所以不拿 curl 退出码当成败——POST 后轮询 status，last_success 时间戳变了才算真部署
-      - name: publish
+      # 大包体过不了 CF→源站（100s 预算内传不完直接断）。改走端点的 source_url 通道：
+      # site.tgz 先传 COS（CI→COS 快），POST 只带一个预签名 GET（小 JSON 过 CF 无压力），
+      # 服务器同地域从 COS 拉包部署。轮询 status 的 last_success 时间戳确认落地。
+      - name: setup cos sdk
+        run: pip install cos-python-sdk-v5 -q
+
+      - name: publish via COS relay
         env:
           XIYOU_PUBLISH_TOKEN: ${{ secrets.XIYOU_PUBLISH_TOKEN }}
+          XIYOU_COS: ${{ secrets.XIYOU_COS }}
         run: |
-          status_ts() {
-            curl -fsS "https://agentpay.xx.kg/publish/xiyou/status" \
-              -H "User-Agent: agentpay-publish-client/1.2" \
-              -H "X-Publish-Token: $XIYOU_PUBLISH_TOKEN" \
-            | python3 -c "import json,sys; print(((json.load(sys.stdin).get('last_success') or {}).get('ts') or ''))" 2>/dev/null || echo ""
-          }
-          BEFORE=$(status_ts)
-          echo "last_success before: ${BEFORE:-<none>}"
-          curl -sS -X POST "https://agentpay.xx.kg/publish/xiyou" \
-            -H "User-Agent: agentpay-publish-client/1.2" \
-            -H "X-Publish-Token: $XIYOU_PUBLISH_TOKEN" \
-            -H "X-Publish-Filename: site.tgz" \
-            --data-binary @site.tgz || echo "POST ended non-2xx (CF timeout is expected for large packs)"
-          for i in $(seq 1 24); do
-            sleep 5
-            AFTER=$(status_ts)
-            if [ -n "$AFTER" ] && [ "$AFTER" != "$BEFORE" ]; then
-              echo "deploy confirmed: $AFTER"; exit 0
-            fi
-          done
-          echo "publish not confirmed within 120s"; exit 1
+          python3 - <<'PY'
+          import hashlib, json, os, time, urllib.request
+
+          cos = json.loads(os.environ["XIYOU_COS"])
+          token = os.environ["XIYOU_PUBLISH_TOKEN"]
+          key = "xiyou-ci/site-%s.tgz" % time.strftime("%Y%m%d-%H%M%S")
+
+          # --- 1) site.tgz -> COS（走 SDK，自动分片） ---
+          from qcloud_cos import CosConfig, CosS3Client
+          cli = CosS3Client(CosConfig(Region=cos["region"], SecretId=cos["secret_id"],
+                                      SecretKey=cos["secret_key"], Scheme="https"))
+          data = open("site.tgz", "rb").read()
+          cli.put_object(Bucket=cos["bucket"], Key=key, Body=data)
+          src_url = cli.get_presigned_url(Bucket=cos["bucket"], Key=key, Method="GET", Expired=3600)
+          print("cos uploaded: %s (%d bytes)" % (key, len(data)))
+
+          # --- 2) POST source_url（小 JSON，过 CF 无压力） ---
+          headers = {"User-Agent": "agentpay-publish-client/1.2", "X-Publish-Token": token}
+          req_status = urllib.request.Request("https://agentpay.xx.kg/publish/xiyou/status", headers=headers)
+          def last_ts():
+              try:
+                  with urllib.request.urlopen(req_status, timeout=15) as r:
+                      return (json.load(r).get("last_success") or {}).get("ts") or ""
+              except Exception:
+                  return ""
+          before = last_ts()
+          print("last_success before:", before or "<none>")
+          body = json.dumps({"source_url": src_url, "filename": "site.tgz",
+                             "sha256": hashlib.sha256(data).hexdigest()}).encode()
+          req = urllib.request.Request("https://agentpay.xx.kg/publish/xiyou", data=body,
+                                       headers={**headers, "Content-Type": "application/json"})
+          try:
+              with urllib.request.urlopen(req, timeout=120) as r:
+                  print("publish resp:", r.status, r.read()[:300])
+          except Exception as e:
+              print("publish POST non-2xx (deploy may still land): %s" % e)
+
+          # --- 3) 轮询 status 确认部署落地 ---
+          for i in range(24):
+              ts = last_ts()
+              if ts and ts != before:
+                  print("deploy confirmed:", ts)
+                  raise SystemExit(0)
+              time.sleep(5)
+          print("publish not confirmed within 120s")
+          raise SystemExit(1)
+          PY
