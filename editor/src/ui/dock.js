@@ -415,10 +415,9 @@ function renderAssets() {
   const sharedScope = assetFolder.startsWith('s:')
   const stripWrap = document.createElement('div')
   stripWrap.className = 'cb-strip-wrap'
-  if (sharedScope) stripWrap.appendChild(renderSharedElementLibrary())
-
   const strip = document.createElement('div');
   strip.className = 'asset-strip';
+  if (sharedScope) stripWrap.appendChild(renderSharedElementLibrary())
 
   const currentFolderId = assetFolder.slice(2)
   // fld_shared 是旧项目目录里的归档：显示并入共享素材库，不再出现在项目区
@@ -436,6 +435,72 @@ function renderAssets() {
     const matchesFolder = currentFolderId === '' || (asset.folder || '') === currentFolderId;
     return matchesQuery && matchesKind && matchesFolder;
   });
+  const importCard = document.createElement('button');
+  importCard.type = 'button';
+  importCard.className = 'cb-card cb-import';
+  importCard.innerHTML = `${iconMarkup('upload-2-line', '导入素材')}<span>导入素材</span>`;
+  importCard.title = '导入图片、视频、音频、GLB 或高斯泼溅 PLY / SOG / SPZ 文件';
+
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.multiple = true;
+  input.accept = 'image/*,video/*,audio/*,.glb,.gltf,.sog,.ply,.spz,.splat,.ksplat,model/gltf-binary,model/gltf+json';
+  input.hidden = true;
+
+  input.addEventListener('change', async () => {
+    for (const file of Array.from(input.files || [])) {
+      const mime = file.type || '';
+      let type = 'asset';
+      if (mime.startsWith('image/')) type = 'image';
+      else if (mime.startsWith('video/')) type = 'video';
+      else if (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf')) type = 'glb';
+      else if (/\.(sog|ply|spz|splat|ksplat)$/i.test(file.name)) type = 'splat';
+      else if (mime.startsWith('audio/')) type = 'audio';
+
+      let url = `local://${file.name}`;
+      // 本机导入的素材用 blob URL 挂起来，缩略图和贴图立即可见
+      if (!window.__xiyouBlobMap) window.__xiyouBlobMap = new Map();
+      window.__xiyouBlobMap.set(url, URL.createObjectURL(file));
+
+      const assetProps = {
+        name: file.name,
+        kind: type === 'glb' ? 'model' : type,
+        type,
+        folder: currentFolderId,
+        size: file.size,
+        bytes: file.size,
+        mime,
+        url,
+        metadata: type === 'splat' ? { format: file.name.split('.').pop()?.toLowerCase() || 'ply', local: true } : {}
+      }
+      const asset = sharedScope
+        ? projects.addSharedAsset(assetProps)
+        : store.addAsset(assetProps)
+      if (asset && type === 'splat') {
+        const plyMeta = /\.ply$/i.test(file.name) ? await inspectPly(file) : null
+        if (plyMeta) {
+          asset.metadata = { ...(asset.metadata || {}), ply: plyMeta }
+          const patch = {
+            sog_url: url,
+            transform: plyMeta.transform,
+            coordinate_system: plyMeta.coordinateSystem,
+            editing: { transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: 1 }, crop: null }
+          }
+          store.updateAsset?.(asset.id, { metadata: asset.metadata })
+          store.setBase?.(patch)
+          log(`已分析 PLY：${plyMeta.vertexCount.toLocaleString()} 个 Gaussian，已按 Y-up 居中并落地`, 'info')
+        } else {
+          store.setBase?.({ sog_url: url, transform: { s: 1, R: [1, 0, 0, 0, 1, 0, 0, 0, 1], t: [0, 0, 0], scale_source: 'manual' } });
+          log(`已导入高斯泼溅「${file.name}」，正在加载到底座`, 'info');
+        }
+      }
+    }
+    input.value = '';
+  });
+
+  importCard.addEventListener('click', () => input.click());
+  importCard.appendChild(input);
+  strip.appendChild(importCard)
   assets.forEach(asset => {
     const card = document.createElement('div');
     card.className = `cb-card${selectedAssetId === asset.id ? ' active' : ''}`;
@@ -511,72 +576,7 @@ function renderAssets() {
     strip.appendChild(card);
   });
 
-  const importCard = document.createElement('button');
-  importCard.type = 'button';
-  importCard.className = 'cb-card cb-import';
-  importCard.innerHTML = `${iconMarkup('upload-2-line', '导入素材')}<span>导入素材</span>`;
-  importCard.title = '导入图片、视频、音频、GLB 或高斯泼溅 PLY / SOG / SPZ 文件';
 
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.multiple = true;
-  input.accept = 'image/*,video/*,audio/*,.glb,.gltf,.sog,.ply,.spz,.splat,.ksplat,model/gltf-binary,model/gltf+json';
-  input.hidden = true;
-
-  input.addEventListener('change', async () => {
-    for (const file of Array.from(input.files || [])) {
-      const mime = file.type || '';
-      let type = 'asset';
-      if (mime.startsWith('image/')) type = 'image';
-      else if (mime.startsWith('video/')) type = 'video';
-      else if (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf')) type = 'glb';
-      else if (/\.(sog|ply|spz|splat|ksplat)$/i.test(file.name)) type = 'splat';
-      else if (mime.startsWith('audio/')) type = 'audio';
-
-      let url = `local://${file.name}`;
-      // 本机导入的素材用 blob URL 挂起来，缩略图和贴图立即可见
-      if (!window.__xiyouBlobMap) window.__xiyouBlobMap = new Map();
-      window.__xiyouBlobMap.set(url, URL.createObjectURL(file));
-
-      const assetProps = {
-        name: file.name,
-        kind: type === 'glb' ? 'model' : type,
-        type,
-        folder: currentFolderId,
-        size: file.size,
-        bytes: file.size,
-        mime,
-        url,
-        metadata: type === 'splat' ? { format: file.name.split('.').pop()?.toLowerCase() || 'ply', local: true } : {}
-      }
-      const asset = sharedScope
-        ? projects.addSharedAsset(assetProps)
-        : store.addAsset(assetProps)
-      if (asset && type === 'splat') {
-        const plyMeta = /\.ply$/i.test(file.name) ? await inspectPly(file) : null
-        if (plyMeta) {
-          asset.metadata = { ...(asset.metadata || {}), ply: plyMeta }
-          const patch = {
-            sog_url: url,
-            transform: plyMeta.transform,
-            coordinate_system: plyMeta.coordinateSystem,
-            editing: { transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: 1 }, crop: null }
-          }
-          store.updateAsset?.(asset.id, { metadata: asset.metadata })
-          store.setBase?.(patch)
-          log(`已分析 PLY：${plyMeta.vertexCount.toLocaleString()} 个 Gaussian，已按 Y-up 居中并落地`, 'info')
-        } else {
-          store.setBase?.({ sog_url: url, transform: { s: 1, R: [1, 0, 0, 0, 1, 0, 0, 0, 1], t: [0, 0, 0], scale_source: 'manual' } });
-          log(`已导入高斯泼溅「${file.name}」，正在加载到底座`, 'info');
-        }
-      }
-    }
-    input.value = '';
-  });
-
-  importCard.addEventListener('click', () => input.click());
-  importCard.appendChild(input);
-  strip.appendChild(importCard);
 
   stripWrap.appendChild(strip)
   body.appendChild(stripWrap)
