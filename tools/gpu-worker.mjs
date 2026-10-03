@@ -368,8 +368,12 @@ function engineStatus(name) {
 
 function localEngineHealth() {
   const engines = ['ffmpeg', 'ffprobe', 'colmap', 'brush'].map(engineStatus)
-  const missing = engines.filter(item => !item.exists).map(item => item.name)
-  return { ready: missing.length === 0, engines, missing }
+  const external = process.env.XIYOU_RECONSTRUCTOR_BIN
+    ? { name: 'reconstructor', path: resolve(process.env.XIYOU_RECONSTRUCTOR_BIN), exists: existsSync(resolve(process.env.XIYOU_RECONSTRUCTOR_BIN)) }
+    : null
+  const missing = engines.filter(item => item.name === 'ffmpeg' || item.name === 'ffprobe' || !external).filter(item => !item.exists).map(item => item.name)
+  const ready = missing.length === 0 && (Boolean(external?.exists) || engines.every(item => item.name === 'ffmpeg' || item.name === 'ffprobe' || item.exists))
+  return { ready, mode: external?.exists ? 'external-reconstructor' : 'bundled-colmap-brush', engines, external, missing }
 }
 
 function serve(port) {

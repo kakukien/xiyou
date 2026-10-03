@@ -180,7 +180,9 @@ function publishPeers() {
       clientId,
       name: state.name || `访客${clientId}`,
       color: state.color || palette[clientId % palette.length],
-      sel: Array.isArray(state.sel) ? state.sel : []
+      sel: Array.isArray(state.sel) ? state.sel : [],
+      role: state.role || 'editor',
+      cursor: state.cursor && typeof state.cursor === 'object' ? state.cursor : { visible: false }
     })
   }
 
@@ -188,7 +190,8 @@ function publishPeers() {
 }
 
 function emitStatus(extra = {}) {
-  store.emit('collab-status', { connected: Boolean(provider && activeConnection), connecting: Boolean(activeConnection && !collab.connected), room: activeConnection?.room || '', url: activeConnection?.url || '', ...extra })
+  const connected = extra.connected ?? Boolean(provider && activeConnection && collab.connected)
+  store.emit('collab-status', { connected, connecting: Boolean(extra.connecting ?? (activeConnection && !collab.connected)), room: activeConnection?.room || '', url: activeConnection?.url || '', ...extra })
 }
 
 function updateLocalAwareness() {
@@ -199,6 +202,8 @@ function updateLocalAwareness() {
     ...current,
     name: activeUser?.name || current.name || `访客${doc.clientID}`,
     color: activeUser?.color || current.color || palette[doc.clientID % palette.length],
+    role: activeUser?.role || current.role || 'editor',
+    cursor: current.cursor || { visible: false },
     sel: store.selected()
   })
 }
@@ -317,7 +322,8 @@ export const collab = {
 
     activeUser = {
       name: user.name || '',
-      color: user.color || palette[doc.clientID % palette.length]
+      color: user.color || palette[doc.clientID % palette.length],
+      role: user.role || 'editor'
     }
 
     const opts = { connect: true }
@@ -402,7 +408,9 @@ export const collab = {
         clientId,
         name: state.name || `访客${clientId}`,
         color: state.color || palette[clientId % palette.length],
-        sel: Array.isArray(state.sel) ? state.sel : []
+        sel: Array.isArray(state.sel) ? state.sel : [],
+        role: state.role || 'editor',
+        cursor: state.cursor && typeof state.cursor === 'object' ? state.cursor : { visible: false }
       })
     }
 
@@ -413,6 +421,12 @@ export const collab = {
     const id = String(objectId)
     const peer = this.peers().find(item => item.sel.includes(id))
     return peer ? { name: peer.name, color: peer.color } : null
+  },
+
+  setCursor(cursor) {
+    if (!provider?.awareness || !doc) return
+    const current = provider.awareness.getLocalState() || {}
+    provider.awareness.setLocalState({ ...current, cursor: cursor && typeof cursor === 'object' ? cursor : { visible: false } })
   },
 
   undo() {

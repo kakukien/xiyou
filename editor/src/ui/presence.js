@@ -52,12 +52,18 @@ export function mount(el) {
   let selectedIds = [];
 
   const user = getUser();
+  const role = getRole();
   const params = new URLSearchParams(location.search);
   const hasExplicitCollab = params.has('ws') || params.has('collab') || location.hostname === 'agentpay.xx.kg';
   const wsUrl = params.get('ws') ||
     (location.hostname === 'agentpay.xx.kg'
       ? 'wss://agentpay.xx.kg/xiyou-yjs'
       : `ws://${location.hostname}:8022`);
+
+  function getRole() {
+    const requested = new URLSearchParams(location.search).get('role') || localStorage.getItem('xiyou.role') || 'editor'
+    return ['manager', 'editor', 'previewer'].includes(requested) ? requested : 'editor'
+  }
 
   function getUser() {
     const key = 'xiyou.user';
@@ -111,7 +117,7 @@ export function mount(el) {
     statusText.style.color = connectionState === 'connected' ? '' : 'var(--accent,#e8842c)';
 
     peersCount.textContent = connectionState === 'connected'
-      ? `${peers.length} 人在线`
+      ? `${peers.length + 1} 人在线`
       : '';
 
     avatars.replaceChildren();
@@ -174,7 +180,7 @@ export function mount(el) {
       || '';
     try {
       Promise.resolve(
-        collab.connect({ url: wsUrl, room, user: { name: user, key: keyParam } })
+        collab.connect({ url: wsUrl, room, user: { name: user, role, key: keyParam } })
       ).catch(error => {
         connectionState = 'disconnected';
         renderStatus();

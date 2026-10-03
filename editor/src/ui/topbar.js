@@ -222,6 +222,10 @@ export function mount(el) {
   undoInput.className = 'field tb-undo-input';
   undoWrap.appendChild(undoInput);
 
+  const modeTools = document.createElement('div')
+  modeTools.className = 'tb-mode-tools'
+  modeTools.append(modeToggle, undoWrap, splatToggle)
+
   const projectTools = document.createElement('div')
   projectTools.className = 'tb-group tb-project-tools'
   projectTools.append(draftChip, projSelect, projNewBtn)
@@ -231,7 +235,7 @@ export function mount(el) {
   sceneActions.append(demoButton, syncButton, arButton, anchorButton, previewButton, publishButton)
 
   sceneActions.append(noticeButton)
-  bar.append(logo, baseLoad, splatToggle, undoWrap, modeToggle, spacer, projectTools, sceneActions)
+  bar.append(logo, baseLoad, modeTools, spacer, projectTools, sceneActions)
 
   el.appendChild(bar);
 
