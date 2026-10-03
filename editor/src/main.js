@@ -159,8 +159,8 @@ projects.on('ready', () => {
   }
   const existing = new Set(projects.sharedAssets().map(a => a.id))
   const BUILTIN_SHARED = [
-    { id: 'a_world', name: '虚境世界·体素.glb', url: 'assets/xiyou_world.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 1915952, mime: 'model/gltf-binary' },
-    { id: 'a_belltower', name: '西安钟楼·体块.glb', url: 'assets/xiyou_belltower.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 782288, mime: 'model/gltf-binary' },
+    { id: 'a_world', name: '虚境世界·体素.glb', url: 'assets/xiyou_world.glb', kind: 'model', type: 'glb', folder: 'fld_shared', tags: ['环境', '体素', '场景'], bytes: 1915952, mime: 'model/gltf-binary' },
+    { id: 'a_belltower', name: '西安钟楼·体块.glb', url: 'assets/xiyou_belltower.glb', kind: 'model', type: 'glb', folder: 'fld_shared', tags: ['建筑', '钟楼', '西安'], bytes: 782288, mime: 'model/gltf-binary' },
   ]
   const seed = [
     ...BUILTIN_SHARED,

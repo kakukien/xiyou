@@ -252,11 +252,7 @@ function renderObjects(scene, query, readOnly) {
   `).join('');
 
   return `
-    ${renderElementCatalog(query, readOnly)}
-    <div class="ol-section-title">
-      <span>场景对象</span>
-      ${readOnly ? '' : `<button class="ol-inline-add" type="button" data-action="add-object">${iconMarkup('add-line')} 添加</button>`}
-    </div>
+    <div class="ol-section-title"><span>场景对象</span><span class="ol-section-hint">${objects.length} 项</span></div>
     <div class="ol-object-groups">${groupsHtml || '<div class="ol-empty">暂无场景对象</div>'}</div>
   `;
 }
@@ -412,6 +408,7 @@ export function mount(el) {
       row.addEventListener('click', event => {
         if (event.target.closest('[data-delete-zone]')) return
         store.select(row.dataset.zoneId)
+        viewport.focus?.(row.dataset.zoneId)
       })
     })
 
@@ -448,6 +445,7 @@ export function mount(el) {
       row.addEventListener('click', event => {
         if (event.target.closest('[data-delete-anchor]')) return;
         store.select(row.dataset.anchorId);
+        viewport.focus?.(row.dataset.anchorId);
       });
     });
 
@@ -489,6 +487,7 @@ export function mount(el) {
       row.addEventListener('click', event => {
         if (event.target.closest('[data-delete-object]')) return;
         store.select(row.dataset.objectId);
+        viewport.focus?.(row.dataset.objectId);
       });
 
       row.addEventListener('dblclick', () => {

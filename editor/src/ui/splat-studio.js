@@ -717,7 +717,7 @@ export function mount(root) {
       ${state.source && !state.asset ? `<button class="studio-generate-btn" data-studio-generate ${state.busy ? 'disabled' : ''}>${iconMarkup(state.busy ? 'loader-4-line' : 'sparkling-2-line')} ${state.busy ? '生成中…' : '开始生成高斯场景'}</button>` : ''}
       ${state.step === 'job' && state.busy ? `<button class="btn studio-cancel-btn" data-studio-cancel>${iconMarkup('close-line')} 取消重建</button>` : ''}
       ${state.job && !state.busy && ['cancelled', 'failed'].includes(state.job.status) ? `<div class="studio-job-actions"><button class="btn" data-studio-resume>${iconMarkup('play-line')} 恢复任务</button><button class="btn" data-studio-retry>${iconMarkup('refresh-line')} 重新提交</button></div>` : ''}
-      <div class="studio-workflow-note"><i>${iconMarkup('information-line')}</i><span>本地 Companion 接收浏览器 multipart 文件；远程 Provider 使用同一任务契约。未配置真实重建器时只生成输入包，不会伪装成已完成 Gaussian 训练。</span></div>`
+      <div class="studio-workflow-note" tabindex="0" role="note" title="查看 Provider 说明"><i>${iconMarkup('information-line')}</i><span>本地 Companion 接收浏览器 multipart 文件；远程 Provider 使用同一任务契约。未配置真实重建器时只生成输入包，不会伪装成已完成 Gaussian 训练。</span></div>`
   }
 
   function metaMarkup() {

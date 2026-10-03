@@ -861,7 +861,7 @@ html,body,#app { background:var(--bg0); color:var(--fg); }
 .component-card-body strong { color:var(--ui-ink); font-size:13px; }
 .component-card-body span { color:var(--ui-muted); font-size:11px; line-height:1.45; }
 .component-card-body small { display:inline-flex; width:max-content; padding:2px 7px; border-radius:999px; background:#eef5ff; color:#4d78b6; font-size:10px; }
-.component-card > .btn { align-self:center; min-width:60px; }
+.component-card > .btn { align-self:start; margin-top:1px; min-width:60px; }
 .component-selection-hint { min-height:38px; border-bottom:1px solid var(--ui-line-soft); background:#fffaf4; color:#c36a22; }
 
 /* Timeline editing surface: toolbar, add-track row and keyframe editor use one grid. */
@@ -1648,3 +1648,39 @@ body.studio-footer-resizing .studio-viewport canvas { pointer-events:none; }
   #topbar .tb-mode-tools .mode-toggle { height:auto; }
   #topbar .tb-mode-tools .tb-undo-limit { height:auto; min-height:0; }
 }
+
+/* 资源库 / 互动组件共享元素：元素添加入口统一为一套紧凑卡片语言。 */
+.shared-element-library { padding:10px 14px 8px; border-bottom:1px solid var(--ui-line-soft); background:#fbfcfd; }
+.shared-element-library-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+.shared-element-library-head > div { display:flex; flex-direction:column; gap:2px; }
+.shared-element-library-head strong { color:var(--ui-ink); font-size:12px; }
+.shared-element-library-head span { color:var(--ui-muted); font-size:10px; }
+.shared-element-library-count { color:var(--ui-subtle); font:10px var(--mono); }
+.shared-element-categories { display:flex; gap:8px; overflow:auto; padding-bottom:2px; }
+.shared-element-category { min-width:180px; }
+.shared-element-category-title { display:flex; align-items:center; justify-content:space-between; margin-bottom:5px; color:var(--ui-muted); font-size:10px; font-weight:700; }
+.shared-element-category-title small { color:var(--ui-subtle); font:10px var(--mono); }
+.shared-element-grid { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:5px; }
+.shared-element-card { min-width:0; min-height:58px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:5px 3px; border:1px solid var(--ui-line); border-radius:6px; background:#fff; color:var(--ui-muted); cursor:pointer; }
+.shared-element-card:hover { border-color:var(--ui-accent); background:var(--ui-accent-soft); color:var(--ui-accent); }
+.shared-element-icon { font-size:17px; line-height:1; }
+.shared-element-name { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; }
+.shared-element-action { color:var(--ui-accent); font-size:9px; }
+.ol-section-hint { color:var(--ui-subtle); font:10px var(--mono); }
+
+/* 底部资源库与高斯任务栏统一拖拽握把、Tab 高度和视觉节奏。 */
+#dock > .dock-resize { top:-6px; height:14px; display:flex; align-items:flex-start; justify-content:center; background:transparent; }
+#dock > .dock-resize .dock-grip-pill { width:48px; height:4px; margin-top:3px; border-radius:999px; background:#aab7c3; }
+#dock > .dock-resize:hover .dock-grip-pill { width:64px; height:5px; background:var(--ui-accent); }
+.dock-tabs { height:42px; min-height:42px; }
+.dock-tabs .tab { height:42px; min-height:42px; }
+.studio-footer-tabs { height:42px; min-height:42px; }
+.studio-footer-tabs button { height:42px; min-height:42px; display:inline-flex; align-items:center; }
+
+/* 生成任务的取消操作不贴左边，并将说明收进帮助图标。 */
+.studio-cancel-btn { width:calc(100% - 28px); min-height:38px; margin:0 14px 12px; justify-content:center; }
+.studio-workflow-note { position:relative; width:30px; min-height:30px; margin:4px 14px 14px auto; padding:0; border:0; border-radius:50%; background:var(--ui-accent-soft); color:var(--ui-accent); align-items:center; justify-content:center; overflow:visible; }
+.studio-workflow-note > i { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; }
+.studio-workflow-note > span { position:absolute; z-index:20; right:0; bottom:calc(100% + 8px); width:250px; padding:9px 10px; border:1px solid #f2cd9d; border-radius:7px; background:#fffaf4; color:#7a5a3b; font-size:10px; line-height:1.5; box-shadow:0 4px 12px rgba(35,49,60,.12); opacity:0; visibility:hidden; pointer-events:none; transition:opacity 140ms ease, visibility 140ms ease; }
+.studio-workflow-note:hover > span, .studio-workflow-note:focus-within > span { opacity:1; visibility:visible; }
+@media (prefers-reduced-motion:reduce) { .studio-workflow-note > span { transition:none; } }
