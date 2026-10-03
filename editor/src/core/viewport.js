@@ -1268,6 +1268,25 @@ export const viewport = {
     return true
   },
 
+  focusBase() {
+    const target = this.splatViewer?.splatMesh || this.baseGroup;
+    if (!target || !this.camera || !this.controls) return;
+    const box = new THREE.Box3().setFromObject(target);
+    if (box.isEmpty()) return;
+    const sphere = box.getBoundingSphere(new THREE.Sphere());
+    const center = sphere.center.clone();
+    const radius = Math.max(sphere.radius, 0.5);
+    const direction = new THREE.Vector3(0.55, 0.5, 0.75).normalize();
+    this.focusState = {
+      elapsed: 0,
+      duration: 0.5,
+      fromPosition: this.camera.position.clone(),
+      fromTarget: this.controls.target.clone(),
+      toPosition: center.clone().add(direction.multiplyScalar(radius * 2.2)),
+      toTarget: center
+    };
+  },
+
   focus(id) {
     const node = this.nodes.get(id) || this.zoneNodes?.get(id);
     if (!node || !this.camera || !this.controls) return;

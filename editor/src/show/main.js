@@ -75,9 +75,9 @@ function buildScene() {
   // 场景对象
   const assets = sceneData.meta?.assets || [];
   for (const [id, objDef] of Object.entries(sceneData.objects || {})) {
-    if (objDef.visible === false) continue;
     try {
       const node = createNode({ ...objDef, id }, assets);
+      node.visible = objDef.visible !== false; // 隐藏对象照样构建，交互/时间线可随时唤出
       nodeMap.set(id, node);
       sceneContent.add(node);
     } catch (e) { console.warn('object build fail', id, e); }
@@ -142,6 +142,10 @@ function fireTap(objId) {
       if (act.action === 'play_seq') playSeq(act.args?.seqId || act.args?.seq || act.args?.id);
       else if (act.action === 'show_card' || act.action === 'card') showCard(act.args?.text || act.args?.copy || '');
       else if (act.action === 'highlight') flashNode(trg.target);
+      else if (act.action === 'toggle_visible' || act.action === 'show' || act.action === 'hide') {
+        const node = nodeMap.get(act.args?.target || trg.target);
+        if (node) node.visible = act.action === 'show' ? true : act.action === 'hide' ? false : !node.visible;
+      }
     }
   }
 }

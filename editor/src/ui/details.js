@@ -230,6 +230,14 @@ function renderMaterial(obj) {
     <label class="row field-row"><span>材质</span><select class="field" data-material="type">${options.map(item => `<option value="${item}" ${material.type === item ? 'selected' : ''}>${MATERIAL_LABELS[item] || item}</option>`).join('')}</select></label>
     <div class="slider-row"><span>透明度</span><input type="range" min="0" max="1" step="0.01" value="${esc(material.opacity ?? 1)}" data-material="opacity"><output>${Number(material.opacity ?? 1).toFixed(2)}</output></div>
     ${type === 'splat_segment' ? `<div class="slider-row"><span>点大小</span><input type="range" min="0.005" max="0.1" step="0.001" value="${esc(pointSize)}" data-material="point_size"><output>${Number(pointSize).toFixed(3)}</output></div>` : ''}
+    ${type === 'glb' ? `
+      <label class="row field-row"><span>基础色</span><input class="field color-field" type="color" value="${esc(material.color || '#ffffff')}" data-material="color"></label>
+      <label class="row field-row"><span>自发光色</span><input class="field color-field" type="color" value="${esc(material.emissive || '#000000')}" data-material="emissive"></label>
+      <div class="slider-row"><span>自发光强度</span><input type="range" min="0" max="5" step="0.1" value="${esc(material.emissiveIntensity ?? 0)}" data-material="emissiveIntensity"><output>${Number(material.emissiveIntensity ?? 0).toFixed(1)}</output></div>
+      <div class="slider-row"><span>金属度</span><input type="range" min="0" max="1" step="0.05" value="${esc(material.metalness ?? 0)}" data-material="metalness"><output>${Number(material.metalness ?? 0).toFixed(2)}</output></div>
+      <div class="slider-row"><span>粗糙度</span><input type="range" min="0" max="1" step="0.05" value="${esc(material.roughness ?? 1)}" data-material="roughness"><output>${Number(material.roughness ?? 1).toFixed(2)}</output></div>
+      <div class="row"><button class="btn btn-secondary btn-sm" data-action="material-reset">重置材质</button></div>
+    ` : ''}
     <label class="row toggle-row"><span>可见</span><button class="toggle ${obj.visible !== false ? 'on' : ''}" data-action="visible" aria-pressed="${obj.visible !== false}"><i></i></button></label>
   `);
 }
@@ -561,6 +569,7 @@ function renderBaseEditor() {
         ${baseUploadButton('高斯泼溅底座', '.ply,.sog,.spz,.splat,.ksplat', 'sog_url', '支持 PLY / SOG / SPZ / SPLAT / KSPLAT')}
         <label class="row field-row"><span>资源地址</span><input class="field" value="${esc(base.sog_url || '')}" placeholder="可选远程 PLY / SOG / SPZ URL" data-base-field="sog_url"></label>
         <label class="row field-row"><span>编辑器加载点云</span><button class="toggle ${base.editor_load !== false ? 'on' : ''}" data-base-action="editor-load" title="关闭后编辑器不再下载/渲染点云，只显示占位底座；不影响已发布的 AR 端" aria-pressed="${base.editor_load !== false}"><i></i></button></label>
+        <div class="row"><button class="btn btn-secondary btn-sm" data-base-action="focus-base">定位到底座</button></div>
         ${baseUploadButton('碰撞体', '.glb,.gltf', 'collider_url', '可选，用于地面落点与禁布检测')}
         <label class="row field-row"><span>碰撞地址</span><input class="field" value="${esc(base.collider_url || '')}" placeholder="可选 Collider GLB / GLTF URL" data-base-field="collider_url"></label>
         <label class="row field-row"><span>碰撞可视化</span><button class="toggle ${base.collider?.visible ? 'on' : ''}" data-base-action="collider-visible" aria-pressed="${Boolean(base.collider?.visible)}"><i></i></button></label>
@@ -693,6 +702,7 @@ function bindEvents() {
     if (baseAction) {
       const key = baseAction.dataset.baseAction;
       if (key === 'collider-visible') store.setBase?.({ collider: { ...(store.scene.base.collider || {}), visible: !store.scene.base.collider?.visible } });
+      if (key === 'focus-base') window.__xiyou?.viewport?.focusBase?.();
       if (key === 'lod-enabled') store.setBase?.({ lod: { ...(store.scene.base.lod || {}), enabled: !store.scene.base.lod?.enabled } });
       if (key === 'editor-load') {
         const next = store.scene.base.editor_load === false
@@ -743,6 +753,13 @@ function bindEvents() {
     if (visible) {
       const obj = getSelectedObject();
       if (obj) updateObject(obj.id, { visible: obj.visible === false });
+      return;
+    }
+
+    const materialReset = event.target.closest('[data-action="material-reset"]');
+    if (materialReset) {
+      const obj = getSelectedObject();
+      if (obj) updateObject(obj.id, { material: { color: undefined, emissive: undefined, emissiveIntensity: undefined, metalness: undefined, roughness: undefined, opacity: 1 } });
       return;
     }
 
@@ -822,10 +839,11 @@ function bindEvents() {
     const material = event.target.closest('[data-material]');
     if (material) {
       const key = material.dataset.material;
-      const value = key === 'opacity' || key === 'point_size' ? Number(material.value) : material.value;
+      const isNum = ['opacity', 'point_size', 'emissiveIntensity', 'metalness', 'roughness'].includes(key);
+      const value = isNum ? Number(material.value) : material.value;
       updateObject(obj.id, { material: { [key]: value } }, true);
       const output = material.parentElement?.querySelector('output');
-      if (output) output.value = Number(value).toFixed(key === 'point_size' ? 3 : 2);
+      if (output) output.value = Number(value).toFixed(key === 'point_size' ? 3 : key === 'emissiveIntensity' ? 1 : 2);
       return;
     }
 
@@ -999,7 +1017,7 @@ function bindEvents() {
     const material = event.target.closest('[data-material]');
     if (material) {
       const key = material.dataset.material;
-      updateObject(obj.id, { material: { [key]: key === 'opacity' || key === 'point_size' ? Number(material.value) : material.value } }, false);
+      updateObject(obj.id, { material: { [key]: ['opacity', 'point_size', 'emissiveIntensity', 'metalness', 'roughness'].includes(key) ? Number(material.value) : material.value } }, false);
       return;
     }
 
