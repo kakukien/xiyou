@@ -28,6 +28,34 @@ async function readResponse(response) {
   return body
 }
 
+function uploadMultipart(url, form, { onProgress } = {}) {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest()
+    request.open('POST', url)
+    request.responseType = 'json'
+    request.timeout = 15 * 60 * 1000
+    request.upload.addEventListener('progress', event => {
+      if (!event.lengthComputable) return
+      onProgress?.(Math.round(event.loaded / event.total * 100), event.loaded, event.total)
+    })
+    request.addEventListener('load', () => {
+      let body = request.response
+      if (!body) {
+        try { body = request.responseText ? JSON.parse(request.responseText) : null } catch { body = null }
+      }
+      if (request.status < 200 || request.status >= 300) {
+        reject(new Error(body?.error || body?.message || `${request.status} ${request.statusText}`))
+        return
+      }
+      resolve(body)
+    })
+    request.addEventListener('error', () => reject(new Error('无法连接重建服务，请确认 Worker 已启动或远程 Provider 地址可访问')))
+    request.addEventListener('timeout', () => reject(new Error('素材上传超时，请检查网络或改用更小的视频后重试')))
+    request.addEventListener('abort', () => reject(new Error('素材上传已取消')))
+    request.send(form)
+  })
+}
+
 function artifactUrl(baseUrl, artifact, jobId) {
   if (!artifact || !jobId) return artifact
   if (!artifact.url) artifact.url = `${baseUrl}/jobs/${encodeURIComponent(jobId)}/assets/${encodeURIComponent(artifact.name || 'scene.sog')}`
@@ -96,7 +124,7 @@ export class HttpGaussianReconstructionProvider extends GaussianReconstructionPr
     return readResponse(response)
   }
 
-  async createJob({ file, files = null, inputType = 'video', quality = 'balanced', options = {} } = {}) {
+  async createJob({ file, files = null, inputType = 'video', quality = 'balanced', options = {}, onProgress } = {}) {
     if (!this.baseUrl) throw new Error('未配置远程重建服务地址')
     const form = new FormData()
     const inputs = Array.isArray(files) && files.length ? files : (file ? [file] : [])
@@ -104,8 +132,7 @@ export class HttpGaussianReconstructionProvider extends GaussianReconstructionPr
     form.append('inputType', inputType)
     form.append('quality', quality)
     form.append('options', JSON.stringify(options))
-    const response = await fetch(`${this.baseUrl}/reconstruction/jobs`, { method: 'POST', body: form })
-    return readResponse(response)
+    return uploadMultipart(`${this.baseUrl}/reconstruction/jobs`, form, { onProgress })
   }
 
   async getJob(jobId) {
@@ -153,7 +180,7 @@ export class LocalGpuWorkerProvider extends GaussianReconstructionProvider {
     }
   }
 
-  async createJob({ inputPath, file, files = null, inputType = 'video', quality = 'balanced', options = {} } = {}) {
+  async createJob({ inputPath, file, files = null, inputType = 'video', quality = 'balanced', options = {}, onProgress } = {}) {
     const inputs = Array.isArray(files) && files.length ? files : (file ? [file] : [])
     if (inputs.length) {
       const form = new FormData()
@@ -162,8 +189,7 @@ export class LocalGpuWorkerProvider extends GaussianReconstructionProvider {
       form.append('inputType', inputType)
       form.append('quality', quality)
       form.append('options', JSON.stringify(options))
-      const response = await fetch(`${this.baseUrl}/jobs`, { method: 'POST', body: form })
-      return readResponse(response)
+      return uploadMultipart(`${this.baseUrl}/jobs`, form, { onProgress })
     }
     if (!inputPath) throw new Error('本地 Companion 需要本机素材路径或浏览器文件')
     const response = await fetch(`${this.baseUrl}/jobs`, {

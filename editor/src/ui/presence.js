@@ -71,6 +71,7 @@ export function mount(el) {
   let awaitingOwner = false;
 
   const user = getUser();
+  const role = getRole();
   const params = new URLSearchParams(location.search);
   const ROLE_LABEL = { owner: '房主', editor: '编辑', previewer: '观看' };
 
@@ -87,6 +88,11 @@ export function mount(el) {
     (location.hostname === 'agentpay.xx.kg'
       ? 'wss://agentpay.xx.kg/xiyou-yjs'
       : `ws://${location.hostname}:8022`);
+
+  function getRole() {
+    const requested = new URLSearchParams(location.search).get('role') || localStorage.getItem('xiyou.role') || 'editor'
+    return ['manager', 'editor', 'previewer'].includes(requested) ? requested : 'editor'
+  }
 
   function getUser() {
     const key = 'xiyou.user';
@@ -140,7 +146,7 @@ export function mount(el) {
     statusText.style.color = connectionState === 'connected' ? '' : 'var(--accent,#e8842c)';
 
     peersCount.textContent = connectionState === 'connected'
-      ? `${peers.length} 人在线`
+      ? `${peers.length + 1} 人在线`
       : '';
 
     const role = collab.role || 'editor';

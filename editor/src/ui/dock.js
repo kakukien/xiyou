@@ -5,6 +5,9 @@ import { budget } from '../core/schema.js';
 import { player } from '../core/playback.js';
 import { log } from './log.js';
 import { iconMarkup } from './components/icon.js';
+import { listElements, addElementInstance, categoryLabel } from '../core/elements.js';
+import { viewport } from '../core/viewport.js';
+import { inspectPly } from '../core/ply.js';
 
 const KIND_LABELS = {
   transform: '变换',
@@ -42,6 +45,7 @@ let selectedAssetId = null;
 let selectedSharedId = null;
 // 内容浏览器目录选择：'p:<fid>' 项目目录 / 'p:' 项目根 / 's:<fid>' 共享目录 / 's:' 全部共享
 let assetFolder = null;
+const collapsedFolders = new Set();
 let keyPopoverCleanup = null;
 
 // 行内改名：把 el 换成 input，Enter/失焦提交，Esc 取消
@@ -177,8 +181,6 @@ function renderTabs() {
     row.appendChild(tab);
   });
 
-  row.appendChild(renderCardChips());
-
   const spacer = document.createElement('span');
   spacer.className = 'dock-tabs-spacer';
   row.appendChild(spacer);
@@ -247,10 +249,9 @@ function renderAssets() {
   importButton.addEventListener('click', () => root?.querySelector('.cb-import input')?.click());
   toolbar.append(search, kind, importButton);
   panel.appendChild(toolbar);
-
   // ---- 工作目录树：共享素材库（全员同步）+ 项目素材（仅本工程）----
-  const personalId = store.ensureWorkspaceFolders?.() || ''
-  if (assetFolder === null) assetFolder = `p:${personalId}`
+  store.ensureWorkspaceFolders?.()
+  if (assetFolder === null) assetFolder = 's:'
   const folders = (store.folders || []).filter(item => item.id !== 'fld_shared')
   const sharedFolders = projects.sharedFolders?.() || []
   if (assetFolder.startsWith('p:') && assetFolder !== 'p:' && !folders.some(item => item.id === assetFolder.slice(2))) assetFolder = 'p:'
@@ -265,14 +266,20 @@ function renderAssets() {
   const rail = document.createElement('div')
   rail.className = 'cb-folders'
 
-  const addRow = (sel, name, icon, depth, title) => {
+  const addRow = (sel, name, icon, depth, title, collapsible = false, collapsed = false) => {
     const row = document.createElement('button')
     row.type = 'button'
     row.className = `cb-folder${assetFolder === sel ? ' active' : ''}`
     row.style.paddingLeft = `${6 + depth * 12}px`
-    row.innerHTML = `${iconMarkup(icon)}<span>${name}</span>`
+    row.innerHTML = `${collapsible ? `<i class="cb-folder-toggle ri-arrow-${collapsed ? 'right' : 'down'}-s-line" data-folder-toggle></i>` : '<i class="cb-folder-toggle-placeholder"></i>'}${iconMarkup(icon)}<span>${name}</span>`
     row.title = title || name
-    row.addEventListener('click', () => { assetFolder = sel; requestRender() })
+    row.addEventListener('click', event => { if (event.target.closest('[data-folder-toggle]')) return; assetFolder = sel; requestRender() })
+    row.querySelector('[data-folder-toggle]')?.addEventListener('click', event => {
+      event.stopPropagation()
+      if (collapsed) collapsedFolders.delete(sel.slice(2))
+      else collapsedFolders.add(sel.slice(2))
+      requestRender()
+    })
     // 素材卡拖上目录行 = 移动到该目录
     row.addEventListener('dragover', event => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; row.classList.add('drop') })
     row.addEventListener('dragleave', () => row.classList.remove('drop'))
@@ -318,11 +325,25 @@ function renderAssets() {
   addRow('s:', '全部共享', 'folder-open-line', 0, '显示共享素材库全部内容')
   const pushShared = parent => {
     sharedFolders.filter(item => (item.parent || '') === parent).forEach(item => {
-      addRow(`s:${item.id}`, item.name, 'folder-2-line', depthOf(sharedFolders, item), `共享目录：${item.name}`)
-      pushShared(item.id)
+      const children = sharedFolders.some(child => (child.parent || '') === item.id)
+      const collapsed = collapsedFolders.has(item.id)
+      addRow(`s:${item.id}`, item.name, 'folder-2-line', depthOf(sharedFolders, item), `共享目录：${item.name}`, children, collapsed)
+      if (!collapsed) pushShared(item.id)
     })
   }
   pushShared('')
+
+  // 项目文件是工程导航；项目素材是当前工程内部可共享的资产目录。
+  const sceneHead = document.createElement('div')
+  sceneHead.className = 'cb-folders-head'
+  sceneHead.textContent = '项目文件'
+  rail.appendChild(sceneHead)
+  const currentProject = (projects.list?.() || []).find(project => project.id === (window.__xiyouProj || 'main'))
+  const sceneRow = document.createElement('div')
+  sceneRow.className = 'cb-folder cb-project-context'
+  sceneRow.innerHTML = `${iconMarkup('file-3-line')}<span>${currentProject?.name || store.scene?.meta?.name || '当前工程'}</span>`
+  sceneRow.title = '当前协作工程；项目素材在下方按目录管理'
+  rail.appendChild(sceneRow)
 
   const projHead = document.createElement('div')
   projHead.className = 'cb-folders-head'
@@ -331,8 +352,10 @@ function renderAssets() {
   addRow('p:', '工程文件', 'folder-open-line', 0, `本工程根目录：${store.scene?.meta?.name || ''}`)
   const pushProject = parent => {
     folders.filter(item => (item.parent || '') === parent).forEach(item => {
-      addRow(`p:${item.id}`, item.name, 'folder-2-line', depthOf(folders, item), `项目目录：${item.name}`)
-      pushProject(item.id)
+      const children = folders.some(child => (child.parent || '') === item.id)
+      const collapsed = collapsedFolders.has(item.id)
+      addRow(`p:${item.id}`, item.name, 'folder-2-line', depthOf(folders, item), `项目目录：${item.name}`, children, collapsed)
+      if (!collapsed) pushProject(item.id)
     })
   }
   pushProject('')
@@ -381,13 +404,13 @@ function renderAssets() {
   rail.appendChild(railOps)
   body.appendChild(rail)
 
+  const sharedScope = assetFolder.startsWith('s:')
   const stripWrap = document.createElement('div')
   stripWrap.className = 'cb-strip-wrap'
-
   const strip = document.createElement('div');
   strip.className = 'asset-strip';
+  if (sharedScope) stripWrap.appendChild(renderSharedElementLibrary())
 
-  const sharedScope = assetFolder.startsWith('s:')
   const currentFolderId = assetFolder.slice(2)
   // fld_shared 是旧项目目录里的归档：显示并入共享素材库，不再出现在项目区
   const registryAssets = projects.sharedAssets?.() || []
@@ -401,9 +424,78 @@ function renderAssets() {
     const haystack = [asset.name, asset.id, asset.kind, asset.type, category, ...(asset.tags || [])].join(' ').toLowerCase();
     const matchesQuery = !assetQuery.trim() || haystack.includes(assetQuery.trim().toLowerCase());
     const matchesKind = assetKind === 'all' || category === assetKind || asset.kind === assetKind || asset.type === assetKind || asset.subtype === assetKind;
-    const matchesFolder = currentFolderId === '' || (asset.folder || '') === currentFolderId;
+    // 共享素材根目录展示全部共享资产；项目根目录只展示项目根目录资产。
+    const matchesFolder = sharedScope && currentFolderId === ''
+      ? true
+      : currentFolderId === '' || (asset.folder || '') === currentFolderId;
     return matchesQuery && matchesKind && matchesFolder;
   });
+  const importCard = document.createElement('button');
+  importCard.type = 'button';
+  importCard.className = 'cb-card cb-import';
+  importCard.innerHTML = `${iconMarkup('upload-2-line', '导入素材')}<span>导入素材</span>`;
+  importCard.title = '导入图片、视频、音频、GLB 或高斯泼溅 PLY / SOG / SPZ 文件';
+
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.multiple = true;
+  input.accept = 'image/*,video/*,audio/*,.glb,.gltf,.sog,.ply,.spz,.splat,.ksplat,model/gltf-binary,model/gltf+json';
+  input.hidden = true;
+
+  input.addEventListener('change', async () => {
+    for (const file of Array.from(input.files || [])) {
+      const mime = file.type || '';
+      let type = 'asset';
+      if (mime.startsWith('image/')) type = 'image';
+      else if (mime.startsWith('video/')) type = 'video';
+      else if (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf')) type = 'glb';
+      else if (/\.(sog|ply|spz|splat|ksplat)$/i.test(file.name)) type = 'splat';
+      else if (mime.startsWith('audio/')) type = 'audio';
+
+      let url = `local://${file.name}`;
+      // 本机导入的素材用 blob URL 挂起来，缩略图和贴图立即可见
+      if (!window.__xiyouBlobMap) window.__xiyouBlobMap = new Map();
+      window.__xiyouBlobMap.set(url, URL.createObjectURL(file));
+
+      const assetProps = {
+        name: file.name,
+        kind: type === 'glb' ? 'model' : type,
+        type,
+        folder: currentFolderId,
+        size: file.size,
+        bytes: file.size,
+        mime,
+        url,
+        metadata: type === 'splat' ? { format: file.name.split('.').pop()?.toLowerCase() || 'ply', local: true } : {}
+      }
+      const asset = sharedScope
+        ? projects.addSharedAsset(assetProps)
+        : store.addAsset(assetProps)
+      if (asset && type === 'splat') {
+        const plyMeta = /\.ply$/i.test(file.name) ? await inspectPly(file) : null
+        if (plyMeta) {
+          asset.metadata = { ...(asset.metadata || {}), ply: plyMeta }
+          const patch = {
+            sog_url: url,
+            transform: plyMeta.transform,
+            coordinate_system: plyMeta.coordinateSystem,
+            editing: { transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: 1 }, crop: null }
+          }
+          store.updateAsset?.(asset.id, { metadata: asset.metadata })
+          store.setBase?.(patch)
+          log(`已分析 PLY：${plyMeta.vertexCount.toLocaleString()} 个 Gaussian，已按 Y-up 居中并落地`, 'info')
+        } else {
+          store.setBase?.({ sog_url: url, transform: { s: 1, R: [1, 0, 0, 0, 1, 0, 0, 0, 1], t: [0, 0, 0], scale_source: 'manual' } });
+          log(`已导入高斯泼溅「${file.name}」，正在加载到底座`, 'info');
+        }
+      }
+    }
+    input.value = '';
+  });
+
+  importCard.addEventListener('click', () => input.click());
+  importCard.appendChild(input);
+  strip.appendChild(importCard)
   assets.forEach(asset => {
     const card = document.createElement('div');
     card.className = `cb-card${selectedAssetId === asset.id ? ' active' : ''}`;
@@ -479,58 +571,7 @@ function renderAssets() {
     strip.appendChild(card);
   });
 
-  const importCard = document.createElement('button');
-  importCard.type = 'button';
-  importCard.className = 'cb-card cb-import';
-  importCard.innerHTML = `${iconMarkup('upload-2-line', '导入素材')}<span>导入素材</span>`;
-  importCard.title = '导入图片、视频、音频、GLB 或高斯泼溅 PLY / SOG / SPZ 文件';
 
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.multiple = true;
-  input.accept = 'image/*,video/*,audio/*,.glb,.gltf,.sog,.ply,.spz,.splat,.ksplat,model/gltf-binary,model/gltf+json';
-  input.hidden = true;
-
-  input.addEventListener('change', () => {
-    Array.from(input.files || []).forEach(file => {
-      const mime = file.type || '';
-      let type = 'asset';
-      if (mime.startsWith('image/')) type = 'image';
-      else if (mime.startsWith('video/')) type = 'video';
-      else if (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf')) type = 'glb';
-      else if (/\.(sog|ply|spz|splat|ksplat)$/i.test(file.name)) type = 'splat';
-      else if (mime.startsWith('audio/')) type = 'audio';
-
-      let url = `local://${file.name}`;
-      // 本机导入的素材用 blob URL 挂起来，缩略图和贴图立即可见
-      if (!window.__xiyouBlobMap) window.__xiyouBlobMap = new Map();
-      window.__xiyouBlobMap.set(url, URL.createObjectURL(file));
-
-      const assetProps = {
-        name: file.name,
-        kind: type === 'glb' ? 'model' : type,
-        type,
-        folder: currentFolderId,
-        size: file.size,
-        bytes: file.size,
-        mime,
-        url,
-        metadata: type === 'splat' ? { format: file.name.split('.').pop()?.toLowerCase() || 'ply', local: true } : {}
-      }
-      const asset = sharedScope
-        ? projects.addSharedAsset(assetProps)
-        : store.addAsset(assetProps)
-      if (asset && type === 'splat') {
-        store.setBase?.({ sog_url: url });
-        log(`已导入高斯泼溅「${file.name}」，正在加载到底座`, 'info');
-      }
-    });
-    input.value = '';
-  });
-
-  importCard.addEventListener('click', () => input.click());
-  importCard.appendChild(input);
-  strip.appendChild(importCard);
 
   stripWrap.appendChild(strip)
   body.appendChild(stripWrap)
@@ -589,6 +630,42 @@ function renderAssets() {
     panel.appendChild(detail)
   }
   return panel;
+}
+
+function renderSharedElementLibrary() {
+  const panel = document.createElement('section')
+  panel.className = 'shared-element-library'
+  panel.innerHTML = `<div class="shared-element-library-head"><div><strong>共享素材库</strong><span>常用家具、游戏素材和空间效果</span></div><span class="shared-element-library-count">${listElements({}).length} 个</span></div>`
+  const categories = document.createElement('div')
+  categories.className = 'shared-element-categories'
+  const visibleCategories = ['furniture', 'environment', 'game', 'toy', 'fx', 'interactive']
+  visibleCategories.forEach(categoryId => {
+    const items = listElements({ categoryId }).slice(0, 8)
+    if (!items.length) return
+    const group = document.createElement('section')
+    group.className = 'shared-element-category'
+    group.innerHTML = `<div class="shared-element-category-title"><span>${categoryLabel(categoryId)}</span><small>${items.length}</small></div>`
+    const grid = document.createElement('div')
+    grid.className = 'shared-element-grid'
+    items.forEach(item => {
+      const card = document.createElement('button')
+      card.type = 'button'
+      card.className = 'shared-element-card'
+      card.title = `添加${item.name}到视口`
+      card.innerHTML = `<span class="shared-element-icon">${iconMarkup(item.render?.kind === 'effect' ? 'sparkling-2-line' : item.categoryId === 'furniture' ? 'armchair-line' : item.categoryId === 'game' ? 'game-line' : 'shapes-line')}</span><span class="shared-element-name">${item.name}</span><span class="shared-element-action">添加</span>`
+      card.addEventListener('click', () => {
+        if (store.mode === 'play') return
+        const rect = viewport.container?.getBoundingClientRect?.()
+        const point = viewport.placementPoint?.(rect ? rect.left + rect.width * 0.52 : window.innerWidth * 0.62, rect ? rect.top + rect.height * 0.48 : window.innerHeight * 0.48) || [0, 0, -3]
+        addElementInstance(item.id, point)
+      })
+      grid.appendChild(card)
+    })
+    group.appendChild(grid)
+    categories.appendChild(group)
+  })
+  panel.appendChild(categories)
+  return panel
 }
 
 function renderComponents() {
@@ -1315,6 +1392,7 @@ export function mount(el) {
   });
 
   store.on('change', requestRender);
+  projects.on('ready', requestRender);
   projects.on('shared', requestRender);
   projects.on('projects', requestRender);
   store.on('selection', requestRender);

@@ -10,6 +10,7 @@ import { mount as mountPresence } from './ui/presence.js'
 import { mount as mountChat } from './ui/chat.js'
 import { mount as mountVpchrome } from './ui/vpchrome.js'
 import { mount as mountSplatStudio } from './ui/splat-studio.js'
+import { mount as mountCollabCursors } from './ui/collab-cursors.js'
 import { collab } from './core/collab.js'
 import { addElementInstance } from './core/elements.js'
 import { projects } from './core/projects.js'
@@ -51,23 +52,18 @@ if (splatQ) {
   }
 }
 
-// 空底座占位：现场照片墙播种为可编辑 quad（可选中/移动/换图/删除）
-// photo_walls_seeded 标记保证只播种一次，用户删掉后不会再冒回来
+// 空底座不再自动播种“现场照片 A/B/C”占位物；场景对象只展示用户实际添加的内容。
+// 清理旧版本已经写入草稿的占位照片，避免它们从历史存档中继续出现在预览区。
 {
-  const base = store.scene.base || {}
-  const meta = store.scene.meta || (store.scene.meta = {})
-  if (!meta.photo_walls_seeded && !base.sog_url && !(base.chunks || []).length && !base.proxy) {
-    meta.photo_walls_seeded = true
-    ;[
-      { name: '现场照片A', p: [0, 2, -6], r: [0, 0, 0] },
-      { name: '现场照片B', p: [-4.2, 2, -4.2], r: [0, -45, 0] },
-      { name: '现场照片C', p: [4.2, 2, -4.2], r: [0, 45, 0] }
-    ].forEach(wall => store.addObject('quad', { name: wall.name, transform: { p: wall.p, r: wall.r, s: [4, 4, 1] } }))
-  }
+  const legacyPhotoNames = new Set(['现场照片A', '现场照片B', '现场照片C'])
+  ;(store.scene.objects || []).slice().forEach(object => {
+    if (legacyPhotoNames.has(object?.name)) store.removeObject(object.id)
+  })
 }
 
 viewport.init(document.getElementById('viewport'))
 mountVpchrome(document.getElementById('viewport-wrap'), viewport)
+mountCollabCursors(document.getElementById('viewport-wrap'))
 viewport.setBase(store.scene.base)
 viewport.sync()
 
@@ -79,6 +75,64 @@ const presenceEl = mountPresence(document.getElementById('topbar'))
 mountChat()
 const splatStudio = mountSplatStudio(document.getElementById('splat-studio'))
 window.__xiyou.splatStudio = splatStudio
+
+// 移动端把复杂面板改为底部工作表：视口保持可见，面板按需打开。
+const mobileNav = document.getElementById('mobile-nav')
+const mobileMore = document.getElementById('mobile-more')
+const setMobilePanel = panel => {
+  document.body.dataset.mobilePanel = panel === 'none' ? '' : panel
+  mobileNav?.querySelectorAll('[data-mobile-panel]').forEach(item => {
+    const active = panel === 'none'
+      ? item.dataset.mobilePanel === 'none'
+      : item.dataset.mobilePanel === panel
+    item.classList.toggle('active', active)
+    item.setAttribute('aria-pressed', String(active))
+  })
+}
+mobileNav?.querySelectorAll('[data-mobile-panel]').forEach(button => button.setAttribute('aria-pressed', 'false'))
+setMobilePanel('none')
+mobileNav?.addEventListener('click', event => {
+  const button = event.target.closest('[data-mobile-panel]')
+  if (!button) return
+  setMobilePanel(button.dataset.mobilePanel)
+})
+mobileMore?.querySelector('[data-mobile-close]')?.addEventListener('click', () => setMobilePanel('none'))
+const mobileProjectPicker = mobileMore?.querySelector('[data-mobile-project-select]')
+const syncMobileProjects = () => {
+  const source = document.querySelector('.tb-proj')
+  if (!source || !mobileProjectPicker) return
+  mobileProjectPicker.replaceChildren(...Array.from(source.options).map(option => {
+    const clone = option.cloneNode(true)
+    clone.selected = option.selected
+    return clone
+  }))
+}
+mobileProjectPicker?.addEventListener('change', event => {
+  const source = document.querySelector('.tb-proj')
+  if (!source) return
+  source.value = event.target.value
+  source.dispatchEvent(new Event('change', { bubbles: true }))
+})
+mobileMore?.querySelectorAll('[data-mobile-action]').forEach(button => {
+  button.addEventListener('click', () => {
+    const action = button.dataset.mobileAction
+    if (action === 'project-select') {
+      syncMobileProjects()
+      if (mobileProjectPicker) mobileProjectPicker.hidden = false
+      return
+    }
+    const target = {
+      'project-new': '.tb-project-tools .icon-btn',
+      'scene-new': '.tb-scene-actions > .btn:nth-child(1)',
+      sync: '.tb-scene-actions > .btn:nth-child(2)',
+      runtime: '.tb-scene-actions > .btn:nth-child(3)',
+      anchor: '.tb-scene-actions > .btn:nth-child(4)'
+    }[action]
+    if (target) document.querySelector(target)?.click()
+    if (mobileProjectPicker) mobileProjectPicker.hidden = true
+    setMobilePanel('none')
+  })
+})
 
 // auto-connect collab (non-fatal if server unreachable)
 if (presenceEl?._connect && presenceEl._hasExplicitCollab) presenceEl._connect()
@@ -99,9 +153,17 @@ projects.on('ready', () => {
   }
   const existing = new Set(projects.sharedAssets().map(a => a.id))
   const BUILTIN_SHARED = [
-    { id: 'a_world', name: '虚境世界·体素.glb', url: 'assets/xiyou_world.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 1915952, mime: 'model/gltf-binary' },
-    { id: 'a_belltower', name: '西安钟楼·体块.glb', url: 'assets/xiyou_belltower.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 782288, mime: 'model/gltf-binary' },
-    { id: 'a_nongyao', name: '王者峡谷.glb', url: 'assets/nongyao.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 19233212, mime: 'model/gltf-binary' },
+    { id: 'a_world', name: '虚境世界·体素.glb', url: 'assets/xiyou_world.glb', kind: 'model', type: 'glb', folder: 'fld_shared', tags: ['环境', '体素', '场景'], bytes: 1915952, mime: 'model/gltf-binary' },
+    { id: 'a_belltower', name: '西安钟楼·体块.glb', url: 'assets/xiyou_belltower.glb', kind: 'model', type: 'glb', folder: 'fld_shared', tags: ['建筑', '钟楼', '西安'], bytes: 782288, mime: 'model/gltf-binary' },
+    { id: 'a_nongyao', name: '王者峡谷.glb', url: 'assets/nongyao.glb', kind: 'model', type: 'glb', folder: 'fld_shared', tags: ['游戏', '场景'], bytes: 19235268, mime: 'model/gltf-binary' },
+    { id: 'a_obj_temple', name: '寺庙模型.glb', url: 'assets/obj_temple.glb', kind: 'model', type: 'glb', folder: 'fld_shared', tags: ['建筑', '模型'], bytes: 14152912, mime: 'model/gltf-binary' },
+    { id: 'a_gen_subjtest_src', name: '主体生成参考图.png', url: 'assets/gen_subjtest_src.png', kind: 'image', type: 'image', folder: 'fld_shared', tags: ['生成', '参考图'], bytes: 239347, mime: 'image/png' },
+    { id: 'a_gen_testmt_src', name: '场景生成参考图 1.png', url: 'assets/gen_testmt_src.png', kind: 'image', type: 'image', folder: 'fld_shared', tags: ['生成', '参考图'], bytes: 42460, mime: 'image/png' },
+    { id: 'a_gen_wmuriz2ar_src', name: '场景生成参考图 2.png', url: 'assets/gen_wmuriz2ar_src.png', kind: 'image', type: 'image', folder: 'fld_shared', tags: ['生成', '参考图'], bytes: 42460, mime: 'image/png' },
+    { id: 'a_gen_wmurjj923_src', name: '场景生成参考图 3.png', url: 'assets/gen_wmurjj923_src.png', kind: 'image', type: 'image', folder: 'fld_shared', tags: ['生成', '参考图'], bytes: 42460, mime: 'image/png' },
+    { id: 'a_gen_wmurm2sqi_src', name: '场景生成参考图 4.png', url: 'assets/gen_wmurm2sqi_src.png', kind: 'image', type: 'image', folder: 'fld_shared', tags: ['生成', '参考图'], bytes: 42460, mime: 'image/png' },
+    { id: 'a_gen_wmurmcser_src', name: '场景生成参考图 5.png', url: 'assets/gen_wmurmcser_src.png', kind: 'image', type: 'image', folder: 'fld_shared', tags: ['生成', '参考图'], bytes: 1347677, mime: 'image/png' },
+    { id: 'a_vps', name: 'VPS 地址配置.txt', url: 'vps.txt', kind: 'config', type: 'text', folder: 'fld_shared', tags: ['VPS', '配置'], bytes: 0, mime: 'text/plain' },
   ]
   const seed = [
     ...BUILTIN_SHARED,

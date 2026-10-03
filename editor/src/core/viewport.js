@@ -531,9 +531,12 @@ export const viewport = {
     const dy = Number(event.deltaY || 0) * factor;
     if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) return;
 
+    // 触控板手势按“内容跟手”处理：手指向左/上移动时，视图也向左/上响应。
+    // 旧实现额外取反了 X/Y，导致 PLY/普通底座都会出现左右、上下反向。
+    // Shift + 双指平移遵循画布拖拽直觉：手向左，场景向右；手向上，场景向下。
     if (event.shiftKey) this.panBy(-dx, -dy);
     else if (event.ctrlKey || event.metaKey) this.dollyBy(dy || dx);
-    else this.orbitBy(-dx, -dy);
+    else this.orbitBy(dx, dy);
     this.controls.update();
   },
 
@@ -770,6 +773,7 @@ export const viewport = {
     const objects = [...this.nodes.values()].filter(node => node.visible);
     const zoneObjects = this.zoneGroup && store.mode !== 'play' ? [this.zoneGroup] : [];
     const hits = raycaster.intersectObjects([...objects, ...zoneObjects], true);
+    let picked = false
 
     for (const hit of hits) {
       let current = hit.object;
@@ -785,10 +789,12 @@ export const viewport = {
       }
 
       if (zoneId && store.mode !== 'play') {
+        picked = true
         store.select(zoneId, { add: Boolean(ctrlKey) });
         break;
       }
       if (helper || !id) continue;
+      picked = true
 
       if (store.mode === 'play') {
         triggers.fire('tap', id);
@@ -797,6 +803,7 @@ export const viewport = {
       }
       break;
     }
+    if (!picked && store.mode !== 'play') store.select(null)
   },
 
   disposeBase() {
@@ -940,8 +947,7 @@ export const viewport = {
       this.baseGroup.add(ground);
       this.baseHelpers.push(ground);
 
-      // 现场照片占位墙已改为可编辑 quad 对象（main.js 引导期播种），
-      // 这里只留网格地面，不再塞不可选中的辅助体。
+      // 这里只留网格地面；场景对象由 main.js / 内容浏览器管理。
     } else {
       // DropInViewer 的内部 Viewer 不允许并发 add/remove；按队列异步加载，
       // 单个分块失败只标记本块，后续分块继续加载。
@@ -1241,6 +1247,25 @@ export const viewport = {
     if (!mesh || !point) return false
     const vector = point instanceof THREE.Vector3 ? point : new THREE.Vector3(...point)
     return new THREE.Box3().setFromObject(mesh).containsPoint(vector)
+  },
+
+  snapSelectedToGround() {
+    const ids = store.selected?.() || []
+    const id = ids[0]
+    const object = id ? store.getObject?.(id) : null
+    if (!object) {
+      log('请先选择一个场景对象，再执行落地吸附', 'warn')
+      return false
+    }
+    const node = this.nodes.get(id)
+    if (!node) return false
+    node.updateMatrixWorld(true)
+    const box = new THREE.Box3().setFromObject(node)
+    const delta = -box.min.y
+    const p = object.transform?.p || [0, 0, 0]
+    store.updateObject(id, { transform: { p: [Number(p[0]) || 0, (Number(p[1]) || 0) + delta, Number(p[2]) || 0] } })
+    log(`已将「${object.name || id}」吸附到地面`, 'info')
+    return true
   },
 
   focusBase() {

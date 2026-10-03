@@ -18,6 +18,7 @@
   "dependencies": {
     "@mkkellogg/gaussian-splats-3d": "^0.4.7",
     "mind-ar": "^1.2.5",
+    "remixicon": "^4.6.0",
     "three": "^0.169.0",
     "y-websocket": "^3.1.0",
     "yjs": "^13.6.33"

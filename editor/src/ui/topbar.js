@@ -169,13 +169,13 @@ export function mount(el) {
   syncButton.textContent = '同步线上';
 
   const arButton = document.createElement('button');
-  arButton.className = 'btn';
+  arButton.className = 'btn ar-button';
   arButton.type = 'button';
   arButton.title = '打开正式游客 Runtime：相机、方向、定位兜底和场景互动';
   arButton.textContent = '游客 Runtime';
 
   const anchorButton = document.createElement('button');
-  anchorButton.className = 'btn';
+  anchorButton.className = 'btn anchor-button';
   anchorButton.type = 'button';
   anchorButton.title = '放置定位锚点：点击视口地面落点，剧情节点可绑定（Esc 取消）';
   anchorButton.textContent = '锚点';
@@ -195,7 +195,7 @@ export function mount(el) {
   connection.innerHTML = '<i class="tb-status-dot"></i><span>未连接</span>';
 
   const noticeButton = document.createElement('button');
-  noticeButton.className = 'btn icon-btn';
+  noticeButton.className = 'btn icon-btn noticeButton';
   noticeButton.type = 'button';
   noticeButton.title = '通知';
   noticeButton.innerHTML = iconMarkup('notification-3-line', '通知');
@@ -222,25 +222,20 @@ export function mount(el) {
   undoInput.className = 'field tb-undo-input';
   undoWrap.appendChild(undoInput);
 
-  bar.append(
-    logo,
-    baseLoad,
-    splatToggle,
-    undoWrap,
-    modeToggle,
-    spacer,
-    draftChip,
-    projSelect,
-    projNewBtn,
-    demoButton,
-    syncButton,
-    arButton,
-    anchorButton,
-    previewButton,
-    publishButton,
-    connection,
-    noticeButton
-  );
+  const modeTools = document.createElement('div')
+  modeTools.className = 'tb-mode-tools'
+  modeTools.append(modeToggle, undoWrap, splatToggle)
+
+  const projectTools = document.createElement('div')
+  projectTools.className = 'tb-group tb-project-tools'
+  projectTools.append(draftChip, projSelect, projNewBtn)
+
+  const sceneActions = document.createElement('div')
+  sceneActions.className = 'tb-group tb-scene-actions'
+  sceneActions.append(demoButton, syncButton, arButton, anchorButton, previewButton, publishButton)
+
+  sceneActions.append(noticeButton)
+  bar.append(logo, baseLoad, modeTools, spacer, projectTools, sceneActions)
 
   el.appendChild(bar);
 
