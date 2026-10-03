@@ -446,9 +446,14 @@ async function startFreeMode() {
 // ---------- VPS 视觉定位 ----------
 // 帧 -> hloc 服务 (DINOv2 检索 -> SuperPoint+LightGlue -> PnP) -> AR 坐标系位姿。
 // 位姿是 COLMAP 约定（相机 +Z 向前、+Y 向下），转 three 需右乘 diag(1,-1,-1)。
-const VPS_FALLBACK = 'https://rest-ann-home-chrome.trycloudflare.com'; // 演示隧道，变了就改这里
+const VPS_FALLBACK = 'https://protecting-rug-frequent-calvin.trycloudflare.com'; // 快隧道，变了就推 vps.txt
 let VPS_URL = new URLSearchParams(location.search).get('vps')
   || VPS_FALLBACK;
+// 动态发现：vps.txt 里是最新隧道地址（隧道重启只需推文件，免发版）
+const vpsReady = fetch('vps.txt?v=' + Date.now()).then(r => r.ok ? r.text() : '').then(t => {
+  const u = (t || '').trim();
+  if (/^https:\/\//.test(u) && !new URLSearchParams(location.search).get('vps')) VPS_URL = u;
+}).catch(() => {});
 let vpsTimer = null, vpsGyroQ = null, vpsCamQ0 = null, vpsGyroQ0 = null;
 
 function capFrame(video, maxW = 960) {
@@ -509,17 +514,13 @@ async function startVpsMode() {
   const flip = new THREE.Matrix4().makeScale(1, -1, -1);
   const vpsCamP0 = new THREE.Vector3(), desQ = new THREE.Quaternion();
   const _fp = new THREE.Vector3(), _fq = new THREE.Quaternion();
-  let busy = false, locFail = 0, pending = null;
+  await vpsReady; // 先拿到 vps.txt 的最新隧道地址
+  let inflight = 0, locFail = 0, pending = null;
   const angBetween = (a, b) => 2 * Math.acos(Math.min(1, Math.abs(a.dot(b)))) * 180 / Math.PI;
-  const arm = ms => { if (mode === 'vps') vpsTimer = setTimeout(locate, ms); };
-  const locate = async () => {
-    if (mode !== 'vps') return;
-    if (busy) { arm(1500); return; }
-    if (!freeVideo.videoWidth) { arm(600); return; }
-    busy = true;
-    let wait = 1300; // 失败快速重试，抓一帧清晰的
+  const MAX_INFLIGHT = 5; // 流水线并发：服务端单次 ~0.4-2.5s，5 并发才撑得起 0.2s 节奏
+  const locateOnce = async () => {
     try {
-      const blob = await capFrame(freeVideo, 1280);
+      const blob = await capFrame(freeVideo, 960); // 5Hz 下压到 960px，省上行带宽/编码耗时
       const res = await fetch(`${VPS_URL}/locate?k=15&min=8`, { method: 'POST', body: blob });
       const j = await res.json();
       if (j.ok) {
@@ -539,7 +540,7 @@ async function startVpsMode() {
           else { pending = { p: _fp.clone(), q: _fq.clone() }; dropWhy = `跳变/弱解已丢弃 内点${j.inliers}`; }
         }
         if (accept) {
-          locFail = 0; wait = 1000; pending = null;
+          locFail = 0; pending = null;
           // 置信加权融合：内点越多话语权越大（>=60 全权），弱解只轻微修正——钉住不漂
           const w = Math.min(1, Math.max(0.15, j.inliers / 60));
           if (!vpsCamQ0) {
@@ -571,13 +572,17 @@ async function startVpsMode() {
       }
     } catch (e) {
       locFail++;
-      setState('定位服务不可达 · ' + VPS_URL);
+      if (locFail > 10) setState('定位服务不可达 · ' + VPS_URL);
     }
-    busy = false;
-    arm(wait);
   };
   setState('VPS · 对准环境，首次定位…');
-  locate();
+  // 0.2s 一轮投递：上一批没回就跳过本轮，并发上限内持续流水
+  vpsTimer = setInterval(() => {
+    if (mode !== 'vps' || !freeVideo.videoWidth) return;
+    if (inflight >= MAX_INFLIGHT) return;
+    inflight++;
+    locateOnce().finally(() => { inflight--; });
+  }, 200);
 
   rootEl.addEventListener('pointerup', e => {
     const x = (e.clientX / innerWidth) * 2 - 1, y = -(e.clientY / innerHeight) * 2 + 1;
