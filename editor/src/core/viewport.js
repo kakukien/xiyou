@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DropInViewer, SceneFormat } from '@mkkellogg/gaussian-splats-3d';
 import { buildProxyGroup } from './proxyrender.js';
 import { store } from './store.js';
-import { createNode, applyTransform, placeholderTexture } from './objects.js';
+import { createNode, applyTransform } from './objects.js';
 import { player, triggers } from './playback.js';
 import { log } from '../ui/log.js';
 
@@ -243,7 +243,7 @@ export const viewport = {
   init(container) {
     this.container = container;
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color('#dfe6ef');
+    this.scene.background = new THREE.Color('#e8eef6');
 
     this.camera = new THREE.PerspectiveCamera(
       60,
@@ -925,8 +925,8 @@ export const viewport = {
       const grid = new THREE.GridHelper(
         20,
         20,
-        0xa8b4c4,
-        0xc8d0dc
+        0xb2bfd0,
+        0xd7dfe9
       );
       grid.userData.isBaseHelper = true;
       this.baseGroup.add(grid);
@@ -947,6 +947,7 @@ export const viewport = {
       this.baseGroup.add(ground);
       this.baseHelpers.push(ground);
 
+      // 这里只留网格地面；场景对象由 main.js / 内容浏览器管理。
     } else {
       // DropInViewer 的内部 Viewer 不允许并发 add/remove；按队列异步加载，
       // 单个分块失败只标记本块，后续分块继续加载。
@@ -1108,7 +1109,7 @@ export const viewport = {
       this.baseGroup.add(dome);
       this.scene.background = null;
     } else if (this.scene.background === null) {
-      this.scene.background = new THREE.Color('#dfe6ef');
+      this.scene.background = new THREE.Color('#e8eef6');
     }
 
     this.scene.add(this.baseGroup);

@@ -13,6 +13,23 @@ import { WebsocketProvider } from 'y-websocket'
 
 const REGISTRY_ROOM = 'xiyou-projects'
 
+// 内置共享素材：客户端常量，注册表连不上/被清空也始终可见
+// id/结构必须与 main.js 播种的 BUILTIN_SHARED 一致，避免连上后出现两份
+const BUILTIN_SHARED_FOLDER = { id: 'fld_shared', name: '共享素材', parent: '' }
+const BUILTIN_SHARED_ASSETS = [
+  { id: 'a_world', name: '虚境世界·体素.glb', url: 'assets/xiyou_world.glb', kind: 'model', type: 'glb', folder: 'fld_shared', tags: ['环境', '体素', '场景'], bytes: 1915952, mime: 'model/gltf-binary', builtin: true },
+  { id: 'a_belltower', name: '西安钟楼·体块.glb', url: 'assets/xiyou_belltower.glb', kind: 'model', type: 'glb', folder: 'fld_shared', tags: ['建筑', '钟楼', '西安'], bytes: 782288, mime: 'model/gltf-binary', builtin: true },
+  { id: 'a_nongyao', name: '王者峡谷.glb', url: 'assets/nongyao.glb', kind: 'model', type: 'glb', folder: 'fld_shared', tags: ['游戏', '场景'], bytes: 19235268, mime: 'model/gltf-binary', builtin: true },
+  { id: 'a_obj_temple', name: '寺庙模型.glb', url: 'assets/obj_temple.glb', kind: 'model', type: 'glb', folder: 'fld_shared', tags: ['建筑', '模型'], bytes: 14152912, mime: 'model/gltf-binary', builtin: true },
+  { id: 'a_gen_subjtest_src', name: '主体生成参考图.png', url: 'assets/gen_subjtest_src.png', kind: 'image', type: 'image', folder: 'fld_shared', tags: ['生成', '参考图'], bytes: 239347, mime: 'image/png', builtin: true },
+  { id: 'a_gen_testmt_src', name: '场景生成参考图 1.png', url: 'assets/gen_testmt_src.png', kind: 'image', type: 'image', folder: 'fld_shared', tags: ['生成', '参考图'], bytes: 42460, mime: 'image/png', builtin: true },
+  { id: 'a_gen_wmuriz2ar_src', name: '场景生成参考图 2.png', url: 'assets/gen_wmuriz2ar_src.png', kind: 'image', type: 'image', folder: 'fld_shared', tags: ['生成', '参考图'], bytes: 42460, mime: 'image/png', builtin: true },
+  { id: 'a_gen_wmurjj923_src', name: '场景生成参考图 3.png', url: 'assets/gen_wmurjj923_src.png', kind: 'image', type: 'image', folder: 'fld_shared', tags: ['生成', '参考图'], bytes: 42460, mime: 'image/png', builtin: true },
+  { id: 'a_gen_wmurm2sqi_src', name: '场景生成参考图 4.png', url: 'assets/gen_wmurm2sqi_src.png', kind: 'image', type: 'image', folder: 'fld_shared', tags: ['生成', '参考图'], bytes: 42460, mime: 'image/png', builtin: true },
+  { id: 'a_gen_wmurmcser_src', name: '场景生成参考图 5.png', url: 'assets/gen_wmurmcser_src.png', kind: 'image', type: 'image', folder: 'fld_shared', tags: ['生成', '参考图'], bytes: 1347677, mime: 'image/png', builtin: true },
+  { id: 'a_vps', name: 'VPS 地址配置.txt', url: 'vps.txt', kind: 'config', type: 'text', folder: 'fld_shared', tags: ['VPS', '配置'], bytes: 0, mime: 'text/plain', builtin: true },
+]
+
 const listeners = new Map()
 let doc = null
 let provider = null
@@ -127,11 +144,14 @@ export const projects = {
 
   // ---- 共享素材库（目录树 + 素材元数据，全员同步）----
   sharedFolders() {
-    return parseJSON(sharedMap?.get('folders'), [])
+    const reg = parseJSON(sharedMap?.get('folders'), [])
+    return [BUILTIN_SHARED_FOLDER, ...reg.filter(f => f.id !== BUILTIN_SHARED_FOLDER.id)]
   },
 
   sharedAssets() {
-    return parseJSON(sharedMap?.get('assets'), [])
+    const reg = parseJSON(sharedMap?.get('assets'), [])
+    const dup = new Set(BUILTIN_SHARED_ASSETS.map(a => a.id))
+    return [...BUILTIN_SHARED_ASSETS, ...reg.filter(a => !a.builtin && !dup.has(a.id))]
   },
 
   setSharedFolders(folders) {

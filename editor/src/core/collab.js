@@ -32,6 +32,8 @@ let applying = false
 let activeUser = null
 let activeConnection = null
 let connectionGeneration = 0
+let role = 'editor'       // owner | editor | previewer
+let seeded = false        // 远端房间已有内容（=已被房主播种）
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value))
@@ -96,6 +98,8 @@ function writeCollection(name) {
 
 function writeLocalScene() {
   if (!doc || !entities || !synced || applying) return
+  if (role === 'previewer') return                       // 只读档：不写房间
+  if (!seeded && role !== 'owner') return                // 空房间：非房主不得播种
 
   doc.transact(() => {
     for (const name of [...COLLECTIONS, 'base', 'meta']) writeCollection(name)
@@ -103,6 +107,7 @@ function writeLocalScene() {
 }
 
 function readCollection(name) {
+  if (!entities) return name === 'base' || name === 'meta' ? null : []
   const bucket = entities.get(name)
 
   if (!(bucket instanceof Y.Map)) {
@@ -211,6 +216,9 @@ function updateLocalAwareness() {
 function handleRemoteTransaction(events, transaction) {
   if (!synced || transaction.origin === 'local') return
   if (!events || events.length === 0) return
+  const wasSeeded = seeded
+  seeded = true
+  if (!wasSeeded) store.emit('collab-seeded', roomOwner())
   applyRemoteScene()
 }
 
@@ -232,28 +240,33 @@ function remoteSceneForComparison() {
   return readRemoteScene()
 }
 
+function roomOwner() {
+  const meta = readCollection('meta')
+  return meta && meta.owner && meta.owner.name ? meta.owner : null
+}
+
 function finishInitialSync() {
   if (synced) return
   synced = true
 
-  if (!hasRemoteData()) {
-    writeLocalScene()
-    log('已发布本地场景到协作房间')
-  } else {
-    const remote = remoteSceneForComparison()
-    const localHasContent = sceneHasContent(store.scene)
-    const remoteHasContent = sceneHasContent(remote)
-    const localTime = Date.parse(store.scene.meta?.updatedAt || '') || 0
-    const remoteTime = Date.parse(remote.meta?.updatedAt || '') || 0
+  const remoteHas = hasRemoteData()
+  seeded = remoteHas
 
-    // 两边都有内容时不再无条件用远端覆盖本地；保留较新的草稿，避免刷新/错房间造成“内容消失”。
-    if (localHasContent && remoteHasContent && localTime >= remoteTime) {
-      writeLocalScene()
-      log('本地草稿较新，已保留本地并同步到协作房间', 'warn')
-    } else {
-      applyRemoteScene({ loaded: true })
-      log('已载入协作场景')
-    }
+  if (remoteHas) {
+    applyRemoteScene({ loaded: true })
+    const owner = roomOwner()
+    log(owner ? `已载入房主「${owner.name}」的协作场景` : '已载入协作场景')
+  } else if (role === 'owner') {
+    // 空房间 + 房主：认领并播种本地工程
+    if (!store.scene.meta) store.scene.meta = {}
+    store.scene.meta.owner = { name: activeUser?.name || '房主', at: new Date().toISOString() }
+    seeded = true
+    writeLocalScene()
+    log('已认领房间并发布本地场景到协作房间')
+  } else {
+    // 空房间 + 非房主：本地草稿绝不写入房间，等房主开播
+    log('房间为空，等待房主同步场景（你的本地改动不会上传）', 'warn')
+    store.emit('collab-awaiting', { room: activeConnection?.room || '' })
   }
 
   publishPeers()
@@ -312,6 +325,8 @@ export const collab = {
     this.disconnect({ invalidate: false })
     setupStoreListeners()
     activeConnection = { url, room }
+    role = user.role === 'owner' ? 'owner' : user.role === 'previewer' ? 'previewer' : 'editor'
+    seeded = false
     emitStatus({ connecting: true })
 
     doc = new Y.Doc()
@@ -397,6 +412,26 @@ export const collab = {
     }
   },
 
+  // 房主显式把本地工程写进房间（覆盖远端）
+  publishLocalScene() {
+    if (!doc || !entities || role !== 'owner') return false
+    if (!store.scene.meta) store.scene.meta = {}
+    store.scene.meta.owner = { name: activeUser?.name || '房主', at: new Date().toISOString() }
+    seeded = true
+    synced = true
+    doc.transact(() => {
+      for (const name of [...COLLECTIONS, 'base', 'meta']) writeCollection(name)
+    }, 'local')
+    return true
+  },
+
+  get role() { return role },
+  get isOwner() { return role === 'owner' },
+  get awaitingOwner() { return synced && !seeded && role !== 'owner' },
+  roomInfo() {
+    return { room: activeConnection?.room || '', owner: roomOwner(), role, seeded }
+  },
+
   peers() {
     if (!provider || !provider.awareness || !doc) return []
 
@@ -472,6 +507,8 @@ export const collab = {
     entities = null
     undoManager = null
     synced = false
+    seeded = false
+    role = 'editor'
     activeUser = null
     activeConnection = null
     this.connected = false

@@ -1726,3 +1726,7 @@ body.studio-footer-resizing .studio-viewport canvas { pointer-events:none; }
   .cb-folders-head { font-size:11px; }
   .cb-project-context { white-space:nowrap; }
 }
+/* 协作角色徽标 */
+.presence-role, .presence-owner { font-size:11px; color:var(--fg-dim); white-space:nowrap; }
+.presence-owner { color:var(--accent2); font-weight:600; }
+.btn.btn-sm.presence-save { padding:2px 8px; font-size:11px; }

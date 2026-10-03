@@ -185,6 +185,7 @@ export class LocalGpuWorkerProvider extends GaussianReconstructionProvider {
     if (inputs.length) {
       const form = new FormData()
       inputs.forEach(input => form.append('input', input, input.name))
+      form.append('type', options.jobType || 'reconstruct')
       form.append('inputType', inputType)
       form.append('quality', quality)
       form.append('options', JSON.stringify(options))
@@ -194,7 +195,7 @@ export class LocalGpuWorkerProvider extends GaussianReconstructionProvider {
     const response = await fetch(`${this.baseUrl}/jobs`, {
       method: 'POST',
       headers: { ...jsonHeaders(), 'content-type': 'application/json' },
-      body: JSON.stringify({ type: 'reconstruct', payload: { input: inputPath, inputType, quality, options } })
+      body: JSON.stringify({ type: options.jobType || 'reconstruct', payload: { input: inputPath, inputType, quality, prompt: options.prompt || '', options } })
     })
     return readResponse(response)
   }
@@ -229,7 +230,8 @@ export class LocalGpuWorkerProvider extends GaussianReconstructionProvider {
 export function createReconstructionProviders() {
   const config = globalThis.__xiyou?.reconstruction || {}
   const remoteUrl = config.remoteUrl || globalThis.__XIYOU_RECONSTRUCTION_URL || ''
-  const localUrl = config.localUrl || globalThis.__XIYOU_GPU_WORKER_URL || 'http://127.0.0.1:8787'
+  const workerParam = new URLSearchParams(globalThis.location?.search || '').get('worker')
+  const localUrl = (workerParam ? `http://${workerParam}` : '') || config.localUrl || globalThis.__XIYOU_GPU_WORKER_URL || 'http://127.0.0.1:8787'
   return {
     local: new LocalGpuWorkerProvider({ baseUrl: localUrl }),
     remote: new HttpGaussianReconstructionProvider({ baseUrl: remoteUrl })

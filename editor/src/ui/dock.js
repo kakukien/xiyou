@@ -251,7 +251,7 @@ function renderAssets() {
   panel.appendChild(toolbar);
   // ---- 工作目录树：共享素材库（全员同步）+ 项目素材（仅本工程）----
   const personalId = store.ensureWorkspaceFolders?.() || ''
-  if (assetFolder === null) assetFolder = `p:${personalId}`
+  if (assetFolder === null) assetFolder = 's:'
   const folders = (store.folders || []).filter(item => item.id !== 'fld_shared')
   const sharedFolders = projects.sharedFolders?.() || []
   if (assetFolder.startsWith('p:') && assetFolder !== 'p:' && !folders.some(item => item.id === assetFolder.slice(2))) assetFolder = 'p:'

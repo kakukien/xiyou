@@ -273,12 +273,30 @@ function createGlb(objDef, assets) {
       resolveAssetUrl(asset.url),
       gltf => {
         root.remove(placeholder);
-        root.add(gltf.scene);
+        // 超大模型自动归一化：居中到对象原点并缩放到 ~8 单位，避免“加载了但看不见”
+        const bbox = new THREE.Box3().setFromObject(gltf.scene);
+        const size = new THREE.Vector3();
+        bbox.getSize(size);
+        const span = Math.max(size.x, size.y, size.z);
+        let sceneNode = gltf.scene;
+        if (Number.isFinite(span) && (span > 20 || (span > 0 && span < 0.05))) {
+          const center = new THREE.Vector3();
+          bbox.getCenter(center);
+          const wrap = new THREE.Group();
+          const k = 8 / span;
+          gltf.scene.position.sub(center);
+          wrap.add(gltf.scene);
+          wrap.scale.setScalar(k);
+          sceneNode = wrap;
+        }
+        root.add(sceneNode);
         root.userData.animations = gltf.animations || [];
-        root.userData.loadedScene = gltf.scene;
+        root.userData.loadedScene = sceneNode;
       },
       undefined,
-      () => {}
+      (err) => {
+        console.warn('[xiyou] glb load failed:', asset?.url, err);
+      }
     );
   }
 

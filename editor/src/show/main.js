@@ -446,10 +446,19 @@ async function startFreeMode() {
 // ---------- VPS 视觉定位 ----------
 // 帧 -> hloc 服务 (DINOv2 检索 -> SuperPoint+LightGlue -> PnP) -> AR 坐标系位姿。
 // 位姿是 COLMAP 约定（相机 +Z 向前、+Y 向下），转 three 需右乘 diag(1,-1,-1)。
-const VPS_FALLBACK = 'https://rest-ann-home-chrome.trycloudflare.com'; // 演示隧道，变了就改这里
-let VPS_URL = new URLSearchParams(location.search).get('vps')
-  || VPS_FALLBACK;
+// 直连隧道最快(2s)：读 vps.txt 拿当前隧道地址；服务器代理 /xiyou-vps 兜底(绕太平洋 ~20s 仅作备胎)
+const VPS_FALLBACK = '/xiyou-vps';
+let VPS_URL = new URLSearchParams(location.search).get('vps') || VPS_FALLBACK;
+const vpsReady = fetch('vps.txt?v=' + Date.now()).then(r => r.ok ? r.text() : '').then(t => {
+  const u = (t || '').trim();
+  if (/^https:\/\//.test(u) && !new URLSearchParams(location.search).get('vps')) VPS_URL = u;
+}).catch(() => {});
 let vpsTimer = null, vpsGyroQ = null, vpsCamQ0 = null, vpsGyroQ0 = null;
+let xrSession = null, xrSpace = null, xrSupported = false;
+(async () => {
+  try { xrSupported = !!(navigator.xr && await navigator.xr.isSessionSupported('immersive-ar')); }
+  catch { xrSupported = false; }
+})();
 
 function capFrame(video, maxW = 960) {
   const w = video.videoWidth || 640, h = video.videoHeight || 480;
@@ -457,7 +466,43 @@ function capFrame(video, maxW = 960) {
   const c = document.createElement('canvas');
   c.width = Math.round(w * s); c.height = Math.round(h * s);
   c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
-  return new Promise(res => c.toBlob(res, 'image/jpeg', 0.72));
+  return new Promise(res => c.toBlob(res, 'image/jpeg', 0.6));
+}
+
+// VPS 锁定后接管：释放相机 -> ARCore SLAM。M = C·P⁻¹，场景矩阵 = P·C⁻¹
+async function enterXR() {
+  if (!vpsCamQ0) { setState('先完成首次定位再进 AR'); return; }
+  try {
+    const session = await navigator.xr.requestSession('immersive-ar', {
+      requiredFeatures: ['local-floor'], optionalFeatures: ['hit-test', 'camera-access'] });
+    freeVideo?.srcObject?.getTracks().forEach(t => t.stop());
+    freeVideo?.remove(); freeVideo = null;
+    clearInterval(vpsTimer);
+    freeRenderer.xr.enabled = true;
+    await freeRenderer.xr.setSession(session);
+    xrSpace = await session.requestReferenceSpace('local-floor');
+    xrSession = session; mode = 'xr';
+    const C = new THREE.Matrix4().compose(vpsCamP0, vpsCamQ0, new THREE.Vector3(1, 1, 1));
+    let got = false;
+    freeRenderer.setAnimationLoop((t, frame) => {
+      if (frame && xrSpace && !got) {
+        const pose = frame.getViewerPose(xrSpace);
+        if (pose) {
+          got = true;
+          const P = new THREE.Matrix4().fromArray(pose.transform.matrix);
+          const alignInv = P.multiply(C.clone().invert()); // P · C⁻¹：世界->XR局部
+          sceneContent.matrixAutoUpdate = false; sceneContent.matrix.copy(alignInv);
+          streamGroup.matrixAutoUpdate = false; streamGroup.matrix.copy(alignInv);
+          sceneContent.visible = true;
+          setState('AR 跟踪中 · ARCore SLAM');
+        }
+      }
+      tickStream(freeRenderer.xr.isPresenting ? freeRenderer.xr.getCamera() : freeCamera);
+      tickPlayer(1 / 60);
+      freeRenderer.render(freeScene, freeCamera);
+    });
+    session.addEventListener('end', () => location.reload());
+  } catch (e) { setState('WebXR 不可用 · ' + (e.message || e)); }
 }
 
 async function startVpsMode() {
@@ -467,7 +512,7 @@ async function startVpsMode() {
     setState(camErr(new DOMException('x', 'SecurityError'))); return;
   }
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
     freeVideo = document.createElement('video');
     freeVideo.autoplay = true; freeVideo.muted = true; freeVideo.playsInline = true;
     freeVideo.setAttribute('playsinline', '');
@@ -509,18 +554,14 @@ async function startVpsMode() {
   const flip = new THREE.Matrix4().makeScale(1, -1, -1);
   const vpsCamP0 = new THREE.Vector3(), desQ = new THREE.Quaternion();
   const _fp = new THREE.Vector3(), _fq = new THREE.Quaternion();
-  let busy = false, locFail = 0, pending = null;
+  await vpsReady; // 先拿到 vps.txt 的最新隧道地址
+  let inflight = 0, locFail = 0, pending = null;
   const angBetween = (a, b) => 2 * Math.acos(Math.min(1, Math.abs(a.dot(b)))) * 180 / Math.PI;
-  const arm = ms => { if (mode === 'vps') vpsTimer = setTimeout(locate, ms); };
-  const locate = async () => {
-    if (mode !== 'vps') return;
-    if (busy) { arm(1500); return; }
-    if (!freeVideo.videoWidth) { arm(600); return; }
-    busy = true;
-    let wait = 1300; // 失败快速重试，抓一帧清晰的
+  const MAX_INFLIGHT = 5; // 流水线并发：服务端单次 ~0.4-2.5s，5 并发才撑得起 0.2s 节奏
+  const locateOnce = async () => {
     try {
-      const blob = await capFrame(freeVideo, 1280);
-      const res = await fetch(`${VPS_URL}/locate?k=15&min=8`, { method: 'POST', body: blob });
+      const blob = await capFrame(freeVideo, 640); // 隧道链路慢(~20s/req)：帧越小上行越快
+      const res = await fetch(`${VPS_URL}/locate?k=10&min=6`, { method: 'POST', body: blob });
       const j = await res.json();
       if (j.ok) {
         const m = new THREE.Matrix4().fromArray(j.cam2world).multiply(flip);
@@ -529,17 +570,23 @@ async function startVpsMode() {
         const strong = j.inliers >= 25;
         let accept = false, dropWhy = '';
         if (!vpsCamQ0) {
-          accept = j.inliers >= 15;
+          // 首定：单帧 >=15 直落；或连续两帧 >=10 且互相印证（弱但一致的解也认）
+          if (j.inliers >= 15) accept = true;
+          else if (j.inliers >= 10 && pending && _fp.distanceTo(pending.p) < 0.8 && angBetween(_fq, pending.q) < 15) accept = true;
+          else pending = { p: _fp.clone(), q: _fq.clone() };
           if (!accept) dropWhy = `首定质量不足 内点${j.inliers}`;
         } else {
           const dp = _fp.distanceTo(vpsCamP0), da = angBetween(_fq, vpsCamQ0);
+          // 锁定后冻结：只信强解（一致微调 或 两帧印证的真移动）；弱解一律保持位姿
           if (strong && dp < 3.5 && da < 50) accept = true;
-          else if (strong && pending && _fp.distanceTo(pending.p) < 1.2 && angBetween(_fq, pending.q) < 25) accept = true; // 连续两次一致的大位移=真实移动
-          else if (!strong && dp < 1.5 && da < 25) accept = true;
-          else { pending = { p: _fp.clone(), q: _fq.clone() }; dropWhy = `跳变/弱解已丢弃 内点${j.inliers}`; }
+          else if (strong && pending && _fp.distanceTo(pending.p) < 1.2 && angBetween(_fq, pending.q) < 25) accept = true;
+          else {
+            if (strong) pending = { p: _fp.clone(), q: _fq.clone() }; // 弱解连存疑资格都没有
+            dropWhy = strong ? `跳变待印证 内点${j.inliers}` : `弱解保持 内点${j.inliers}`;
+          }
         }
         if (accept) {
-          locFail = 0; wait = 1000; pending = null;
+          locFail = 0; pending = null;
           // 置信加权融合：内点越多话语权越大（>=60 全权），弱解只轻微修正——钉住不漂
           const w = Math.min(1, Math.max(0.15, j.inliers / 60));
           if (!vpsCamQ0) {
@@ -556,10 +603,11 @@ async function startVpsMode() {
             freeCamera.updateMatrix();
           }
           sceneContent.visible = true;
+          if (xrSupported) $('btn-xr').style.display = '';
           setState(`已定位 · 内点 ${j.inliers} · ${j.ms}ms`);
         } else {
           locFail++;
-          setState((vpsCamQ0 ? '保持位姿 · ' : '定位中…') + dropWhy);
+          setState((vpsCamQ0 ? '位姿锁定 · ' : '定位中…') + dropWhy);
         }
       } else {
         locFail++;
@@ -567,21 +615,25 @@ async function startVpsMode() {
         const hint = j.max_inliers != null ? ` · 内点 ${j.max_inliers}` : (j.reason ? ` · ${j.reason}` : '');
         const weak = !vpsCamQ0 && (j.max_inliers || 0) < 5 && locFail > 4;
         setState(weak ? '此区域未收录或光线偏弱 · 请回到舞台/大屏方向' + hint
-          : (vpsCamQ0 ? '定位偏移中 · 保持上帧位姿' : '定位中…对准舞台/大屏区域缓慢移动') + hint);
+          : (vpsCamQ0 ? '位姿锁定 · 保持上帧' : '定位中…对准舞台/大屏区域缓慢移动') + hint);
       }
     } catch (e) {
       locFail++;
-      setState('定位服务不可达 · ' + VPS_URL);
+      if (locFail > 10) setState('定位服务不可达 · ' + VPS_URL);
     }
-    busy = false;
-    arm(wait);
   };
   setState('VPS · 对准环境，首次定位…');
-  locate();
+  // 0.2s 一轮投递：上一批没回就跳过本轮，并发上限内持续流水
+  vpsTimer = setInterval(() => {
+    if (mode !== 'vps' || !freeVideo.videoWidth) return;
+    if (inflight >= MAX_INFLIGHT) return;
+    inflight++;
+    locateOnce().finally(() => { inflight--; });
+  }, 200);
 
   rootEl.addEventListener('pointerup', e => {
     const x = (e.clientX / innerWidth) * 2 - 1, y = -(e.clientY / innerHeight) * 2 + 1;
-    raycaster.setFromCamera({ x, y }, freeCamera);
+    raycaster.setFromCamera({ x, y }, freeRenderer?.xr?.isPresenting ? freeRenderer.xr.getCamera() : freeCamera);
     const hits = raycaster.intersectObjects([...nodeMap.values()], true);
     if (hits.length) {
       let o = hits[0].object;
@@ -652,6 +704,7 @@ $('btn-mode').onclick = async () => {
   await startFreeMode();
 };
 $('btn-rescan').onclick = () => location.reload();
+$('btn-xr').onclick = () => enterXR();
 
 $('btn-enter').onclick = async () => {
   $('boot').style.display = 'none';
