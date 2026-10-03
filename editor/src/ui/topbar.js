@@ -743,6 +743,20 @@ export function mount(el) {
     const release = store.createRelease?.();
     log(release ? `已发布场景 v${release.version}` : '已发布场景');
     showOverlay('发布结果', validation, { published: true, release });
+
+    // 持房间口令时把快照同步到线上游客页 /xiyou/show
+    const key = new URLSearchParams(location.search).get('key')
+      || localStorage.getItem(`xiyou.key.${getRoomCode()}`) || '';
+    if (key && release?.snapshot) {
+      fetch('/xiyou/show/scene.json', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-xiyou-key': key },
+        body: release.snapshot,
+      }).then(async res => {
+        if (res.ok) log('已同步到线上游客页 /xiyou/show');
+        else log(`线上同步失败（${res.status}），当前仅本地发布`, 'warn');
+      }).catch(e => log(`线上同步失败：${e?.message || e}`, 'warn'));
+    }
   });
 
   noticeButton.addEventListener('click', showHistory);
