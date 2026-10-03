@@ -533,10 +533,13 @@ async function startVpsMode() {
           if (!accept) dropWhy = `首定质量不足 内点${j.inliers}`;
         } else {
           const dp = _fp.distanceTo(vpsCamP0), da = angBetween(_fq, vpsCamQ0);
+          // 锁定后冻结：只信强解（一致微调 或 两帧印证的真移动）；弱解一律保持位姿
           if (strong && dp < 3.5 && da < 50) accept = true;
-          else if (strong && pending && _fp.distanceTo(pending.p) < 1.2 && angBetween(_fq, pending.q) < 25) accept = true; // 连续两次一致的大位移=真实移动
-          else if (!strong && dp < 1.5 && da < 25) accept = true;
-          else { pending = { p: _fp.clone(), q: _fq.clone() }; dropWhy = `跳变/弱解已丢弃 内点${j.inliers}`; }
+          else if (strong && pending && _fp.distanceTo(pending.p) < 1.2 && angBetween(_fq, pending.q) < 25) accept = true;
+          else {
+            if (strong) pending = { p: _fp.clone(), q: _fq.clone() }; // 弱解连存疑资格都没有
+            dropWhy = strong ? `跳变待印证 内点${j.inliers}` : `弱解保持 内点${j.inliers}`;
+          }
         }
         if (accept) {
           locFail = 0; pending = null;
@@ -559,7 +562,7 @@ async function startVpsMode() {
           setState(`已定位 · 内点 ${j.inliers} · ${j.ms}ms`);
         } else {
           locFail++;
-          setState((vpsCamQ0 ? '保持位姿 · ' : '定位中…') + dropWhy);
+          setState((vpsCamQ0 ? '位姿锁定 · ' : '定位中…') + dropWhy);
         }
       } else {
         locFail++;
@@ -567,7 +570,7 @@ async function startVpsMode() {
         const hint = j.max_inliers != null ? ` · 内点 ${j.max_inliers}` : (j.reason ? ` · ${j.reason}` : '');
         const weak = !vpsCamQ0 && (j.max_inliers || 0) < 5 && locFail > 4;
         setState(weak ? '此区域未收录或光线偏弱 · 请回到舞台/大屏方向' + hint
-          : (vpsCamQ0 ? '定位偏移中 · 保持上帧位姿' : '定位中…对准舞台/大屏区域缓慢移动') + hint);
+          : (vpsCamQ0 ? '位姿锁定 · 保持上帧' : '定位中…对准舞台/大屏区域缓慢移动') + hint);
       }
     } catch (e) {
       locFail++;
