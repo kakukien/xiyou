@@ -21,7 +21,7 @@ export function mount(el) {
   roomInput.type = 'text';
   roomInput.title = '协作房间';
   roomInput.placeholder = '房间名';
-  roomInput.value = new URLSearchParams(location.search).get('room') || 'demo';
+  roomInput.value = new URLSearchParams(location.search).get('room') || window.__xiyouRoom || 'demo';
 
   const peersCount = document.createElement('span');
   peersCount.className = 'presence-count';

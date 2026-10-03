@@ -2,6 +2,7 @@ import { store } from '../core/store.js';
 import { collab } from '../core/collab.js';
 import { CONDITIONS } from '../core/schema.js';
 import { iconMarkup } from './components/icon.js';
+import { log } from './log.js';
 
 const CONDITION_LABELS = {
   tap: '点击',
@@ -559,6 +560,7 @@ function renderBaseEditor() {
       ${card('底座资源', `
         ${baseUploadButton('高斯泼溅底座', '.ply,.sog,.spz,.splat,.ksplat', 'sog_url', '支持 PLY / SOG / SPZ / SPLAT / KSPLAT')}
         <label class="row field-row"><span>资源地址</span><input class="field" value="${esc(base.sog_url || '')}" placeholder="可选远程 PLY / SOG / SPZ URL" data-base-field="sog_url"></label>
+        <label class="row field-row"><span>编辑器加载点云</span><button class="toggle ${base.editor_load !== false ? 'on' : ''}" data-base-action="editor-load" title="关闭后编辑器不再下载/渲染点云，只显示占位底座；不影响已发布的 AR 端" aria-pressed="${base.editor_load !== false}"><i></i></button></label>
         ${baseUploadButton('碰撞体', '.glb,.gltf', 'collider_url', '可选，用于地面落点与禁布检测')}
         <label class="row field-row"><span>碰撞地址</span><input class="field" value="${esc(base.collider_url || '')}" placeholder="可选 Collider GLB / GLTF URL" data-base-field="collider_url"></label>
         <label class="row field-row"><span>碰撞可视化</span><button class="toggle ${base.collider?.visible ? 'on' : ''}" data-base-action="collider-visible" aria-pressed="${Boolean(base.collider?.visible)}"><i></i></button></label>
@@ -692,6 +694,11 @@ function bindEvents() {
       const key = baseAction.dataset.baseAction;
       if (key === 'collider-visible') store.setBase?.({ collider: { ...(store.scene.base.collider || {}), visible: !store.scene.base.collider?.visible } });
       if (key === 'lod-enabled') store.setBase?.({ lod: { ...(store.scene.base.lod || {}), enabled: !store.scene.base.lod?.enabled } });
+      if (key === 'editor-load') {
+        const next = store.scene.base.editor_load === false
+        store.setBase?.({ editor_load: next })
+        log(next ? '点云底座已开启加载' : '点云底座已关闭加载，只显示占位底座', 'info')
+      }
       return;
     }
 

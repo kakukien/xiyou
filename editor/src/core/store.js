@@ -16,7 +16,13 @@ let batchSnapshot = null
 let committedSnapshot = JSON.stringify(scene)
 const undoStack = []
 const redoStack = []
-const HISTORY_LIMIT = 100
+// 撤销步数可调（默认 30），持久化到本机
+let historyLimit = (() => {
+  try {
+    const value = Number(localStorage.getItem('xiyou.historyLimit'))
+    return Number.isFinite(value) && value >= 1 ? Math.min(500, Math.round(value)) : 30
+  } catch { return 30 }
+})()
 
 const changeLog = []
 const CHANGELOG_LIMIT = 300
@@ -85,10 +91,13 @@ function normalizeScene(input) {
   source.base = {
     sog_url: typeof base.sog_url === 'string' ? base.sog_url : '',
     visible: base.visible !== false,
+    editor_load: base.editor_load !== false,
     collider_url: base.collider_url ?? null,
     collider: isObject(base.collider) ? base.collider : { type: 'box', size: [20, 2, 20], center: [0, 1, 0], visible: false },
     lod: isObject(base.lod) ? { enabled: Boolean(base.lod.enabled), levels: Array.isArray(base.lod.levels) ? base.lod.levels : ['high', 'medium', 'low'], current: base.lod.current || 'high', urls: isObject(base.lod.urls) ? base.lod.urls : { high: '', medium: '', low: '' }, thresholds: isObject(base.lod.thresholds) ? base.lod.thresholds : { near: 12, far: 30 } } : { enabled: false, levels: ['high', 'medium', 'low'], current: 'high', urls: { high: '', medium: '', low: '' }, thresholds: { near: 12, far: 30 } },
     chunks: Array.isArray(base.chunks) ? base.chunks : [],
+    proxy: isObject(base.proxy) && base.proxy.v === 1 ? base.proxy : null,
+    viewMode: ['proxy', 'splat', 'both'].includes(base.viewMode) ? base.viewMode : '',
     env: isObject(base.env) ? base.env : {},
     transform: {
       s: Number.isFinite(baseTransform.s) ? baseTransform.s : 1,
@@ -158,6 +167,13 @@ function normalizeScene(input) {
   source.meta.assets = Array.isArray(source.meta.assets)
     ? source.meta.assets
     : []
+  source.meta.folders = Array.isArray(source.meta.folders)
+    ? source.meta.folders.filter(item => isObject(item) && item.id).map(item => ({
+        id: String(item.id),
+        name: String(item.name || '未命名文件夹'),
+        parent: typeof item.parent === 'string' ? item.parent : ''
+      }))
+    : []
   source.meta.releases = Array.isArray(source.meta.releases)
     ? source.meta.releases
     : []
@@ -221,7 +237,7 @@ function markChanged(transient = false, record = true) {
 
   if (record && !transient) {
     undoStack.push(committedSnapshot)
-    if (undoStack.length > HISTORY_LIMIT) undoStack.shift()
+    if (undoStack.length > historyLimit) undoStack.shift()
     redoStack.length = 0
     committedSnapshot = JSON.stringify(scene)
   }
@@ -232,7 +248,7 @@ function markChanged(transient = false, record = true) {
 function replaceScene(nextScene, { record = true, transient = false } = {}) {
   if (record && !transient) {
     undoStack.push(committedSnapshot)
-    if (undoStack.length > HISTORY_LIMIT) undoStack.shift()
+    if (undoStack.length > historyLimit) undoStack.shift()
     redoStack.length = 0
   }
 
@@ -878,7 +894,7 @@ export const store = {
       batchDepth -= 1
       if (batchDepth === 0 && batchDirty) {
         undoStack.push(batchSnapshot || committedSnapshot)
-        if (undoStack.length > HISTORY_LIMIT) undoStack.shift()
+        if (undoStack.length > historyLimit) undoStack.shift()
         redoStack.length = 0
         committedSnapshot = JSON.stringify(scene)
         batchSnapshot = null
@@ -983,6 +999,7 @@ export const store = {
       variants: isObject(props.variants) ? clone(props.variants) : {},
       metadata: isObject(props.metadata) ? clone(props.metadata) : {},
       tags: Array.isArray(props.tags) ? clone(props.tags) : [],
+      folder: typeof props.folder === 'string' ? props.folder : '',
       license: props.license || 'project',
       version: props.version || '1.0.0'
     }
@@ -1049,6 +1066,90 @@ export const store = {
     markChanged(false)
     emit('assets', scene.meta.assets)
     return asset
+  },
+
+  // ---- 资源工作目录（UE 式内容浏览器）----
+  // scene.meta.folders: [{ id, name, parent }]；parent='' 挂在根目录「内容」下；
+  // asset.folder 存目录 id，'' 表示根目录。协作时每人用自己的目录隔离素材。
+
+  get folders() {
+    if (!isObject(scene.meta)) scene.meta = {}
+    if (!Array.isArray(scene.meta.folders)) scene.meta.folders = []
+    return scene.meta.folders
+  },
+
+  // 播种默认工作目录：当前用户个人目录（共享素材库由工程注册表提供，不进项目目录），返回个人目录 id
+  ensureWorkspaceFolders() {
+    const folders = this.folders
+    let touched = false
+    const personalId = `fld_${whoami()}`
+    if (!folders.find(item => item.id === personalId)) {
+      folders.push({ id: personalId, name: `${whoami()}的素材`, parent: '' })
+      touched = true
+    }
+    if (touched) {
+      markChanged(false)
+      emit('assets', scene.meta.assets)
+    }
+    return personalId
+  },
+
+  addFolder(name, parent = '') {
+    const label = String(name || '').trim() || '新建文件夹'
+    const folder = { id: randomId('fld'), name: label, parent: String(parent || '') }
+    this.folders.push(folder)
+    addHistory(folder.id, `新建文件夹「${label}」`)
+    markChanged(false)
+    emit('assets', scene.meta.assets)
+    return folder
+  },
+
+  renameFolder(id, name) {
+    const folder = this.folders.find(item => item.id === id)
+    const label = String(name || '').trim()
+    if (!folder || !label) return null
+    folder.name = label
+    addHistory(id, `重命名文件夹为「${label}」`)
+    markChanged(false)
+    emit('assets', scene.meta.assets)
+    return folder
+  },
+
+  // 删除目录：子目录与素材都上移到父目录，不丢素材
+  removeFolder(id) {
+    const folders = this.folders
+    const folder = folders.find(item => item.id === id)
+    if (!folder) return false
+    const parent = folder.parent || ''
+    folders.forEach(item => { if (item.parent === id) item.parent = parent })
+    scene.meta.assets.forEach(asset => { if (asset?.folder === id) asset.folder = parent })
+    folders.splice(folders.indexOf(folder), 1)
+    addHistory(id, `删除文件夹「${folder.name}」`)
+    markChanged(false)
+    emit('assets', scene.meta.assets)
+    return true
+  },
+
+  moveAssetToFolder(assetId, folderId = '') {
+    const asset = scene.meta.assets.find(item => item?.id === assetId)
+    if (!asset) return null
+    const exists = folderId === '' || this.folders.some(item => item.id === folderId)
+    if (!exists) return null
+    asset.folder = folderId
+    markChanged(false)
+    emit('assets', scene.meta.assets)
+    return asset
+  },
+
+  get historyLimit() { return historyLimit },
+
+  setHistoryLimit(value) {
+    const next = Number(value)
+    if (!Number.isFinite(next)) return historyLimit
+    historyLimit = Math.max(1, Math.min(500, Math.round(next)))
+    try { localStorage.setItem('xiyou.historyLimit', String(historyLimit)) } catch {}
+    while (undoStack.length > historyLimit) undoStack.shift()
+    return historyLimit
   },
 
   createRelease() {

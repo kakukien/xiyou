@@ -12,12 +12,17 @@ import { mount as mountVpchrome } from './ui/vpchrome.js'
 import { mount as mountSplatStudio } from './ui/splat-studio.js'
 import { collab } from './core/collab.js'
 import { addElementInstance } from './core/elements.js'
+import { projects } from './core/projects.js'
 
 // ---- bootstrap ----
-window.__xiyou = { viewport, store, player }
+window.__xiyou = { viewport, store, player, projects }
 const params = new URLSearchParams(location.search)
-const ROOM = params.get('room') || 'demo'
+// 工程制：?proj=<id> → 协作房间 xiyou-proj-<id> + 独立本地存档；?room= 保持兼容。
+const PROJ = params.get('proj') || 'main'
+const ROOM = params.get('room') || `xiyou-proj-${PROJ}`
 const STORAGE_KEY = `xiyou.scene.v2.${ROOM}`
+window.__xiyouRoom = ROOM
+window.__xiyouProj = PROJ
 store.setStorageKey(STORAGE_KEY)
 if (params.has('reset')) {
   try {
@@ -33,6 +38,32 @@ if (!loadedScene && store.lastLoadStatus === 'missing') {
 }
 if (!loadedScene && store.lastLoadStatus !== 'missing') {
   log('场景草稿未自动覆盖：请检查日志或从备份/JSON 恢复', 'warn')
+}
+
+// 言出法随热加载：?splat=assets/gen_x.ply 直接替换 3GS 底座（gen_space.py 产物）
+// 生成空间用单位变换——ml-sharp 输出相机在原点，套实拍场地的 Sim3 会把空间掰歪
+const splatQ = params.get('splat')
+if (splatQ) {
+  store.scene.base = {
+    ...(store.scene.base || {}),
+    sog_url: splatQ,
+    transform: { s: 1, R: [1, 0, 0, 0, 1, 0, 0, 0, 1], t: [0, 0, 0], scale_source: 'genspace' }
+  }
+}
+
+// 空底座占位：现场照片墙播种为可编辑 quad（可选中/移动/换图/删除）
+// photo_walls_seeded 标记保证只播种一次，用户删掉后不会再冒回来
+{
+  const base = store.scene.base || {}
+  const meta = store.scene.meta || (store.scene.meta = {})
+  if (!meta.photo_walls_seeded && !base.sog_url && !(base.chunks || []).length && !base.proxy) {
+    meta.photo_walls_seeded = true
+    ;[
+      { name: '现场照片A', p: [0, 2, -6], r: [0, 0, 0] },
+      { name: '现场照片B', p: [-4.2, 2, -4.2], r: [0, -45, 0] },
+      { name: '现场照片C', p: [4.2, 2, -4.2], r: [0, 45, 0] }
+    ].forEach(wall => store.addObject('quad', { name: wall.name, transform: { p: wall.p, r: wall.r, s: [4, 4, 1] } }))
+  }
 }
 
 viewport.init(document.getElementById('viewport'))
@@ -51,6 +82,34 @@ window.__xiyou.splatStudio = splatStudio
 
 // auto-connect collab (non-fatal if server unreachable)
 if (presenceEl?._connect && presenceEl._hasExplicitCollab) presenceEl._connect()
+
+// 工程注册表（共享素材库也在这条 doc 里）
+projects.connect()
+// 注册当前工程，让工程清单对协作者可见
+projects.on('ready', () => {
+  const name = store.scene?.meta?.name || '未命名工程'
+  if (!projects.list().find(item => item.id === PROJ)) {
+    projects.touch(PROJ, { name, owner: '' })
+  }
+  // 播种共享素材库：场景中 fld_shared 归档的素材同步进注册表（全员可见）
+  const sharedFolders = projects.sharedFolders()
+  if (!sharedFolders.find(f => f.id === 'fld_shared')) {
+    sharedFolders.unshift({ id: 'fld_shared', name: '共享素材', parent: '' })
+    projects.setSharedFolders(sharedFolders)
+  }
+  const existing = new Set(projects.sharedAssets().map(a => a.id))
+  const BUILTIN_SHARED = [
+    { id: 'a_world', name: '虚境世界·体素.glb', url: 'assets/xiyou_world.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 1915952, mime: 'model/gltf-binary' },
+    { id: 'a_belltower', name: '西安钟楼·体块.glb', url: 'assets/xiyou_belltower.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 782288, mime: 'model/gltf-binary' },
+  ]
+  const seed = [
+    ...BUILTIN_SHARED,
+    ...(store.scene?.meta?.assets || []).filter(a => a.folder === 'fld_shared'),
+  ].filter(a => !existing.has(a.id))
+  if (seed.length) {
+    seed.forEach(a => projects.addSharedAsset({ ...a, folder: 'fld_shared' }))
+  }
+})
 
 // ---- react to store ----
 let lastBase = store.scene.base
@@ -115,9 +174,27 @@ vpEl.addEventListener('drop', e => {
   const type = e.dataTransfer.getData('xo-type')
   const elementId = e.dataTransfer.getData('text/x-xiyou-element')
   const assetId = e.dataTransfer.getData('text/x-xiyou-asset')
+  const sharedId = e.dataTransfer.getData('text/x-xiyou-shared')
   const point = viewport.placementPoint ? viewport.placementPoint(e.clientX, e.clientY) : [0, 0, -3]
   if (elementId) {
     addElementInstance(elementId, point)
+    return
+  }
+  // 共享素材拖入视口：先复制进本工程资产表，对象引用才有解析源
+  if (sharedId && !assetId) {
+    const shared = (projects.sharedAssets?.() || []).find(item => item.id === sharedId)
+    if (!shared) return
+    let asset = (store.scene.meta?.assets || []).find(item => item.id === shared.id)
+    if (!asset) asset = store.addAsset({ ...shared, folder: '' })
+    if (!asset) return
+    const kind = shared.kind || shared.type
+    if (kind === 'splat') { store.setBase({ sog_url: asset.url || '' }); log(`已将共享素材「${shared.name || sharedId}」设为高斯空间底座`); return }
+    const objectType = kind === 'image' ? 'quad' : kind === 'video' ? 'video_quad' : kind === 'model' || kind === 'glb' ? 'glb' : null
+    if (!objectType) { log(`共享素材「${shared.name || sharedId}」暂不支持拖入视口`, 'warn'); return }
+    const zone = viewport.zoneAtPoint?.(point, 'editable')
+    const obj = store.addObject(objectType, { asset: asset.id, zone_id: zone?.id || '', transform: { p: point, r: [0, 0, 0], s: [1, 1, 1] } })
+    store.select(obj.id)
+    log(`已布置共享素材 ${shared.name || sharedId}`)
     return
   }
   if (assetId) {
