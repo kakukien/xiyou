@@ -107,6 +107,7 @@ function writeLocalScene() {
 }
 
 function readCollection(name) {
+  if (!entities) return name === 'base' || name === 'meta' ? null : []
   const bucket = entities.get(name)
 
   if (!(bucket instanceof Y.Map)) {

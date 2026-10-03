@@ -317,22 +317,13 @@ function renderAnchors(scene, query, readOnly) {
 const localCollapsed = new Set();
 
 export function mount(el) {
-  let activeTab = 'content';
   let query = '';
 
   function render() {
     const scene = store.scene;
     const readOnly = isPlayMode();
-    const chapters = scene.story?.chapters || [];
-    const visibleChapters = chapters.filter(chapter => chapterMatches(scene, chapter, query));
-    const worldOnly = activeTab === 'world';
-    const contentOnly = activeTab === 'content';
 
     el.innerHTML = `
-      <div class="ol-tabs">
-        <button class="tab${activeTab === 'content' ? ' active' : ''}" data-tab="content">剧情</button>
-        <button class="tab${activeTab === 'world' ? ' active' : ''}" data-tab="world">空间</button>
-      </div>
       <div class="ol-search">
         <input class="field" type="search" placeholder="搜索元素、对象、区域、锚点" value="${esc(query)}">
       </div>
@@ -340,8 +331,8 @@ export function mount(el) {
         ${readOnly ? '' : `<span class="ol-context-hint">点击 + 添加，或拖入视口</span>`}
       </div>
       <div class="ol-tree">
-        ${worldOnly ? renderObjects(scene, query, readOnly) : contentOnly ? `<div class="ol-section-title">剧情章</div><div class="ol-chapters">${visibleChapters.map(chapter => renderChapter(scene, chapter, query, worldOnly)).join('') || '<div class="ol-empty">暂无匹配内容</div>'}</div>` : renderObjects(scene, query, readOnly)}
-        ${worldOnly ? renderAnchors(scene, query, readOnly) : `${renderZones(scene, query, readOnly)}${renderAnchors(scene, query, readOnly)}`}
+        ${renderObjects(scene, query, readOnly)}
+        ${renderZones(scene, query, readOnly)}${renderAnchors(scene, query, readOnly)}
       </div>
     `;
 
@@ -349,13 +340,6 @@ export function mount(el) {
   }
 
   function bind() {
-    el.querySelectorAll('[data-tab]').forEach(button => {
-      button.addEventListener('click', () => {
-        activeTab = button.dataset.tab;
-        render();
-      });
-    });
-
     const search = el.querySelector('.ol-search input');
     search?.addEventListener('input', event => {
       query = event.target.value.trim().toLowerCase();
