@@ -1,4 +1,5 @@
 import { store } from '../core/store.js';
+import { projects } from '../core/projects.js';
 import { ACTION_CARDS, cardToSequence, INTERACTION_TEMPLATES, interactionTemplate } from '../core/templates.js';
 import { budget } from '../core/schema.js';
 import { player } from '../core/playback.js';
@@ -38,7 +39,8 @@ let tlZoom = 140; // 时间线缩放：像素/秒
 let assetQuery = '';
 let assetKind = 'all';
 let selectedAssetId = null;
-// 内容浏览器工作目录：'' = 根目录「内容」，null = 未初始化（首次渲染落到个人目录）
+let selectedSharedId = null;
+// 内容浏览器目录选择：'p:<fid>' 项目目录 / 'p:' 项目根 / 's:<fid>' 共享目录 / 's:' 全部共享
 let assetFolder = null;
 let keyPopoverCleanup = null;
 
@@ -246,11 +248,16 @@ function renderAssets() {
   toolbar.append(search, kind, importButton);
   panel.appendChild(toolbar);
 
-  // ---- 工作目录树（UE 式内容浏览器）----
+  // ---- 工作目录树：共享素材库（全员同步）+ 项目素材（仅本工程）----
   const personalId = store.ensureWorkspaceFolders?.() || ''
-  if (assetFolder === null) assetFolder = personalId
-  const folders = store.folders || []
-  if (assetFolder !== '' && !folders.some(item => item.id === assetFolder)) assetFolder = ''
+  if (assetFolder === null) assetFolder = `p:${personalId}`
+  const folders = (store.folders || []).filter(item => item.id !== 'fld_shared')
+  const sharedFolders = projects.sharedFolders?.() || []
+  if (assetFolder.startsWith('p:') && assetFolder !== 'p:' && !folders.some(item => item.id === assetFolder.slice(2))) assetFolder = 'p:'
+  if (assetFolder.startsWith('s:') && assetFolder !== 's:' && !sharedFolders.some(item => item.id === assetFolder.slice(2))) assetFolder = 's:'
+
+  const folderScope = () => assetFolder.slice(0, 2) === 's:' ? 'shared' : 'project'
+  const folderId = () => assetFolder.slice(2)
 
   const body = document.createElement('div')
   body.className = 'cb-body'
@@ -258,44 +265,77 @@ function renderAssets() {
   const rail = document.createElement('div')
   rail.className = 'cb-folders'
 
-  const railHead = document.createElement('div')
-  railHead.className = 'cb-folders-head'
-  railHead.textContent = '内容'
-  rail.appendChild(railHead)
-
-  const folderRows = [{ id: '', name: '全部内容', icon: 'folder-open-line', depth: 0 }]
-  // 递归铺平目录树
-  const pushChildren = parent => {
-    folders.filter(item => (item.parent || '') === parent).forEach(item => {
-      const depth = (() => { let d = 1, p = item.parent; while (p) { d += 1; p = folders.find(f => f.id === p)?.parent } return Math.min(d, 4) })()
-      folderRows.push({ ...item, icon: 'folder-2-line', depth })
-      pushChildren(item.id)
-    })
-  }
-  pushChildren('')
-
-  folderRows.forEach(item => {
+  const addRow = (sel, name, icon, depth, title) => {
     const row = document.createElement('button')
     row.type = 'button'
-    row.className = `cb-folder${assetFolder === item.id ? ' active' : ''}`
-    row.style.paddingLeft = `${6 + item.depth * 12}px`
-    row.innerHTML = `${iconMarkup(item.icon)}<span>${item.name}</span>`
-    row.title = item.id ? `目录：${item.name}` : '显示所有目录'
-    row.addEventListener('click', () => { assetFolder = item.id; requestRender() })
-    // 素材卡拖上目录行 = 移动素材到该目录
+    row.className = `cb-folder${assetFolder === sel ? ' active' : ''}`
+    row.style.paddingLeft = `${6 + depth * 12}px`
+    row.innerHTML = `${iconMarkup(icon)}<span>${name}</span>`
+    row.title = title || name
+    row.addEventListener('click', () => { assetFolder = sel; requestRender() })
+    // 素材卡拖上目录行 = 移动到该目录
     row.addEventListener('dragover', event => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; row.classList.add('drop') })
     row.addEventListener('dragleave', () => row.classList.remove('drop'))
     row.addEventListener('drop', event => {
       event.preventDefault()
       row.classList.remove('drop')
+      const sharedId = event.dataTransfer?.getData('text/x-xiyou-shared')
       const assetId = event.dataTransfer?.getData('text/x-xiyou-asset')
-      if (assetId && store.moveAssetToFolder?.(assetId, item.id)) {
-        log(`已移动到「${item.name}」`)
+      const targetScope = sel.startsWith('s:') ? 'shared' : 'project'
+      const targetFolder = sel.slice(2)
+      if (sharedId) {
+        // 共享素材拖到项目目录 = 复制进本工程
+        if (targetScope === 'project') {
+          const shared = projects.sharedAssets().find(item => item.id === sharedId)
+          if (shared) {
+            store.addAsset({ ...shared, folder: targetFolder, id: shared.id })
+            log(`已从共享素材库引入「${shared.name || sharedId}」`)
+          }
+        } else {
+          projects.updateSharedAsset(sharedId, { folder: targetFolder })
+        }
+        requestRender()
+        return
+      }
+      if (assetId && targetScope === 'project' && store.moveAssetToFolder?.(assetId, targetFolder)) {
+        log(`已移动到「${name}」`)
         requestRender()
       }
     })
     rail.appendChild(row)
-  })
+  }
+
+  const depthOf = (list, item) => {
+    let d = 1, p = item.parent
+    while (p) { d += 1; p = list.find(f => f.id === p)?.parent }
+    return Math.min(d, 4)
+  }
+
+  const sharedHead = document.createElement('div')
+  sharedHead.className = 'cb-folders-head'
+  sharedHead.textContent = '共享素材库'
+  rail.appendChild(sharedHead)
+  addRow('s:', '全部共享', 'folder-open-line', 0, '显示共享素材库全部内容')
+  const pushShared = parent => {
+    sharedFolders.filter(item => (item.parent || '') === parent).forEach(item => {
+      addRow(`s:${item.id}`, item.name, 'folder-2-line', depthOf(sharedFolders, item), `共享目录：${item.name}`)
+      pushShared(item.id)
+    })
+  }
+  pushShared('')
+
+  const projHead = document.createElement('div')
+  projHead.className = 'cb-folders-head'
+  projHead.textContent = '项目素材'
+  rail.appendChild(projHead)
+  addRow('p:', '工程文件', 'folder-open-line', 0, `本工程根目录：${store.scene?.meta?.name || ''}`)
+  const pushProject = parent => {
+    folders.filter(item => (item.parent || '') === parent).forEach(item => {
+      addRow(`p:${item.id}`, item.name, 'folder-2-line', depthOf(folders, item), `项目目录：${item.name}`)
+      pushProject(item.id)
+    })
+  }
+  pushProject('')
 
   const railOps = document.createElement('div')
   railOps.className = 'cb-folders-ops'
@@ -308,23 +348,32 @@ function renderAssets() {
     b.addEventListener('click', fn)
     return b
   }
+  const isSharedScope = folderScope() === 'shared'
   railOps.append(
-    mkOp('folder-add-line', '在当前目录下新建文件夹', () => {
+    mkOp('folder-add-line', `在当前${isSharedScope ? '共享' : '项目'}目录下新建文件夹`, () => {
       const name = window.prompt('文件夹名称', '新建文件夹')
-      if (name !== null) { const f = store.addFolder?.(name, assetFolder); if (f) { assetFolder = f.id; requestRender() } }
+      if (name === null) return
+      const f = isSharedScope ? projects.addSharedFolder(name, folderId()) : store.addFolder?.(name, folderId())
+      if (f) { assetFolder = `${isSharedScope ? 's' : 'p'}:${f.id}`; requestRender() }
     }),
     mkOp('edit-line', '重命名当前文件夹', () => {
-      if (!assetFolder) { log('根目录不可重命名', 'warn'); return }
-      const cur = folders.find(item => item.id === assetFolder)
+      const id = folderId()
+      if (!id) { log('根目录不可重命名', 'warn'); return }
+      const cur = (isSharedScope ? sharedFolders : folders).find(item => item.id === id)
       const name = window.prompt('文件夹名称', cur?.name || '')
-      if (name !== null) { store.renameFolder?.(assetFolder, name); requestRender() }
+      if (name === null) return
+      if (isSharedScope) projects.renameSharedFolder(id, name)
+      else store.renameFolder?.(id, name)
+      requestRender()
     }),
     mkOp('delete-bin-6-line', '删除当前文件夹（素材上移到父目录）', () => {
-      if (!assetFolder) { log('根目录不可删除', 'warn'); return }
-      const cur = folders.find(item => item.id === assetFolder)
+      const id = folderId()
+      if (!id) { log('根目录不可删除', 'warn'); return }
+      const cur = (isSharedScope ? sharedFolders : folders).find(item => item.id === id)
       if (window.confirm(`删除文件夹「${cur?.name}」？其中素材会上移到父目录。`)) {
-        store.removeFolder?.(assetFolder)
-        assetFolder = cur?.parent || ''
+        if (isSharedScope) projects.removeSharedFolder(id)
+        else store.removeFolder?.(id)
+        assetFolder = `${isSharedScope ? 's' : 'p'}:${cur?.parent || ''}`
         requestRender()
       }
     })
@@ -338,12 +387,21 @@ function renderAssets() {
   const strip = document.createElement('div');
   strip.className = 'asset-strip';
 
-  const assets = (store.scene.meta?.assets || []).filter(asset => {
+  const sharedScope = assetFolder.startsWith('s:')
+  const currentFolderId = assetFolder.slice(2)
+  // fld_shared 是旧项目目录里的归档：显示并入共享素材库，不再出现在项目区
+  const registryAssets = projects.sharedAssets?.() || []
+  const registryIds = new Set(registryAssets.map(item => item.id))
+  const legacyShared = (store.scene.meta?.assets || []).filter(item => item.folder === 'fld_shared' && !registryIds.has(item.id))
+  const sourceAssets = sharedScope
+    ? [...registryAssets, ...legacyShared]
+    : (store.scene.meta?.assets || []).filter(item => item.folder !== 'fld_shared')
+  const assets = sourceAssets.filter(asset => {
     const category = assetKindOf(asset);
     const haystack = [asset.name, asset.id, asset.kind, asset.type, category, ...(asset.tags || [])].join(' ').toLowerCase();
     const matchesQuery = !assetQuery.trim() || haystack.includes(assetQuery.trim().toLowerCase());
     const matchesKind = assetKind === 'all' || category === assetKind || asset.kind === assetKind || asset.type === assetKind || asset.subtype === assetKind;
-    const matchesFolder = assetFolder === '' || (asset.folder || '') === assetFolder;
+    const matchesFolder = currentFolderId === '' || (asset.folder || '') === currentFolderId;
     return matchesQuery && matchesKind && matchesFolder;
   });
   assets.forEach(asset => {
@@ -394,13 +452,20 @@ function renderAssets() {
     remove.title = '删除素材';
     remove.addEventListener('click', event => {
       event.stopPropagation();
-      store.removeAsset(asset.id);
+      if (sharedScope) projects.removeSharedAsset(asset.id)
+      else store.removeAsset(asset.id);
+      requestRender()
     });
 
     card.append(thumb, name, size, remove);
     card.addEventListener('click', () => {
-      selectedAssetId = asset.id
+      if (sharedScope) { selectedSharedId = asset.id; selectedAssetId = null }
+      else { selectedAssetId = asset.id; selectedSharedId = null }
       if (assetKindOf(asset) === 'splat') {
+        // 共享 splat 素材需先引入本工程，保证场景引用可解析
+        if (sharedScope && !(store.scene.meta?.assets || []).some(item => item.id === asset.id)) {
+          store.addAsset({ ...asset, folder: '' })
+        }
         store.setBase?.({ sog_url: asset.url || '' })
         log(`已将空间底座切换为「${asset.name || asset.id}」`)
       }
@@ -408,7 +473,8 @@ function renderAssets() {
     })
     card.draggable = true;
     card.addEventListener('dragstart', event => {
-      event.dataTransfer?.setData('text/x-xiyou-asset', asset.id);
+      if (sharedScope) event.dataTransfer?.setData('text/x-xiyou-shared', asset.id);
+      else event.dataTransfer?.setData('text/x-xiyou-asset', asset.id);
     });
     strip.appendChild(card);
   });
@@ -440,17 +506,20 @@ function renderAssets() {
       if (!window.__xiyouBlobMap) window.__xiyouBlobMap = new Map();
       window.__xiyouBlobMap.set(url, URL.createObjectURL(file));
 
-      const asset = store.addAsset({
+      const assetProps = {
         name: file.name,
         kind: type === 'glb' ? 'model' : type,
         type,
-        folder: assetFolder || '',
+        folder: currentFolderId,
         size: file.size,
         bytes: file.size,
         mime,
         url,
         metadata: type === 'splat' ? { format: file.name.split('.').pop()?.toLowerCase() || 'ply', local: true } : {}
-      });
+      }
+      const asset = sharedScope
+        ? projects.addSharedAsset(assetProps)
+        : store.addAsset(assetProps)
       if (asset && type === 'splat') {
         store.setBase?.({ sog_url: url });
         log(`已导入高斯泼溅「${file.name}」，正在加载到底座`, 'info');
@@ -467,6 +536,19 @@ function renderAssets() {
   body.appendChild(stripWrap)
   panel.appendChild(body)
 
+  const selectedShared = (projects.sharedAssets?.() || []).find(asset => asset.id === selectedSharedId)
+  if (selectedShared) {
+    const detail = document.createElement('section')
+    detail.className = 'asset-detail'
+    const folderOptions = [['', '共享素材库（根）'], ...sharedFolders.map(f => [f.id, f.name])]
+      .map(([value, label]) => `<option value="${value}" ${(selectedShared.folder || '') === value ? 'selected' : ''}>${label}</option>`).join('')
+    detail.innerHTML = `<div class="asset-detail-head"><div><strong>${selectedShared.name || selectedShared.id}</strong><span>共享素材 · ${selectedShared.kind || selectedShared.type || '资源'}</span></div><button class="btn icon-btn asset-detail-close" title="关闭" aria-label="关闭">${iconMarkup('close-line')}</button></div><div class="asset-detail-grid"><label>目录<select class="field" data-shared-folder>${folderOptions}</select></label><label>标签<input class="field" data-shared-tags value="${(selectedShared.tags || []).join(', ')}"></label></div><div class="muted base-help">共享素材对全部工程可见；拖入工程视口会自动引入本项目。</div>`
+    detail.querySelector('.asset-detail-close').addEventListener('click', () => { selectedSharedId = null; requestRender() })
+    detail.querySelector('[data-shared-folder]').addEventListener('change', e => { projects.updateSharedAsset(selectedShared.id, { folder: e.target.value }); requestRender() })
+    detail.querySelector('[data-shared-tags]').addEventListener('change', e => { projects.updateSharedAsset(selectedShared.id, { tags: e.target.value.split(',').map(v => v.trim()).filter(Boolean) }) })
+    panel.appendChild(detail)
+    return panel
+  }
   const selectedAsset = (store.scene.meta?.assets || []).find(asset => asset.id === selectedAssetId)
   if (selectedAsset) {
     const detail = document.createElement('section')
@@ -1233,6 +1315,8 @@ export function mount(el) {
   });
 
   store.on('change', requestRender);
+  projects.on('shared', requestRender);
+  projects.on('projects', requestRender);
   store.on('selection', requestRender);
   store.on('assets', requestRender);
   store.on('budget', requestRender);

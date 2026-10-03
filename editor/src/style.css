@@ -1,9 +1,9 @@
 /* 瓷白橙光主题 —— 瓷白面板 + 橙色强调 + 冷色环境 */
 :root {
-  --bg0:#eef1f6;             /* 冷色外环境 */
-  --bg1:#faf9f6;             /* 瓷白面板 */
-  --bg2:#f2f0ea;             /* 瓷白次层 */
-  --bg3:#e8e6df;             /* 瓷白深一层 */
+  --bg0:#eaeff6;             /* 冷色外环境 */
+  --bg1:#fcfbfa;             /* 瓷白面板 */
+  --bg2:#f3f2ee;             /* 瓷白次层 */
+  --bg3:#eae8e1;             /* 瓷白深一层 */
   --line:#d5d9e2;            /* 冷灰描边 */
   --line2:#c4cad6;
   --fg:#2b3440;              /* 主文字 深岩灰 */
@@ -24,10 +24,10 @@ html,body,#app { height:100%; overflow:hidden; background:var(--bg0); color:var(
 #app { display:flex; flex-direction:column; }
 #main { flex:1; display:flex; min-height:0; gap:1px; }
 .panel { background:var(--bg1); border:1px solid var(--line); }
-#topbar { height:46px; display:flex; align-items:center; gap:6px; padding:0 10px; background:linear-gradient(180deg,#fdfcf9,#f2f0ea); border-bottom:1px solid var(--line); flex:none; box-shadow:0 1px 3px #8b96a812; }
+#topbar { height:46px; display:flex; align-items:center; gap:6px; padding:0 10px; background:linear-gradient(180deg,#fefdfc,#f3f2ed); border-bottom:1px solid var(--line); flex:none; box-shadow:0 1px 3px #8b96a812; }
 #outliner { width:260px; flex:none; overflow:auto; display:flex; flex-direction:column; }
 #details { width:320px; flex:none; overflow:auto; }
-#viewport-wrap { flex:1; position:relative; min-width:0; background:#dfe6ef; }
+#viewport-wrap { flex:1; position:relative; min-width:0; background:radial-gradient(115% 85% at 50% 30%, #f5f9fd 0%, #e8eef6 55%, #dde5f0 100%); }
 #viewport { position:absolute; inset:0; }
 #viewport canvas { display:block; }
 #viewport-overlay { position:absolute; left:10px; top:8px; pointer-events:none; font-size:12px; color:var(--fg-dim); text-shadow:0 1px 2px #fff; }
@@ -1319,3 +1319,5 @@ select.field,
 .tb-undo-limit { display:flex; align-items:center; gap:4px; font-size:11px; color:var(--fg-dim); }
 .tb-undo-input { width:48px; padding:2px 4px; font-size:11px; }
 .mode-btn-splat.active, .btn.btn-sm.active { outline:1.5px solid var(--accent); }
+.tb-proj { max-width:150px; font-size:12px; padding:3px 6px; }
+.cb-folders-head + .cb-folder { margin-top:2px; }

@@ -960,14 +960,10 @@ export const store = {
     return scene.meta.folders
   },
 
-  // 播种默认工作目录：共享素材 + 当前用户个人目录，返回个人目录 id
+  // 播种默认工作目录：当前用户个人目录（共享素材库由工程注册表提供，不进项目目录），返回个人目录 id
   ensureWorkspaceFolders() {
     const folders = this.folders
     let touched = false
-    if (!folders.find(item => item.id === 'fld_shared')) {
-      folders.push({ id: 'fld_shared', name: '共享素材', parent: '' })
-      touched = true
-    }
     const personalId = `fld_${whoami()}`
     if (!folders.find(item => item.id === personalId)) {
       folders.push({ id: personalId, name: `${whoami()}的素材`, parent: '' })

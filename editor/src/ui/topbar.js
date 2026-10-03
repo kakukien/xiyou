@@ -1,5 +1,6 @@
 import { store } from '../core/store.js';
 import { publishCheck } from '../core/schema.js';
+import { projects } from '../core/projects.js';
 import { openAR } from './arview.js';
 import { log } from './log.js';
 import { iconMarkup } from './components/icon.js';
@@ -85,6 +86,8 @@ export function mount(el) {
 
   const sceneName = document.createElement('span');
   sceneName.className = 'tb-scene-name';
+  sceneName.title = '双击重命名工程';
+  sceneName.style.cursor = 'text';
 
   const saved = document.createElement('span');
   saved.className = 'tb-saved';
@@ -123,6 +126,17 @@ export function mount(el) {
   draftChip.className = 'draft-chip';
   draftChip.type = 'button';
   draftChip.title = '点击复制房间链接';
+
+  // 工程切换器（UE 式 project）：每个工程 = 独立协作房间 + 独立本地草稿
+  const projSelect = document.createElement('select');
+  projSelect.className = 'field tb-proj';
+  projSelect.title = '切换工程（每个工程是独立协作房间与存档）';
+
+  const projNewBtn = document.createElement('button');
+  projNewBtn.className = 'btn icon-btn';
+  projNewBtn.type = 'button';
+  projNewBtn.title = '新建工程';
+  projNewBtn.innerHTML = iconMarkup('add-line', '新建工程');
 
   const demoButton = document.createElement('button');
   demoButton.className = 'btn';
@@ -198,6 +212,8 @@ export function mount(el) {
     modeToggle,
     spacer,
     draftChip,
+    projSelect,
+    projNewBtn,
     demoButton,
     syncButton,
     arButton,
@@ -573,19 +589,78 @@ export function mount(el) {
     log('已创建空白故事场景');
   });
 
-  syncButton.addEventListener('click', async () => {
-    if (!window.confirm('载入线上正式场景会覆盖当前草稿，确定继续？')) return;
-    try {
-      syncButton.textContent = '同步中…';
-      const res = await fetch('show/scene.json?v=' + Date.now());
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      store.newScene(await res.json());
-      store.save?.();
-      log('已载入线上正式场景（虚境世界/钟楼等新对象一并带入）');
-    } catch (e) {
-      log(`载入线上场景失败：${e?.message || e}`, 'error');
+  // ---- 工程切换 ----
+  const currentProj = window.__xiyouProj || 'main';
+  function renderProjects() {
+    const list = projects.list()
+    projSelect.innerHTML = ''
+    const known = list.find(item => item.id === currentProj)
+    const items = known ? list : [{ id: currentProj, name: store.scene?.meta?.name || currentProj }, ...list]
+    for (const item of items) {
+      const opt = document.createElement('option')
+      opt.value = item.id
+      opt.textContent = item.id === 'main' ? `${item.name || '正式场景'}（主线）` : (item.name || item.id)
+      opt.selected = item.id === currentProj
+      projSelect.appendChild(opt)
     }
-    syncButton.textContent = '同步线上';
+  }
+  projects.on('projects', renderProjects)
+  projects.on('ready', renderProjects)
+  renderProjects()
+
+  projSelect.addEventListener('change', () => {
+    const next = projSelect.value
+    if (!next || next === currentProj) return
+    const url = new URL(location.href)
+    url.searchParams.set('proj', next)
+    url.searchParams.delete('room')
+    location.href = url.toString()
+  })
+
+  projNewBtn.addEventListener('click', () => {
+    const name = window.prompt('新工程名称', '未命名工程')
+    if (name === null) return
+    const item = projects.create(name, '')
+    if (item) {
+      const url = new URL(location.href)
+      url.searchParams.set('proj', item.id)
+      url.searchParams.delete('room')
+      location.href = url.toString()
+    } else log('工程注册表尚未连接，稍后重试', 'warn')
+  })
+
+  // 场景名双击改名：同时写 meta.name + 工程注册表，立即落盘
+  sceneName.addEventListener('dblclick', () => {
+    const next = window.prompt('工程名称', store.scene?.meta?.name || '')
+    if (next === null || !next.trim()) return
+    store.scene.meta.name = next.trim()
+    projects.rename(currentProj, next.trim()) || projects.touch(currentProj, { name: next.trim() })
+    store.save?.()
+    store.emit('change', { transient: false })
+    renderSceneName()
+    renderProjects()
+    log(`工程已更名为「${next.trim()}」`)
+  })
+
+  syncButton.addEventListener('click', async () => {
+    if (currentProj === 'main') {
+      if (!window.confirm('载入线上正式场景会覆盖当前草稿，确定继续？')) return;
+      try {
+        syncButton.textContent = '同步中…';
+        const res = await fetch('show/scene.json?v=' + Date.now());
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        store.newScene(await res.json());
+        store.save?.();
+        log('已载入线上正式场景（虚境世界/钟楼等新对象一并带入）');
+      } catch (e) {
+        log(`载入线上场景失败：${e?.message || e}`, 'error');
+      }
+      syncButton.textContent = '同步线上';
+      return
+    }
+    // 非主线工程：从协作房间拉取最新工程状态
+    if (!window.confirm('重新连接本工程的协作房间，拉取服务器上的最新内容？')) return
+    location.reload()
   });
 
   arButton.addEventListener('click', () => {
