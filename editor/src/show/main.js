@@ -446,10 +446,13 @@ async function startFreeMode() {
 // ---------- VPS 视觉定位 ----------
 // 帧 -> hloc 服务 (DINOv2 检索 -> SuperPoint+LightGlue -> PnP) -> AR 坐标系位姿。
 // 位姿是 COLMAP 约定（相机 +Z 向前、+Y 向下），转 three 需右乘 diag(1,-1,-1)。
-// 默认同源代理：服务器读 vps.txt 转发到当前隧道，地址恒定免 CORS；?vps= 可覆盖调试
+// 直连隧道最快(2s)：读 vps.txt 拿当前隧道地址；服务器代理 /xiyou-vps 兜底(绕太平洋 ~20s 仅作备胎)
 const VPS_FALLBACK = '/xiyou-vps';
 let VPS_URL = new URLSearchParams(location.search).get('vps') || VPS_FALLBACK;
-const vpsReady = Promise.resolve();
+const vpsReady = fetch('vps.txt?v=' + Date.now()).then(r => r.ok ? r.text() : '').then(t => {
+  const u = (t || '').trim();
+  if (/^https:\/\//.test(u) && !new URLSearchParams(location.search).get('vps')) VPS_URL = u;
+}).catch(() => {});
 let vpsTimer = null, vpsGyroQ = null, vpsCamQ0 = null, vpsGyroQ0 = null;
 let xrSession = null, xrSpace = null, xrSupported = false;
 (async () => {
@@ -463,7 +466,7 @@ function capFrame(video, maxW = 960) {
   const c = document.createElement('canvas');
   c.width = Math.round(w * s); c.height = Math.round(h * s);
   c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
-  return new Promise(res => c.toBlob(res, 'image/jpeg', 0.72));
+  return new Promise(res => c.toBlob(res, 'image/jpeg', 0.6));
 }
 
 // VPS 锁定后接管：释放相机 -> ARCore SLAM。M = C·P⁻¹，场景矩阵 = P·C⁻¹
@@ -557,7 +560,7 @@ async function startVpsMode() {
   const MAX_INFLIGHT = 5; // 流水线并发：服务端单次 ~0.4-2.5s，5 并发才撑得起 0.2s 节奏
   const locateOnce = async () => {
     try {
-      const blob = await capFrame(freeVideo, 1280);
+      const blob = await capFrame(freeVideo, 640); // 隧道链路慢(~20s/req)：帧越小上行越快
       const res = await fetch(`${VPS_URL}/locate?k=10&min=6`, { method: 'POST', body: blob });
       const j = await res.json();
       if (j.ok) {
