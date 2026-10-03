@@ -88,33 +88,54 @@ const mobileMore = document.getElementById('mobile-more')
 const setMobilePanel = panel => {
   document.body.dataset.mobilePanel = panel === 'none' ? '' : panel
   mobileNav?.querySelectorAll('[data-mobile-panel]').forEach(item => {
-    const active = panel !== 'none' && item.dataset.mobilePanel === panel
+    const active = panel === 'none'
+      ? item.dataset.mobilePanel === 'none'
+      : item.dataset.mobilePanel === panel
     item.classList.toggle('active', active)
     item.setAttribute('aria-pressed', String(active))
   })
 }
 mobileNav?.querySelectorAll('[data-mobile-panel]').forEach(button => button.setAttribute('aria-pressed', 'false'))
+setMobilePanel('none')
 mobileNav?.addEventListener('click', event => {
   const button = event.target.closest('[data-mobile-panel]')
   if (!button) return
   setMobilePanel(button.dataset.mobilePanel)
 })
 mobileMore?.querySelector('[data-mobile-close]')?.addEventListener('click', () => setMobilePanel('none'))
+const mobileProjectPicker = mobileMore?.querySelector('[data-mobile-project-select]')
+const syncMobileProjects = () => {
+  const source = document.querySelector('.tb-proj')
+  if (!source || !mobileProjectPicker) return
+  mobileProjectPicker.replaceChildren(...Array.from(source.options).map(option => {
+    const clone = option.cloneNode(true)
+    clone.selected = option.selected
+    return clone
+  }))
+}
+mobileProjectPicker?.addEventListener('change', event => {
+  const source = document.querySelector('.tb-proj')
+  if (!source) return
+  source.value = event.target.value
+  source.dispatchEvent(new Event('change', { bubbles: true }))
+})
 mobileMore?.querySelectorAll('[data-mobile-action]').forEach(button => {
   button.addEventListener('click', () => {
+    const action = button.dataset.mobileAction
+    if (action === 'project-select') {
+      syncMobileProjects()
+      if (mobileProjectPicker) mobileProjectPicker.hidden = false
+      return
+    }
     const target = {
       'project-new': '.tb-project-tools .icon-btn',
       'scene-new': '.tb-scene-actions > .btn:nth-child(1)',
       sync: '.tb-scene-actions > .btn:nth-child(2)',
       runtime: '.tb-scene-actions > .btn:nth-child(3)',
       anchor: '.tb-scene-actions > .btn:nth-child(4)'
-    }[button.dataset.mobileAction]
+    }[action]
     if (target) document.querySelector(target)?.click()
-    if (button.dataset.mobileAction === 'project-select') {
-      const select = document.querySelector('.tb-proj')
-      if (select?.showPicker) select.showPicker()
-      else select?.click()
-    }
+    if (mobileProjectPicker) mobileProjectPicker.hidden = true
     setMobilePanel('none')
   })
 })
