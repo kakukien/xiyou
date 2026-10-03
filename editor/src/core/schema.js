@@ -73,6 +73,7 @@ export const ACTIONS = [
   { id: 'play_seq', label: '播放时间线', argKinds: ['sequence'] },
   { id: 'show', label: '显示', argKinds: [] },
   { id: 'hide', label: '隐藏', argKinds: [] },
+  { id: 'toggle_visible', label: '切换显隐', argKinds: [] },
   { id: 'highlight', label: '高亮', argKinds: [] },
   { id: 'card', label: '弹卡片', argKinds: ['text'] },
   { id: 'reward', label: '给奖励', argKinds: ['text'] },

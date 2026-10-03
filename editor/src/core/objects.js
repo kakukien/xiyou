@@ -135,6 +135,27 @@ function applyCommonMaterial(material, mat) {
   return material;
 }
 
+// GLB 网格材质覆盖：基础色/自发光/金属度/粗糙度/透明度，编辑器与 AR 运行时共用
+export function applyGlbMaterialOverrides(root, mat) {
+  if (!root || !mat) return;
+  root.traverse(child => {
+    if (!child.isMesh || !child.material) return;
+    const list = Array.isArray(child.material) ? child.material : [child.material];
+    list.forEach(m => {
+      if (mat.color) m.color?.set(mat.color);
+      if (mat.emissive) m.emissive?.set(mat.emissive);
+      if (Number.isFinite(mat.emissiveIntensity)) m.emissiveIntensity = mat.emissiveIntensity;
+      if (Number.isFinite(mat.metalness)) m.metalness = mat.metalness;
+      if (Number.isFinite(mat.roughness)) m.roughness = mat.roughness;
+      if (Number.isFinite(mat.opacity)) {
+        m.transparent = mat.opacity < 1;
+        m.opacity = mat.opacity;
+      }
+      m.needsUpdate = true;
+    });
+  });
+}
+
 function createQuad(objDef, assets) {
   let material;
   if (objDef.material && objDef.material.shader) {
@@ -290,6 +311,7 @@ function createGlb(objDef, assets) {
           sceneNode = wrap;
         }
         root.add(sceneNode);
+        applyGlbMaterialOverrides(sceneNode, objDef.material);
         root.userData.animations = gltf.animations || [];
         root.userData.loadedScene = sceneNode;
       },
