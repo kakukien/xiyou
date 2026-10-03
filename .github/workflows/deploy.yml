@@ -46,23 +46,39 @@ jobs:
           token = os.environ["XIYOU_PUBLISH_TOKEN"]
           key = "xiyou-ci/site-%s.tgz" % time.strftime("%Y%m%d-%H%M%S")
 
-          # --- 1) site.tgz -> COS（分片断点续传 + 重试；单发 put_object 跨境超时） ---
+          # --- 1) site.tgz -> COS（手动分片 + 逐片重试；ops-agent 无 ListMultipartUploads 权限，不能用 upload_file） ---
           from qcloud_cos import CosConfig, CosS3Client
           cli = CosS3Client(CosConfig(Region=cos["region"], SecretId=cos["secret_id"],
                                       SecretKey=cos["secret_key"], Scheme="https", Timeout=120))
           data = open("site.tgz", "rb").read()
-          last_err = None
-          for attempt in range(3):
+          part_size = 2 * 1024 * 1024
+          uid = cli.create_multipart_upload(Bucket=cos["bucket"], Key=key)["UploadId"]
+          parts = []
+          try:
+              for index in range(0, len(data), part_size):
+                  no = len(parts) + 1
+                  chunk = data[index:index + part_size]
+                  err = None
+                  for attempt in range(3):
+                      try:
+                          etag = cli.upload_part(Bucket=cos["bucket"], Key=key, Body=chunk,
+                                                 PartNumber=no, UploadId=uid)["ETag"]
+                          err = None
+                          break
+                      except Exception as e:
+                          err = e
+                          print("part %d attempt %d failed: %s" % (no, attempt + 1, e))
+                  if err:
+                      raise err
+                  parts.append({"PartNumber": no, "ETag": etag})
+              cli.complete_multipart_upload(Bucket=cos["bucket"], Key=key, UploadId=uid,
+                                            MultipartUpload={"Part": parts})
+          except Exception:
               try:
-                  cli.upload_file(Bucket=cos["bucket"], Key=key, LocalFilePath="site.tgz",
-                                  PartSize=2, MAXThread=4, EnableMD5=False)
-                  last_err = None
-                  break
-              except Exception as e:
-                  last_err = e
-                  print("upload attempt %d failed: %s" % (attempt + 1, e))
-          if last_err:
-              raise last_err
+                  cli.abort_multipart_upload(Bucket=cos["bucket"], Key=key, UploadId=uid)
+              except Exception:
+                  pass
+              raise
           src_url = cli.get_presigned_url(Bucket=cos["bucket"], Key=key, Method="GET", Expired=3600)
           print("cos uploaded: %s (%d bytes)" % (key, len(data)))
 
