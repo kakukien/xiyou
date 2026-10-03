@@ -10,6 +10,7 @@ import { mount as mountPresence } from './ui/presence.js'
 import { mount as mountChat } from './ui/chat.js'
 import { mount as mountVpchrome } from './ui/vpchrome.js'
 import { mount as mountSplatStudio } from './ui/splat-studio.js'
+import { mount as mountCollabCursors } from './ui/collab-cursors.js'
 import { collab } from './core/collab.js'
 import { addElementInstance } from './core/elements.js'
 import { projects } from './core/projects.js'
@@ -68,6 +69,7 @@ if (splatQ) {
 
 viewport.init(document.getElementById('viewport'))
 mountVpchrome(document.getElementById('viewport-wrap'), viewport)
+mountCollabCursors(document.getElementById('viewport-wrap'))
 viewport.setBase(store.scene.base)
 viewport.sync()
 
@@ -79,6 +81,16 @@ const presenceEl = mountPresence(document.getElementById('topbar'))
 mountChat()
 const splatStudio = mountSplatStudio(document.getElementById('splat-studio'))
 window.__xiyou.splatStudio = splatStudio
+
+// 移动端把复杂面板改为底部工作表：视口保持可见，面板按需打开。
+const mobileNav = document.getElementById('mobile-nav')
+mobileNav?.addEventListener('click', event => {
+  const button = event.target.closest('[data-mobile-panel]')
+  if (!button) return
+  const panel = button.dataset.mobilePanel
+  document.body.dataset.mobilePanel = panel === 'none' ? '' : panel
+  mobileNav.querySelectorAll('button').forEach(item => item.classList.toggle('active', item === button))
+})
 
 // auto-connect collab (non-fatal if server unreachable)
 if (presenceEl?._connect && presenceEl._hasExplicitCollab) presenceEl._connect()
