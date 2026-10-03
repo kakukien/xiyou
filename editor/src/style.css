@@ -1685,3 +1685,11 @@ body.studio-footer-resizing .studio-viewport canvas { pointer-events:none; }
 .studio-workflow-note > span { position:absolute; z-index:20; right:0; bottom:calc(100% + 8px); width:250px; padding:9px 10px; border:1px solid #f2cd9d; border-radius:7px; background:#fffaf4; color:#7a5a3b; font-size:10px; line-height:1.5; box-shadow:0 4px 12px rgba(35,49,60,.12); opacity:0; visibility:hidden; pointer-events:none; transition:opacity 140ms ease, visibility 140ms ease; }
 .studio-workflow-note:hover > span, .studio-workflow-note:focus-within > span { opacity:1; visibility:visible; }
 @media (prefers-reduced-motion:reduce) { .studio-workflow-note > span { transition:none; } }
+
+
+/* 左侧场景上下文：标题和空间底座入口使用同一行布局，避免贴边和漂浮。 */
+.ol-scene-context { display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:54px; padding:8px 14px 8px 16px; border-bottom:1px solid var(--ui-line-soft); background:#fff; }
+.ol-scene-context strong { color:var(--ui-ink); font-size:15px; font-weight:700; }
+.ol-scene-context .btn { min-height:34px; padding:0 12px; border-color:#c5d2dd; background:#f8fafb; color:var(--ui-ink); }
+.ol-scene-context .btn:hover { border-color:var(--ui-accent); background:var(--ui-accent-soft); color:var(--ui-accent); }
+.ol-scene-context .btn i { font-size:16px; }

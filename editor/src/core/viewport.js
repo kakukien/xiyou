@@ -533,7 +533,8 @@ export const viewport = {
 
     // 触控板手势按“内容跟手”处理：手指向左/上移动时，视图也向左/上响应。
     // 旧实现额外取反了 X/Y，导致 PLY/普通底座都会出现左右、上下反向。
-    if (event.shiftKey) this.panBy(dx, dy);
+    // Shift + 双指平移遵循画布拖拽直觉：手向左，场景向右；手向上，场景向下。
+    if (event.shiftKey) this.panBy(-dx, -dy);
     else if (event.ctrlKey || event.metaKey) this.dollyBy(dy || dx);
     else this.orbitBy(dx, dy);
     this.controls.update();
@@ -946,31 +947,6 @@ export const viewport = {
       this.baseGroup.add(ground);
       this.baseHelpers.push(ground);
 
-      const wallData = [
-        { text: '现场照片A', position: [0, 2, -6], rotation: [0, 0, 0] },
-        { text: '现场照片B', position: [-4.2, 2, -4.2], rotation: [0, -Math.PI / 4, 0] },
-        { text: '现场照片C', position: [4.2, 2, -4.2], rotation: [0, Math.PI / 4, 0] }
-      ];
-
-      wallData.forEach(item => {
-        const texture = placeholderTexture(item.text);
-        texture.userData.xiyouDisposable = true;
-
-        const wall = new THREE.Mesh(
-          new THREE.PlaneGeometry(4, 4),
-          new THREE.MeshBasicMaterial({
-            map: texture,
-            transparent: true,
-            side: THREE.DoubleSide
-          })
-        );
-
-        wall.position.set(...item.position);
-        wall.rotation.set(...item.rotation);
-        wall.userData.isBaseHelper = true;
-        this.baseGroup.add(wall);
-        this.baseHelpers.push(wall);
-      });
     } else {
       // DropInViewer 的内部 Viewer 不允许并发 add/remove；按队列异步加载，
       // 单个分块失败只标记本块，后续分块继续加载。
