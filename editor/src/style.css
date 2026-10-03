@@ -1333,6 +1333,10 @@ select.field,
 /* 顶栏在窄屏上按优先级收拢，避免操作文案互相覆盖。 */
 #topbar { overflow:visible; }
 #topbar .topbar { gap:8px; }
+#topbar .tb-group { display:flex; align-items:center; gap:6px; min-width:0; }
+#topbar .tb-project-tools { flex:none; }
+#topbar .tb-scene-actions { flex:0 1 auto; justify-content:flex-end; }
+#topbar .tb-scene-actions .btn { flex:none; }
 #topbar .tb-logo { flex:0 1 245px; }
 #topbar .tb-spacer { min-width:10px; }
 #topbar .tb-base-load,
@@ -1374,11 +1378,11 @@ select.field,
 @media (max-width:767px) {
   html, body, #app { min-width:0; height:100%; overflow:hidden; }
   body { -webkit-tap-highlight-color:transparent; }
-  #topbar { height:56px; min-height:56px; padding:0 max(10px, env(safe-area-inset-left)) 0 max(10px, env(safe-area-inset-right)); gap:6px; z-index:80; }
+  #topbar { height:56px; min-height:56px; padding:0 max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left)); gap:6px; z-index:80; }
   #topbar .topbar { gap:5px; }
   #topbar .tb-logo { flex:1 1 auto; min-width:0; }
   #topbar .tb-logo .tb-brand { max-width:92px; overflow:hidden; text-overflow:ellipsis; }
-  #topbar .tb-logo .tb-divider, #topbar .tb-saved, #topbar .tb-base-load, #topbar .tb-undo-limit, #topbar .draft-chip, #topbar .tb-proj, #topbar .noticeButton, #topbar .presence-room, #topbar .presence-count, #topbar .presence-avatars, #topbar .ar-button, #topbar .anchor-button, #topbar .sync-button, #topbar .demo-button { display:none !important; }
+  #topbar .tb-logo .tb-divider, #topbar .tb-saved, #topbar .tb-base-load, #topbar .tb-undo-limit, #topbar .draft-chip, #topbar .tb-proj, #topbar .noticeButton, #topbar .presence-room, #topbar .presence-count, #topbar .presence-avatars, #topbar .ar-button, #topbar .anchor-button { display:none !important; }
   #topbar .tb-scene-meta { width:auto; max-width:118px; }
   #topbar .tb-scene-name { font-size:11px; }
   #topbar .mode-toggle { position:static; flex:none; padding:2px; }
@@ -1396,7 +1400,7 @@ select.field,
   #dock { bottom:62px; height:min(64vh, 540px); max-height:calc(100dvh - 118px); }
   body[data-mobile-panel="outliner"] #outliner, body[data-mobile-panel="details"] #details, body[data-mobile-panel="dock"] #dock { display:flex; }
   #dock { flex-direction:column; }
-  #mobile-nav { position:fixed; display:grid; grid-template-columns:repeat(4,1fr); left:0; right:0; bottom:0; z-index:90; min-height:62px; padding:5px max(8px, env(safe-area-inset-left)) max(5px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right)); border-top:1px solid var(--ui-line); background:rgba(255,255,255,.98); box-shadow:0 -2px 12px rgba(36,49,60,.08); }
+  #mobile-nav { position:fixed; display:grid; grid-template-columns:repeat(4,1fr); left:0; right:0; bottom:0; z-index:90; min-height:62px; padding:5px max(8px, env(safe-area-inset-right)) max(5px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); border-top:1px solid var(--ui-line); background:rgba(255,255,255,.98); box-shadow:0 -2px 12px rgba(36,49,60,.08); }
   #mobile-nav button { min-width:0; min-height:48px; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:3px; border:0; border-radius:7px; background:transparent; color:var(--ui-muted); font:600 10px/1 var(--font); }
   #mobile-nav button i { font-size:20px; line-height:1; }
   #mobile-nav button.active { color:var(--ui-accent); background:var(--ui-accent-soft); }
@@ -1457,4 +1461,74 @@ select.field,
   .btn, input, select, textarea, .tab, .toggle, .tree-item, .obj-row { min-height:38px; }
   .icon-btn { min-width:40px; min-height:40px; }
   .tree-item, .obj-row { padding-top:8px; padding-bottom:8px; }
+}
+
+
+/* ===== 移动端二次校验修复 ===== */
+@media (max-width:767px) {
+  /* 视口不能藏在底部导航后面；导航占用的 62px 留给可见画布。 */
+  #main { padding-bottom:62px; }
+  #viewport-wrap { inset:0 0 62px; }
+
+  /* 顶栏只保留高频操作：场景切换、创作/试玩、预览、发布。 */
+  #topbar .topbar > .btn.btn-sm,
+  #topbar .tb-scene-actions > .btn:nth-child(1),
+  #topbar .tb-scene-actions > .btn:nth-child(2) { display:none !important; }
+  #topbar { padding-right:max(10px, env(safe-area-inset-right)); padding-left:max(10px, env(safe-area-inset-left)); }
+  #topbar .mode-toggle .btn,
+  #topbar .tb-scene-actions > .btn { min-height:40px; }
+  #topbar .tb-scene-actions { gap:4px; }
+
+  /* 对话框不能沿用桌面 420px 固定宽度。 */
+  .tb-overlay { align-items:flex-start; padding:calc(16px + env(safe-area-inset-top)) 12px 12px; overflow:auto; }
+  .tb-dialog { width:100%; max-width:520px; max-height:calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+
+  /* 场景工作台拥有自己的底部任务栏，避免与主编辑器导航叠层。 */
+  body.workspace-studio-active #mobile-nav { display:none !important; }
+}
+
+
+/* ===== 平板 / 窄桌面二次校验 ===== */
+@media (min-width:768px) and (max-width:1023px) {
+  #topbar .mode-toggle { position:static; left:auto; top:auto; }
+  #topbar .tb-spacer { display:none; }
+  #topbar .tb-logo { flex:1 1 auto; min-width:0; }
+  #topbar .tb-logo .tb-brand { max-width:76px; overflow:hidden; text-overflow:ellipsis; }
+  #topbar .tb-scene-meta { width:118px; }
+  #topbar .tb-project-tools,
+  #topbar .tb-base-load,
+  #topbar .tb-undo-limit,
+  #topbar .draft-chip,
+  #topbar .presence-room,
+  #topbar .presence-avatars,
+  #topbar .ar-button,
+  #topbar .anchor-button,
+  #topbar .noticeButton { display:none; }
+  #topbar .tb-scene-actions > .btn:nth-child(-n+4) { display:none; }
+  #topbar .tb-scene-actions { margin-left:auto; }
+  #topbar .mode-toggle .btn { padding-inline:10px; }
+  #outliner { width:220px; }
+  #details { width:280px; }
+  #dock { height:260px; }
+}
+
+@media (max-width:767px) {
+  #topbar .tb-project-tools { display:none !important; }
+  #mobile-nav { grid-template-columns:repeat(5,1fr); }
+  #mobile-more { position:fixed; display:none; left:0; right:0; bottom:62px; z-index:85; max-height:min(48dvh,390px); overflow:auto; padding:10px max(10px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); border:1px solid var(--ui-line); border-bottom:0; background:#fff; box-shadow:0 -10px 30px rgba(36,49,60,.16); }
+  body[data-mobile-panel="more"] #mobile-more { display:block; }
+  .mobile-more-head { display:flex; align-items:center; justify-content:space-between; min-height:38px; padding:0 2px 8px; color:var(--ui-ink); border-bottom:1px solid var(--ui-line-soft); }
+  .mobile-more-head button { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border:0; border-radius:6px; background:transparent; color:var(--ui-muted); }
+  .mobile-more-head button i { font-size:20px; }
+  .mobile-more-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding-top:10px; }
+  .mobile-more-grid button { display:flex; align-items:center; gap:8px; min-height:46px; padding:0 12px; border:1px solid var(--ui-line); border-radius:7px; background:#fff; color:var(--ui-ink); font:600 12px var(--font); }
+  .mobile-more-grid button:active { border-color:var(--ui-accent); background:var(--ui-accent-soft); color:var(--ui-accent); }
+  .mobile-more-grid button i { width:20px; color:var(--ui-accent); font-size:18px; text-align:center; }
+  #outliner, #details { flex-direction:column; }
+  body.workspace-studio-active #mobile-more { display:none !important; }
+}
+
+@media (max-width:360px) {
+  #mobile-nav button span { font-size:9px; }
+  .mobile-more-grid { grid-template-columns:1fr; }
 }

@@ -84,12 +84,39 @@ window.__xiyou.splatStudio = splatStudio
 
 // 移动端把复杂面板改为底部工作表：视口保持可见，面板按需打开。
 const mobileNav = document.getElementById('mobile-nav')
+const mobileMore = document.getElementById('mobile-more')
+const setMobilePanel = panel => {
+  document.body.dataset.mobilePanel = panel === 'none' ? '' : panel
+  mobileNav?.querySelectorAll('[data-mobile-panel]').forEach(item => {
+    const active = panel !== 'none' && item.dataset.mobilePanel === panel
+    item.classList.toggle('active', active)
+    item.setAttribute('aria-pressed', String(active))
+  })
+}
+mobileNav?.querySelectorAll('[data-mobile-panel]').forEach(button => button.setAttribute('aria-pressed', 'false'))
 mobileNav?.addEventListener('click', event => {
   const button = event.target.closest('[data-mobile-panel]')
   if (!button) return
-  const panel = button.dataset.mobilePanel
-  document.body.dataset.mobilePanel = panel === 'none' ? '' : panel
-  mobileNav.querySelectorAll('button').forEach(item => item.classList.toggle('active', item === button))
+  setMobilePanel(button.dataset.mobilePanel)
+})
+mobileMore?.querySelector('[data-mobile-close]')?.addEventListener('click', () => setMobilePanel('none'))
+mobileMore?.querySelectorAll('[data-mobile-action]').forEach(button => {
+  button.addEventListener('click', () => {
+    const target = {
+      'project-new': '.tb-project-tools .icon-btn',
+      'scene-new': '.tb-scene-actions > .btn:nth-child(1)',
+      sync: '.tb-scene-actions > .btn:nth-child(2)',
+      runtime: '.tb-scene-actions > .btn:nth-child(3)',
+      anchor: '.tb-scene-actions > .btn:nth-child(4)'
+    }[button.dataset.mobileAction]
+    if (target) document.querySelector(target)?.click()
+    if (button.dataset.mobileAction === 'project-select') {
+      const select = document.querySelector('.tb-proj')
+      if (select?.showPicker) select.showPicker()
+      else select?.click()
+    }
+    setMobilePanel('none')
+  })
 })
 
 // auto-connect collab (non-fatal if server unreachable)

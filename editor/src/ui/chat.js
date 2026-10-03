@@ -397,15 +397,42 @@ function ensureStyle() {
     }
 
     @media (max-width: 480px) {
+      /* 主编辑器底部导航占用 62px，AI 浮窗不能覆盖导航或遮挡输入区。 */
       .ai-chat-panel {
         right: 10px;
-        bottom: 76px;
+        bottom: calc(138px + env(safe-area-inset-bottom));
         width: calc(100vw - 20px);
+        height: min(480px, calc(100dvh - 170px));
+        max-height: calc(100dvh - 170px);
       }
 
       .ai-chat-root {
         right: 10px;
-        bottom: 10px;
+        bottom: calc(72px + env(safe-area-inset-bottom));
+      }
+
+      .ai-chat-collapse,
+      .ai-chat-mic,
+      .ai-chat-send { min-height: 40px; }
+      .ai-chat-collapse { width: 40px; height: 40px; }
+      .ai-chat-mic { width: 40px; min-width: 40px; height: 40px; line-height: 38px; }
+      .ai-chat-send { height: 40px; padding-inline: 14px; }
+    }
+
+    body.workspace-studio-active .ai-chat-root {
+      bottom: 10px;
+    }
+
+    body.workspace-studio-active .ai-chat-panel {
+      bottom: 76px;
+    }
+
+    @media (max-width: 480px) {
+      body.workspace-studio-active .ai-chat-root {
+        bottom: calc(142px + env(safe-area-inset-bottom));
+      }
+      body.workspace-studio-active .ai-chat-panel {
+        bottom: calc(208px + env(safe-area-inset-bottom));
       }
     }
   `;
@@ -661,9 +688,12 @@ export function mount() {
   const fab = makeElement('button', 'ai-chat-fab', 'AI');
   fab.type = 'button';
   fab.title = '打开 AI 助手';
+  fab.setAttribute('aria-label', '打开 AI 助手');
+  fab.setAttribute('aria-expanded', 'false');
 
   const panel = makeElement('section', 'ai-chat-panel');
   panel.hidden = true;
+  panel.setAttribute('aria-label', 'AI 场景编辑助手');
 
   const header = makeElement('div', 'ai-chat-header');
   const title = makeElement('div', 'ai-chat-title', 'AI 助手 · 场景编辑');
