@@ -433,13 +433,13 @@ function shaderMaterial(mat) {
 const PART_SHAPES = {
   box:      () => new THREE.BoxGeometry(1, 1, 1),
   sphere:   () => new THREE.SphereGeometry(0.5, 32, 20),
-  cylinder: () => new THREE.CylinderGeometry(0.5, 0.5, 1, 24),
-  cone:     () => new THREE.ConeGeometry(0.5, 1, 24),
+  cylinder: () => new THREE.CylinderGeometry(0.5, 0.5, 1, 32),
+  cone:     () => new THREE.ConeGeometry(0.5, 1, 32),
   torus:    () => new THREE.TorusGeometry(0.5, 0.12, 12, 40),
-  icosa:    () => new THREE.IcosahedronGeometry(0.5, 0),
-  octa:     () => new THREE.OctahedronGeometry(0.5, 0),
-  tetra:    () => new THREE.TetrahedronGeometry(0.5, 0),
-  capsule:  () => new THREE.CapsuleGeometry(0.3, 0.5, 6, 16),
+  icosa:    () => new THREE.IcosahedronGeometry(0.5, 1),
+  octa:     () => new THREE.OctahedronGeometry(0.5, 1),
+  tetra:    () => new THREE.TetrahedronGeometry(0.5, 1),
+  capsule:  () => new THREE.CapsuleGeometry(0.3, 0.5, 8, 24),
   plane:    () => new THREE.PlaneGeometry(1, 1),
   ring:     () => new THREE.RingGeometry(0.32, 0.5, 48)
 };
