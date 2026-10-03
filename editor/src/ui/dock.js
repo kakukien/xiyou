@@ -180,8 +180,6 @@ function renderTabs() {
     row.appendChild(tab);
   });
 
-  row.appendChild(renderCardChips());
-
   const spacer = document.createElement('span');
   spacer.className = 'dock-tabs-spacer';
   row.appendChild(spacer);

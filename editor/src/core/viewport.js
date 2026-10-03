@@ -1266,6 +1266,25 @@ export const viewport = {
     return new THREE.Box3().setFromObject(mesh).containsPoint(vector)
   },
 
+  snapSelectedToGround() {
+    const ids = store.selected?.() || []
+    const id = ids[0]
+    const object = id ? store.getObject?.(id) : null
+    if (!object) {
+      log('请先选择一个场景对象，再执行落地吸附', 'warn')
+      return false
+    }
+    const node = this.nodes.get(id)
+    if (!node) return false
+    node.updateMatrixWorld(true)
+    const box = new THREE.Box3().setFromObject(node)
+    const delta = -box.min.y
+    const p = object.transform?.p || [0, 0, 0]
+    store.updateObject(id, { transform: { p: [Number(p[0]) || 0, (Number(p[1]) || 0) + delta, Number(p[2]) || 0] } })
+    log(`已将「${object.name || id}」吸附到地面`, 'info')
+    return true
+  },
+
   focus(id) {
     const node = this.nodes.get(id) || this.zoneNodes?.get(id);
     if (!node || !this.camera || !this.controls) return;
