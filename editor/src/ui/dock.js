@@ -250,7 +250,7 @@ function renderAssets() {
   toolbar.append(search, kind, importButton);
   panel.appendChild(toolbar);
   // ---- 工作目录树：共享素材库（全员同步）+ 项目素材（仅本工程）----
-  const personalId = store.ensureWorkspaceFolders?.() || ''
+  store.ensureWorkspaceFolders?.()
   if (assetFolder === null) assetFolder = 's:'
   const folders = (store.folders || []).filter(item => item.id !== 'fld_shared')
   const sharedFolders = projects.sharedFolders?.() || []
@@ -424,7 +424,10 @@ function renderAssets() {
     const haystack = [asset.name, asset.id, asset.kind, asset.type, category, ...(asset.tags || [])].join(' ').toLowerCase();
     const matchesQuery = !assetQuery.trim() || haystack.includes(assetQuery.trim().toLowerCase());
     const matchesKind = assetKind === 'all' || category === assetKind || asset.kind === assetKind || asset.type === assetKind || asset.subtype === assetKind;
-    const matchesFolder = currentFolderId === '' || (asset.folder || '') === currentFolderId;
+    // 共享素材根目录展示全部共享资产；项目根目录只展示项目根目录资产。
+    const matchesFolder = sharedScope && currentFolderId === ''
+      ? true
+      : currentFolderId === '' || (asset.folder || '') === currentFolderId;
     return matchesQuery && matchesKind && matchesFolder;
   });
   const importCard = document.createElement('button');
@@ -1389,6 +1392,7 @@ export function mount(el) {
   });
 
   store.on('change', requestRender);
+  projects.on('ready', requestRender);
   projects.on('shared', requestRender);
   projects.on('projects', requestRender);
   store.on('selection', requestRender);
