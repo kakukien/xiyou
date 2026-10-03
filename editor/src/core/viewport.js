@@ -531,9 +531,11 @@ export const viewport = {
     const dy = Number(event.deltaY || 0) * factor;
     if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) return;
 
-    if (event.shiftKey) this.panBy(-dx, -dy);
+    // 触控板手势按“内容跟手”处理：手指向左/上移动时，视图也向左/上响应。
+    // 旧实现额外取反了 X/Y，导致 PLY/普通底座都会出现左右、上下反向。
+    if (event.shiftKey) this.panBy(dx, dy);
     else if (event.ctrlKey || event.metaKey) this.dollyBy(dy || dx);
-    else this.orbitBy(-dx, -dy);
+    else this.orbitBy(dx, dy);
     this.controls.update();
   },
 
