@@ -45,6 +45,7 @@ let selectedAssetId = null;
 let selectedSharedId = null;
 // 内容浏览器目录选择：'p:<fid>' 项目目录 / 'p:' 项目根 / 's:<fid>' 共享目录 / 's:' 全部共享
 let assetFolder = null;
+const collapsedFolders = new Set();
 let keyPopoverCleanup = null;
 
 // 行内改名：把 el 换成 input，Enter/失焦提交，Esc 取消
@@ -265,14 +266,20 @@ function renderAssets() {
   const rail = document.createElement('div')
   rail.className = 'cb-folders'
 
-  const addRow = (sel, name, icon, depth, title) => {
+  const addRow = (sel, name, icon, depth, title, collapsible = false, collapsed = false) => {
     const row = document.createElement('button')
     row.type = 'button'
     row.className = `cb-folder${assetFolder === sel ? ' active' : ''}`
     row.style.paddingLeft = `${6 + depth * 12}px`
-    row.innerHTML = `${iconMarkup(icon)}<span>${name}</span>`
+    row.innerHTML = `${collapsible ? `<i class="cb-folder-toggle ri-arrow-${collapsed ? 'right' : 'down'}-s-line" data-folder-toggle></i>` : '<i class="cb-folder-toggle-placeholder"></i>'}${iconMarkup(icon)}<span>${name}</span>`
     row.title = title || name
-    row.addEventListener('click', () => { assetFolder = sel; requestRender() })
+    row.addEventListener('click', event => { if (event.target.closest('[data-folder-toggle]')) return; assetFolder = sel; requestRender() })
+    row.querySelector('[data-folder-toggle]')?.addEventListener('click', event => {
+      event.stopPropagation()
+      if (collapsed) collapsedFolders.delete(sel.slice(2))
+      else collapsedFolders.add(sel.slice(2))
+      requestRender()
+    })
     // 素材卡拖上目录行 = 移动到该目录
     row.addEventListener('dragover', event => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; row.classList.add('drop') })
     row.addEventListener('dragleave', () => row.classList.remove('drop'))
@@ -318,8 +325,10 @@ function renderAssets() {
   addRow('s:', '全部共享', 'folder-open-line', 0, '显示共享素材库全部内容')
   const pushShared = parent => {
     sharedFolders.filter(item => (item.parent || '') === parent).forEach(item => {
-      addRow(`s:${item.id}`, item.name, 'folder-2-line', depthOf(sharedFolders, item), `共享目录：${item.name}`)
-      pushShared(item.id)
+      const children = sharedFolders.some(child => (child.parent || '') === item.id)
+      const collapsed = collapsedFolders.has(item.id)
+      addRow(`s:${item.id}`, item.name, 'folder-2-line', depthOf(sharedFolders, item), `共享目录：${item.name}`, children, collapsed)
+      if (!collapsed) pushShared(item.id)
     })
   }
   pushShared('')
@@ -351,8 +360,10 @@ function renderAssets() {
   addRow('p:', '工程文件', 'folder-open-line', 0, `本工程根目录：${store.scene?.meta?.name || ''}`)
   const pushProject = parent => {
     folders.filter(item => (item.parent || '') === parent).forEach(item => {
-      addRow(`p:${item.id}`, item.name, 'folder-2-line', depthOf(folders, item), `项目目录：${item.name}`)
-      pushProject(item.id)
+      const children = folders.some(child => (child.parent || '') === item.id)
+      const collapsed = collapsedFolders.has(item.id)
+      addRow(`p:${item.id}`, item.name, 'folder-2-line', depthOf(folders, item), `项目目录：${item.name}`, children, collapsed)
+      if (!collapsed) pushProject(item.id)
     })
   }
   pushProject('')

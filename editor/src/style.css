@@ -1693,3 +1693,19 @@ body.studio-footer-resizing .studio-viewport canvas { pointer-events:none; }
 .ol-scene-context .btn { min-height:34px; padding:0 12px; border-color:#c5d2dd; background:#f8fafb; color:var(--ui-ink); }
 .ol-scene-context .btn:hover { border-color:var(--ui-accent); background:var(--ui-accent-soft); color:var(--ui-accent); }
 .ol-scene-context .btn i { font-size:16px; }
+
+
+/* 资源目录支持收起/展开；与工程文件、共享素材的层级结构保持一致。 */
+.cb-folder-toggle, .cb-folder-toggle-placeholder { width:16px; height:16px; flex:none; display:inline-flex; align-items:center; justify-content:center; font-size:15px; color:var(--ui-subtle); }
+.cb-folder-toggle { cursor:pointer; }
+.cb-folder-toggle:hover { color:var(--ui-accent); }
+.cb-folder-toggle-placeholder { opacity:0; }
+
+/* 回到地面 / 切换操作统一为紧凑 Icon Button，文字通过 title 提供。 */
+.vp-toolbar .navigation-mode-button.ground-snap-button,
+.vp-toolbar .navigation-mode-button { width:34px; min-width:34px; height:30px; min-height:30px; padding:0; gap:0; }
+.vp-toolbar .navigation-mode-button > span { display:none; }
+.vp-toolbar .navigation-mode-button > i { font-size:17px; }
+.vp-toolbar .navigation-mode-button:hover { border-color:#f5a06c; background:#fff1e7; color:#f56c16; }
+.vp-toolbar .navigation-mode-button.is-default { color:#4d78b6; background:#eef5ff; border-color:#b9d1ee; }
+@media (max-width:1280px) { .vp-toolbar .navigation-mode-button.ground-snap-button, .vp-toolbar .navigation-mode-button { width:30px; min-width:30px; } }

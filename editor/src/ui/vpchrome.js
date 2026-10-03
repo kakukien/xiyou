@@ -148,11 +148,11 @@ export function mount(wrap, viewport) {
   });
   toolbar.appendChild(lockButton);
 
-  const groundButton = button('回到地面', 'tbtn', '将当前选中对象的最低点吸附到地面', 'arrow-down-to-line');
+  const groundButton = button('', 'navigation-mode-button ground-snap-button', '回到地面：将当前选中对象的最低点吸附到地面', 'arrow-down-line');
   groundButton.addEventListener('click', () => viewport.snapSelectedToGround?.());
   toolbar.appendChild(groundButton);
 
-  const navigationButton = button('切换操作', 'navigation-mode-button', '切换操作方式', 'shuffle-line');
+  const navigationButton = button('', 'navigation-mode-button', '切换操作方式', 'shuffle-line');
   navigationButton.addEventListener('click', () => {
     const next = viewport.navigationStyle === 'blender' ? 'default' : 'blender';
     viewport.setNavigationStyle?.(next);

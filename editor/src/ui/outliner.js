@@ -2,7 +2,6 @@ import { store } from '../core/store.js';
 import { OBJECT_TYPES } from '../core/schema.js';
 import { viewport } from '../core/viewport.js';
 import { iconMarkup } from './components/icon.js';
-import { ELEMENT_CATEGORIES, listElements, addElementInstance } from '../core/elements.js';
 
 const typeLabels = {
   splat_segment: '点云片段',
@@ -192,30 +191,6 @@ function renderChapter(scene, chapter, query, worldOnly = false) {
   `;
 }
 
-function renderElementCatalog(query, readOnly) {
-  const elements = listElements({ query: query === '__element__' ? '' : query });
-  const groups = ELEMENT_CATEGORIES.map(category => {
-    const items = elements.filter(item => item.categoryId === category.id);
-    if (!items.length) return '';
-    const top = items.slice(0, query ? items.length : 10);
-    return `
-      <section class="ol-element-group" data-element-category="${esc(category.id)}">
-        <div class="ol-element-group-head"><span>${esc(category.name)}</span><span class="obj-count">${items.length}</span></div>
-        <div class="ol-element-list">
-          ${top.map(item => `
-            <div class="ol-element-row" draggable="true" data-element-id="${esc(item.id)}" title="拖入视口添加 ${esc(item.name)}">
-              <span class="ol-element-icon">${iconMarkup(item.render?.kind === 'effect' ? 'sparkling-2-line' : item.render?.kind === 'helper' ? 'focus-3-line' : 'shapes-line')}</span>
-              <span class="ol-element-main"><strong>${esc(item.name)}</strong><small>${esc((item.voice?.aliases || item.tags || []).slice(0, 3).join(' · '))}</small></span>
-              <button type="button" class="ol-element-add" data-add-element="${esc(item.id)}" aria-label="添加${esc(item.name)}">${iconMarkup('add-line')}</button>
-            </div>
-          `).join('')}
-          ${!query && items.length > top.length ? `<div class="ol-element-more">还有 ${items.length - top.length} 项，可搜索</div>` : ''}
-        </div>
-      </section>`
-  }).join('');
-  return `<div class="ol-section-title ol-fixed-title"><span>固定元素</span><span class="ol-fixed-count">${elements.length} 项</span></div><div class="ol-element-groups">${groups || '<div class="ol-empty">没有匹配元素</div>'}</div>`;
-}
-
 function renderObjects(scene, query, readOnly) {
   const objects = scene.objects || [];
   const groups = new Map();
@@ -313,16 +288,11 @@ function renderAnchors(scene, query, readOnly) {
 const localCollapsed = new Set();
 
 export function mount(el) {
-  let activeTab = 'content';
   let query = '';
 
   function render() {
     const scene = store.scene;
     const readOnly = isPlayMode();
-    const chapters = scene.story?.chapters || [];
-    const visibleChapters = chapters.filter(chapter => chapterMatches(scene, chapter, query));
-    const worldOnly = activeTab === 'world';
-    const contentOnly = activeTab === 'content';
 
     el.innerHTML = `
       <div class="ol-scene-context"><strong>场景内容</strong><button type="button" class="btn btn-secondary btn-sm" data-select-base>${iconMarkup('database-2-line')} 空间底座</button></div>
@@ -347,13 +317,6 @@ export function mount(el) {
       store.select(null)
       log('已切换到空间底座设置')
     })
-
-    el.querySelectorAll('[data-tab]').forEach(button => {
-      button.addEventListener('click', () => {
-        activeTab = button.dataset.tab;
-        render();
-      });
-    });
 
     const search = el.querySelector('.ol-search input');
     search?.addEventListener('input', event => {
@@ -421,22 +384,6 @@ export function mount(el) {
         if (!isPlayMode()) store.removeZone?.(button.dataset.deleteZone)
       })
     })
-
-    el.querySelectorAll('[data-add-element]').forEach(button => {
-      button.addEventListener('click', event => {
-        event.stopPropagation();
-        if (isPlayMode()) return;
-        const point = viewport.placementPoint?.(window.innerWidth * 0.62, window.innerHeight * 0.48) || [0, 0, -3];
-        addElementInstance(button.dataset.addElement, point);
-      });
-    });
-
-    el.querySelectorAll('[data-element-id]').forEach(row => {
-      row.addEventListener('dragstart', event => {
-        event.dataTransfer?.setData('text/x-xiyou-element', row.dataset.elementId);
-        if (event.dataTransfer) event.dataTransfer.effectAllowed = 'copy';
-      });
-    });
 
     el.querySelector('[data-action="add-zone"]')?.addEventListener('click', () => {
       if (isPlayMode()) return
