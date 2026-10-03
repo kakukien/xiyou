@@ -19,6 +19,7 @@ const BUILTIN_SHARED_FOLDER = { id: 'fld_shared', name: '共享素材', parent: 
 const BUILTIN_SHARED_ASSETS = [
   { id: 'a_world', name: '虚境世界·体素.glb', url: 'assets/xiyou_world.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 1915952, mime: 'model/gltf-binary', builtin: true },
   { id: 'a_belltower', name: '西安钟楼·体块.glb', url: 'assets/xiyou_belltower.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 782288, mime: 'model/gltf-binary', builtin: true },
+  { id: 'a_nongyao', name: '王者峡谷.glb', url: 'assets/nongyao.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 19233212, mime: 'model/gltf-binary', builtin: true },
 ]
 
 const listeners = new Map()

@@ -521,6 +521,7 @@ export function demoScene() {
       { id: 'a_clip', name: '现场片段.mp4', url: 'site/clip.mp4', kind: 'video', type: 'video', folder: 'fld_shared', bytes: 709560, mime: 'video/mp4' },
       { id: 'a_world', name: '虚境世界·体素.glb', url: 'assets/xiyou_world.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 1915952, mime: 'model/gltf-binary' },
       { id: 'a_belltower', name: '西安钟楼·体块.glb', url: 'assets/xiyou_belltower.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 782288, mime: 'model/gltf-binary' },
+      { id: 'a_nongyao', name: '王者峡谷.glb', url: 'assets/nongyao.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 19233212, mime: 'model/gltf-binary' },
       { id: 'a_pointcloud', name: '现场定位点云.ply', url: 'assets/hks204606.compressed.ply', kind: 'splat', type: 'splat', folder: 'fld_我', bytes: 43375147, mime: 'application/octet-stream', metadata: { format: 'ply', role: 'vps-base' } },
       { id: 'a_wukong', name: '孙悟空.glb', url: 'local://孙悟空.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 356515840, mime: 'model/gltf-binary' },
       { id: 'a_va', name: '视频_A.mp4', url: 'local://视频_A.mp4', kind: 'video', type: 'video', folder: 'fld_shared', bytes: 188743680, mime: 'video/mp4' }
