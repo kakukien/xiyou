@@ -326,6 +326,26 @@ function renderAssets() {
   }
   pushShared('')
 
+  const sceneHead = document.createElement('div')
+  sceneHead.className = 'cb-folders-head'
+  sceneHead.textContent = '工程文件'
+  rail.appendChild(sceneHead)
+  ;(projects.list?.() || []).forEach(project => {
+    const sceneRow = document.createElement('button')
+    sceneRow.type = 'button'
+    sceneRow.className = `cb-folder${project.id === (window.__xiyouProj || 'main') ? ' active' : ''}`
+    sceneRow.innerHTML = `${iconMarkup('file-3-line')}<span>${project.name || project.id}</span>`
+    sceneRow.title = `切换工程：${project.name || project.id}`
+    sceneRow.addEventListener('click', () => {
+      if (project.id === (window.__xiyouProj || 'main')) return
+      const url = new URL(location.href)
+      url.searchParams.set('proj', project.id)
+      url.searchParams.delete('room')
+      location.href = url.toString()
+    })
+    rail.appendChild(sceneRow)
+  })
+
   const projHead = document.createElement('div')
   projHead.className = 'cb-folders-head'
   projHead.textContent = '项目素材'
