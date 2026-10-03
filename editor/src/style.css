@@ -1709,3 +1709,9 @@ body.studio-footer-resizing .studio-viewport canvas { pointer-events:none; }
 .vp-toolbar .navigation-mode-button:hover { border-color:#f5a06c; background:#fff1e7; color:#f56c16; }
 .vp-toolbar .navigation-mode-button.is-default { color:#4d78b6; background:#eef5ff; border-color:#b9d1ee; }
 @media (max-width:1280px) { .vp-toolbar .navigation-mode-button.ground-snap-button, .vp-toolbar .navigation-mode-button { width:30px; min-width:30px; } }
+
+/* 资源库滚动安全区：避免最后一行卡片被底部预算状态栏遮挡。 */
+.cb-body { min-height:0; }
+.cb-strip-wrap { overflow:auto; padding-bottom:32px; scrollbar-gutter:stable; }
+.cb-strip-wrap .asset-strip { flex:0 0 auto; min-height:136px; padding-bottom:24px; }
+.shared-element-library { flex:none; }
