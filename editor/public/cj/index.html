@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GenLab · 言出法随测试台</title>
+<style>
+  :root{--bg:#0f1318;--panel:#171d24;--line:#2a3440;--fg:#dbe4ee;--dim:#8494a6;--accent:#ff7a1a;--ok:#3d9e6e;--err:#d9534a;--warn:#e08c1a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--fg);font:13px/1.5 "Segoe UI","Microsoft YaHei",sans-serif}
+  #app{display:flex;height:100%}
+  #side{width:340px;flex:none;display:flex;flex-direction:column;gap:10px;padding:14px;border-right:1px solid var(--line);overflow:auto}
+  #view{flex:1;position:relative;background:#05070a}
+  #view canvas{display:block;width:100%;height:100%}
+  #view .empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--dim);gap:8px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px}
+  .card h2{font-size:13px;margin-bottom:8px;color:var(--dim);letter-spacing:.05em}
+  .row{display:flex;gap:6px;align-items:center}
+  .btn{background:#232c36;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:linear-gradient(180deg,#ff8c3b,#f56d00);border-color:#d95f00;color:#fff;font-weight:600}
+  .btn:disabled{opacity:.4;cursor:default}
+  input[type=text]{width:100%;background:#0d1116;border:1px solid var(--line);border-radius:6px;color:var(--fg);padding:6px 8px}
+  textarea{width:100%;background:#0d1116;border:1px solid var(--line);border-radius:6px;color:var(--fg);padding:6px 8px;resize:vertical;min-height:56px}
+  #drop{border:1.5px dashed var(--line);border-radius:8px;padding:16px;text-align:center;color:var(--dim);cursor:pointer}
+  #drop.over{border-color:var(--accent);color:var(--accent)}
+  #drop img{max-width:100%;max-height:120px;border-radius:4px;margin-top:8px}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--dim)}
+  .pill i{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+  .pill.ok i{background:var(--ok)}.pill.bad i{background:var(--err)}.pill.warn i{background:var(--warn)}
+  #bar{height:6px;background:#0d1116;border-radius:3px;overflow:hidden;margin:8px 0 4px}
+  #bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+  #log{max-height:140px;overflow:auto;font:11px/1.6 Consolas,monospace;color:var(--dim);white-space:pre-wrap}
+  .job{padding:6px 8px;border:1px solid var(--line);border-radius:6px;margin-bottom:6px;cursor:pointer;font-size:12px}
+  .job:hover{border-color:var(--accent)}
+  .job .m{color:var(--dim);font-size:11px}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="side">
+    <div class="card">
+      <h2>言出法随 · GEN-SPACE</h2>
+      <div class="row"><span class="pill" id="health"><i></i>检测中…</span><span class="pill" id="gpu"><i></i></span></div>
+      <div style="height:8px"></div>
+      <div class="row"><input id="worker" type="text" style="flex:1" placeholder="Worker 地址"><button class="btn" id="wsave">存</button></div>
+      <div class="pill" style="font-size:10px">Worker 跑在本机 GPU 上：node tools/gpu-worker.mjs serve --port 8799</div>
+    </div>
+    <div class="card">
+      <h2>① 输入</h2>
+      <div id="drop">点击选择 / 拖入图片<div id="thumb"></div></div>
+      <input id="file" type="file" accept="image/*" hidden>
+      <div id="paintBox" style="display:none;margin-top:8px">
+        <div style="font-size:10px;color:var(--dim);margin-bottom:4px">修边：涂抹<b style="color:#ff5a5a">要擦除</b>的杂边（如绸带/路人）</div>
+        <div id="paintWrap" style="position:relative;width:100%;border:1px solid #2a3340;border-radius:6px;overflow:hidden;line-height:0">
+          <img id="paintImg" style="width:100%;display:block">
+          <canvas id="paintCv" style="position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none"></canvas>
+        </div>
+        <div style="height:4px"></div>
+        <div class="row"><button class="btn" id="paintClear" style="font-size:11px;padding:3px 10px">清除涂抹</button><span class="pill" style="font-size:10px">笔刷沿主体边缘涂一圈即可，别涂满</span></div>
+      </div>
+      <div style="height:8px"></div>
+      <textarea id="prompt" placeholder="或写一句话描述空间（留空则用上面图片）"></textarea>
+      <div style="height:8px"></div>
+      <input id="name" type="text" placeholder="资产名（可选，如 xianshan → gen_xianshan.ply）">
+      <div style="height:10px"></div>
+      <button class="btn primary" id="go" style="width:100%">生成空间</button>
+      <div style="height:8px"></div>
+      <div class="row">
+        <button class="btn" id="goObj" style="flex:1">生成主体 GLB</button>
+        <label class="pill" style="cursor:pointer"><input type="checkbox" id="tex" style="vertical-align:-2px"> 贴图</label>
+      </div>
+      <div class="pill" style="font-size:10px">主体模式：抠图 → 网格模型，需传图片；白模 ~2 分钟，贴图再 +30 分钟</div>
+    </div>
+    <div class="card">
+      <h2>② 任务</h2>
+      <div id="bar"><i></i></div>
+      <div class="pill" id="stage"><i></i>等待提交</div>
+      <div id="log"></div>
+      <div style="height:8px"></div>
+      <a id="openEditor" href="#" target="_blank" style="display:none">在编辑器中打开 ↗</a>
+    </div>
+    <details class="card" id="histCard">
+      <summary style="cursor:pointer;color:var(--dim)">历史产物</summary>
+      <div id="history" style="margin-top:8px"></div>
+    </details>
+  </div>
+  <div id="view"><div class="empty" id="empty"><div style="font-size:32px">◉</div><div>生成完成后在此预览高斯空间</div><div style="font-size:11px">左键旋转 · 右键平移 · 滚轮缩放</div></div></div>
+</div>
+<script type="importmap">
+{"imports":{"three":"./vendor/three.module.js","three/addons/":"./vendor/addons/","@mkkellogg/gaussian-splats-3d":"./vendor/gaussian-splats-3d.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { DropInViewer } from '@mkkellogg/gaussian-splats-3d'
+
+const $ = id => document.getElementById(id)
+const qs = s => document.querySelector(s)
+// Worker 基址：本页由 worker 伺服时（/genlab 或 /）用同源；线上部署（/xiyou/cj）默认指回本机 8799，可改可存
+const ON_WORKER = ['/genlab', '/', ''].includes(location.pathname)
+const WBASE = localStorage.getItem('genlab.worker') || (ON_WORKER ? '' : 'http://127.0.0.1:8799')
+const W = p => WBASE + p
+// 编辑器基址：本地 vite 或线上 /xiyou/；底座一律用 worker 的绝对资产 URL，两处都打得开
+const EBASE = localStorage.getItem('genlab.editor') || (ON_WORKER ? 'http://127.0.0.1:5199/xiyou/' : location.origin + '/xiyou/')
+const openEditor = name => { const u = `${EBASE}?splat=${encodeURIComponent(W(`/genlab-assets/${name}`))}`; $('openEditor').href = u; $('openEditor').style.display = 'inline' }
+const log = (m) => { $('log').textContent += `${new Date().toLocaleTimeString('zh-CN',{hour12:false})}  ${m}\n`; $('log').scrollTop = 1e6 }
+let file = null, job = null, viewer = null, controls = null, renderer = null, scene = null, camera = null, glbObj = null
+const glbLoader = new GLTFLoader()
+
+$('worker').value = WBASE || location.origin
+$('wsave').addEventListener('click', () => {
+  const v = $('worker').value.trim().replace(/\/+$/, '')
+  if (v && v !== location.origin) localStorage.setItem('genlab.worker', v)
+  else localStorage.removeItem('genlab.worker')
+  log(`Worker 地址已存：${v || location.origin}`); health()
+})
+
+async function health() {
+  try {
+    const h = await (await fetch(W('/health'))).json()
+    const g = h?.local?.genspace
+    $('health').className = 'pill ' + (g ? 'ok' : 'bad')
+    $('health').innerHTML = `<i></i>gen-space ${g ? '就绪' : '未就绪'}`
+    $('gpu').className = 'pill ' + (h?.local?.ready ? 'ok' : 'warn')
+    $('gpu').innerHTML = `<i></i>重建引擎 ${h?.local?.ready ? '齐' : '缺 ' + (h?.local?.missing||[]).join('/')}`
+  } catch { $('health').className = 'pill bad'; $('health').innerHTML = '<i></i>Worker 离线' }
+}
+
+function init3d() {
+  const el = $('view')
+  scene = new THREE.Scene()
+  scene.add(new THREE.AmbientLight(0xffffff, 0.7))
+  const dl = new THREE.DirectionalLight(0xffffff, 1.4); dl.position.set(3, 6, 4); scene.add(dl)
+  scene.background = new THREE.Color(0x0a0e13)
+  camera = new THREE.PerspectiveCamera(60, el.clientWidth / el.clientHeight, 0.01, 2000)
+  camera.position.set(0, 0, -2)
+  renderer = new THREE.WebGLRenderer({ antialias: true })
+  renderer.setSize(el.clientWidth, el.clientHeight)
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
+  el.appendChild(renderer.domElement)
+  controls = new OrbitControls(camera, renderer.domElement)
+  controls.enableDamping = true
+  controls.target.set(0, 0, 20)
+  new ResizeObserver(() => { camera.aspect = el.clientWidth / el.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(el.clientWidth, el.clientHeight) }).observe(el)
+  window.__cam = camera; window.__ctl = controls  // 调试/测试钩子
+  ;(function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera) })()
+}
+
+async function showPly(url) {
+  $('empty').style.display = 'none'
+  clearView()
+  viewer = new DropInViewer({ sharedMemoryForWorkers: false })
+  scene.add(viewer)
+  await viewer.addSplatScene(url, { showLoadingUI: false })
+  // 取景：主体资产（包围盒 <15m）自动环绕取景；大空间维持原点内部视角
+  const box = viewer.splatMesh?.getBoundingBox ? viewer.splatMesh.getBoundingBox(new THREE.Box3()) : null
+  if (box && box.max.distanceTo(box.min) < 15) {
+    const c = box.getCenter(new THREE.Vector3()), r = box.getSize(new THREE.Vector3()).length() / 2
+    controls.target.copy(c); camera.position.set(c.x, c.y + r * 0.3, c.z + r * 1.9)
+  } else {
+    controls.target.set(0, 0, 20); camera.position.set(0, 0, -2)
+  }
+  controls.update()
+}
+
+function clearView() {
+  if (viewer) { scene.remove(viewer); viewer.dispose?.(); viewer = null }
+  if (glbObj) { scene.remove(glbObj); glbObj = null }
+}
+
+async function showGlb(url) {
+  $('empty').style.display = 'none'
+  clearView()
+  const g = await glbLoader.loadAsync(url)
+  glbObj = g.scene
+  scene.add(glbObj)
+  const box = new THREE.Box3().setFromObject(glbObj)
+  const c = box.getCenter(new THREE.Vector3()), r = Math.max(box.getSize(new THREE.Vector3()).length() / 2, 0.1)
+  controls.target.copy(c); camera.position.set(c.x, c.y + r * 0.35, c.z + r * 1.9); controls.update()
+}
+
+const showAsset = (url) => /\.glb$/i.test(url) ? showGlb(url) : showPly(url)
+
+async function submit(type = 'gen-space') {
+  const prompt = $('prompt').value.trim(), name = $('name').value.trim()
+  const btn = type === 'gen-obj' ? $('goObj') : $('go')
+  if (type === 'gen-obj' && !file) { log('主体模式需要图片'); return }
+  if (!file && !prompt) { log('需要图片或描述之一'); return }
+  btn.disabled = true; $('openEditor').style.display = 'none'
+  qs('#bar i').style.width = '5%'; $('stage').innerHTML = '<i></i>提交中…'; log(`提交[${type}] ${file ? '图片 ' + file.name : 'prompt「' + prompt.slice(0,40) + '」'}`)
+  try {
+    let res
+    if (file) {
+      const fd = new FormData()
+      fd.append('input', file, file.name); fd.append('type', type); fd.append('inputType', 'images')
+      if (name) fd.append('name', name)
+      if (type === 'gen-obj') {
+        if ($('tex').checked) fd.append('tex', '1')
+        const maskBlob = await exportMask()
+        if (maskBlob) fd.append('mask', maskBlob, 'mask.png')
+      }
+      res = await fetch(W('/jobs'), { method: 'POST', body: fd })
+    } else {
+      res = await fetch(W('/jobs'), { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ type, payload: { prompt, name } }) })
+    }
+    job = await res.json()
+    if (!job.id) throw new Error(job.error || '提交失败')
+    log(`任务 ${job.id.slice(0,8)} 已受理`); poll(btn)
+  } catch (e) { log('提交失败: ' + e.message); btn.disabled = false }
+}
+
+async function poll(btn = $('go')) {
+  try {
+    const j = await (await fetch(W(`/jobs/${job.id}`))).json()
+    job = j
+    qs('#bar i').style.width = (j.progress || 0) + '%'
+    $('stage').className = 'pill ' + (j.status === 'ready' ? 'ok' : j.status === 'failed' || j.status === 'cancelled' ? 'bad' : 'warn')
+    $('stage').innerHTML = `<i></i>${j.message || j.stage}`
+    for (const l of (j.logs || []).slice(-1)) if (log.last !== l.message) { log(l.message); log.last = l.message }
+    if (j.status === 'ready') {
+      const art = j.result?.artifact
+      if (art) {
+        log(`产出 ${art.name} (${(art.bytes/1048576).toFixed(1)}MB)`)
+        if (art?.name && /\.ply$/i.test(art.name)) openEditor(art.name)
+        await showAsset(W(`/jobs/${job.id}/assets/${encodeURIComponent(art.name)}`))
+      } else log('任务完成但无产物')
+      btn.disabled = false; loadHistory(); return
+    }
+    if (j.status === 'failed' || j.status === 'cancelled') { log('任务结束: ' + (j.error || j.status)); btn.disabled = false; return }
+  } catch (e) { log('轮询失败: ' + e.message) }
+  setTimeout(() => poll(btn), 1200)
+}
+
+async function loadHistory() {
+  try {
+    const [jobs, files] = await Promise.all([
+      fetch(W('/jobs')).then(r => r.json()).catch(() => []),
+      fetch(W('/genlab/history')).then(r => r.json()).catch(() => [])
+    ])
+    const inMem = new Map(jobs.filter(j => (j.type === 'gen-space' || j.type === 'gen-obj') && j.status === 'ready' && j.result?.artifact)
+      .map(j => [j.result.artifact.name, `/jobs/${j.id}/assets/${encodeURIComponent(j.result.artifact.name)}`]))
+    const items = files.map(f => ({ name: f.name, bytes: f.bytes, url: inMem.get(f.name) || f.url, editorAssetUrl: f.editorAssetUrl, mtime: f.mtime }))
+    $('history').innerHTML = items.map(f =>
+      `<div class="job" data-u="${f.url}" data-e="${f.editorAssetUrl}">◉ ${f.name}<div class="m">${(f.bytes/1048576).toFixed(0)}MB · ${f.mtime.slice(11,19)}</div></div>`
+    ).join('') || '<div class="m" style="color:var(--dim)">暂无</div>'
+  } catch {}
+}
+
+$('history').addEventListener('click', e => {
+  const el = e.target.closest('.job'); if (!el) return
+  showAsset(W(el.dataset.u))
+  const nm = el.dataset.u.match(/gen_[^/]+\.ply/)?.[0]
+  if (nm) openEditor(nm)
+})
+const go = (t, btn) => submit(t).catch(e => { log('提交异常: ' + (e?.message || e)); btn.disabled = false })
+$('go').addEventListener('click', () => go('gen-space', $('go')))
+$('goObj').addEventListener('click', () => go('gen-obj', $('goObj')))
+$('drop').addEventListener('click', () => $('file').click())
+$('drop').addEventListener('dragover', e => { e.preventDefault(); $('drop').classList.add('over') })
+$('drop').addEventListener('dragleave', () => $('drop').classList.remove('over'))
+$('drop').addEventListener('drop', e => { e.preventDefault(); $('drop').classList.remove('over'); if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]) })
+$('file').addEventListener('change', e => { if (e.target.files[0]) setFile(e.target.files[0]) })
+function setFile(f) {
+  file = f
+  const img = document.createElement('img'); img.src = URL.createObjectURL(f)
+  $('thumb').replaceChildren(img)
+  log(`已选图片 ${f.name} (${(f.size/1048576).toFixed(1)}MB)`)
+  // 修边画布：等图加载出自然尺寸再铺
+  img.onload = () => {
+    const cv = $('paintCv'), pim = $('paintImg')
+    pim.src = img.src
+    cv.width = img.naturalWidth; cv.height = img.naturalHeight
+    clearPaint()
+    $('paintBox').style.display = 'block'
+  }
+}
+
+// 涂抹修边：可视化层(红色半透明) + 掩码层(白 on 黑，提交时导出)
+let painting = false, hasStrokes = false, maskCv = null
+function paintCtx() { return $('paintCv').getContext('2d') }
+function maskCtx() {
+  if (!maskCv) { maskCv = document.createElement('canvas'); maskCv.width = $('paintCv').width; maskCv.height = $('paintCv').height; const c = maskCv.getContext('2d'); c.fillStyle = '#000'; c.fillRect(0, 0, maskCv.width, maskCv.height) }
+  return maskCv.getContext('2d')
+}
+function clearPaint() {
+  hasStrokes = false; maskCv = null
+  const cv = $('paintCv'); paintCtx().clearRect(0, 0, cv.width, cv.height)
+}
+$('paintClear').addEventListener('click', clearPaint)
+function paintDot(e) {
+  const cv = $('paintCv'), r = cv.getBoundingClientRect()
+  const x = (e.clientX - r.left) * cv.width / r.width, y = (e.clientY - r.top) * cv.height / r.height
+  const rad = Math.max(cv.width, cv.height) * 0.028
+  for (const [ctx, color] of [[paintCtx(), 'rgba(255,80,80,.55)'], [maskCtx(), '#fff']]) {
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, rad, 0, 7); ctx.fill()
+  }
+  hasStrokes = true
+}
+const cv = () => $('paintCv')
+document.addEventListener('pointerdown', e => { if (e.target === cv()) { painting = true; paintDot(e); e.preventDefault() } })
+document.addEventListener('pointermove', e => { if (painting && e.target !== cv()) { } if (painting) paintDot(e) })
+document.addEventListener('pointerup', () => painting = false)
+async function exportMask() {
+  if (!hasStrokes) return null
+  return new Promise(r => maskCv.toBlob(r, 'image/png'))
+}
+init3d(); health(); loadHistory()
+</script>
+</body>
+</html>
