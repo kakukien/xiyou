@@ -1715,3 +1715,14 @@ body.studio-footer-resizing .studio-viewport canvas { pointer-events:none; }
 .cb-strip-wrap { overflow:auto; padding-bottom:32px; scrollbar-gutter:stable; }
 .cb-strip-wrap .asset-strip { flex:0 0 auto; min-height:136px; padding-bottom:24px; }
 .shared-element-library { flex:none; }
+
+
+/* 资源库导航：共享素材 / 项目素材是一级分组，当前工程信息只做上下文提示。 */
+.cb-folders-head { min-height:28px; display:flex; align-items:center; padding:6px 10px 4px; color:var(--ui-muted); font-size:12px; letter-spacing:.02em; text-transform:none; }
+.cb-project-context { background:#fff; color:var(--ui-muted); font-weight:600; cursor:default; }
+.cb-project-context:hover { background:#fff; }
+.cb-folder { min-height:32px; }
+@media (max-width:767px) {
+  .cb-folders-head { font-size:11px; }
+  .cb-project-context { white-space:nowrap; }
+}

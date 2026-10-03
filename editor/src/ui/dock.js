@@ -333,25 +333,17 @@ function renderAssets() {
   }
   pushShared('')
 
+  // 项目文件是工程导航；项目素材是当前工程内部可共享的资产目录。
   const sceneHead = document.createElement('div')
   sceneHead.className = 'cb-folders-head'
-  sceneHead.textContent = '工程文件'
+  sceneHead.textContent = '项目文件'
   rail.appendChild(sceneHead)
-  ;(projects.list?.() || []).forEach(project => {
-    const sceneRow = document.createElement('button')
-    sceneRow.type = 'button'
-    sceneRow.className = `cb-folder${project.id === (window.__xiyouProj || 'main') ? ' active' : ''}`
-    sceneRow.innerHTML = `${iconMarkup('file-3-line')}<span>${project.name || project.id}</span>`
-    sceneRow.title = `切换工程：${project.name || project.id}`
-    sceneRow.addEventListener('click', () => {
-      if (project.id === (window.__xiyouProj || 'main')) return
-      const url = new URL(location.href)
-      url.searchParams.set('proj', project.id)
-      url.searchParams.delete('room')
-      location.href = url.toString()
-    })
-    rail.appendChild(sceneRow)
-  })
+  const currentProject = (projects.list?.() || []).find(project => project.id === (window.__xiyouProj || 'main'))
+  const sceneRow = document.createElement('div')
+  sceneRow.className = 'cb-folder cb-project-context'
+  sceneRow.innerHTML = `${iconMarkup('file-3-line')}<span>${currentProject?.name || store.scene?.meta?.name || '当前工程'}</span>`
+  sceneRow.title = '当前协作工程；项目素材在下方按目录管理'
+  rail.appendChild(sceneRow)
 
   const projHead = document.createElement('div')
   projHead.className = 'cb-folders-head'
