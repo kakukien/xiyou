@@ -468,7 +468,7 @@ async function startVpsMode() {
     setState(camErr(new DOMException('x', 'SecurityError'))); return;
   }
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
     freeVideo = document.createElement('video');
     freeVideo.autoplay = true; freeVideo.muted = true; freeVideo.playsInline = true;
     freeVideo.setAttribute('playsinline', '');
@@ -516,8 +516,8 @@ async function startVpsMode() {
   const MAX_INFLIGHT = 5; // 流水线并发：服务端单次 ~0.4-2.5s，5 并发才撑得起 0.2s 节奏
   const locateOnce = async () => {
     try {
-      const blob = await capFrame(freeVideo, 960); // 5Hz 下压到 960px，省上行带宽/编码耗时
-      const res = await fetch(`${VPS_URL}/locate?k=15&min=8`, { method: 'POST', body: blob });
+      const blob = await capFrame(freeVideo, 1280);
+      const res = await fetch(`${VPS_URL}/locate?k=10&min=6`, { method: 'POST', body: blob });
       const j = await res.json();
       if (j.ok) {
         const m = new THREE.Matrix4().fromArray(j.cam2world).multiply(flip);
@@ -526,7 +526,10 @@ async function startVpsMode() {
         const strong = j.inliers >= 25;
         let accept = false, dropWhy = '';
         if (!vpsCamQ0) {
-          accept = j.inliers >= 15;
+          // 首定：单帧 >=15 直落；或连续两帧 >=10 且互相印证（弱但一致的解也认）
+          if (j.inliers >= 15) accept = true;
+          else if (j.inliers >= 10 && pending && _fp.distanceTo(pending.p) < 0.8 && angBetween(_fq, pending.q) < 15) accept = true;
+          else pending = { p: _fp.clone(), q: _fq.clone() };
           if (!accept) dropWhy = `首定质量不足 内点${j.inliers}`;
         } else {
           const dp = _fp.distanceTo(vpsCamP0), da = angBetween(_fq, vpsCamQ0);
