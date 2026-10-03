@@ -203,6 +203,12 @@
 | `default.placement` | 落点策略：地表、漂浮、体积、点、路径或两点之间。 |
 | `assetPolicy` | 资产制作策略，不表示相应 GLB/粒子/Shader 已经交付。 |
 
+## 精度与资源占用策略
+
+- 当前目录采用 `procedural-prefab`：元素由少量高分段几何、材质、Shader 和受上限控制的粒子组成，不随目录提交 GLB/贴图二进制。
+- `quality.visualTier=high-preview` 表示“高精度预览目标”，不是已经通过所有设备实测；`maxDrawCalls`、`particleMaxCount` 是开发预算，不是最终性能结论。
+- `binaryBytes=0` 只表示目录定义不携带外部二进制；若后续接入 GLB/贴图，仍需走 `meta.assets`、版本、LOD 和授权检查。
+
 ## 优先级定义
 
 | 优先级 | 含义 |

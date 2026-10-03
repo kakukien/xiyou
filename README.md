@@ -76,6 +76,27 @@ Worker HTTP API：`GET /health`、`POST /jobs`、`GET /jobs/:id`、`POST /jobs/:
 
 完整变更记录与验收项见：`docs/xiyou-editor-change-log.md`。
 
+## 本轮开发文档与审查
+
+- `docs/data-persistence-refresh-diagnosis.md`：打开后数据消失的代码证据、修复和验收；
+- `docs/ai-space-interaction-development-plan.md`：AI 对话、语音、Provider 和安全操作协议；
+- `docs/scene-runtime-realtime-interaction-plan.md`：创作/场景/试玩、Release、手机定位和实时更新边界；
+- `docs/requirements-traceability-and-review.md`：需求追踪、P0 审查结论、开发准入和测试门槛。
+
+本分支已先修复草稿恢复、协作初始覆盖风险、Runtime 构建入口，并落地 AI 计划确认/撤销和固定元素目录基础链路。
+
+当前进度和外部资产盘点见：`docs/current-progress-inventory.md`。当前仓库没有自动接入其他项目中的外部 GLB；跨项目资产需先确认授权、纹理依赖、坐标系和允许复制范围。
+
+本地跨设备 Release 验收服务：
+
+```bash
+cd editor
+npm run release:serve
+# 手机同一局域网访问：runtime.html?scene=http://<电脑局域网IP>:8790/release/<id>.json
+```
+
+该服务仅用于开发验收，不是生产 Release API。
+
 ## 跑起来
 
 ```

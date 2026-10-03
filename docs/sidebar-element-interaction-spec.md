@@ -1,6 +1,6 @@
 # 侧边栏元素互动规格
 
-> 状态：规划稿 v0.1.0。目标是让“添加元素”之后马上具备可试玩的互动默认值，而不是只创建静态模型。
+> 状态：v0.2.0。目录与第一批 Runtime/编辑器交互已开始落地；下文中仍标注为“规划”的能力表示尚未达到生产级验收。
 
 ## 1. 交互对象的统一模型
 
@@ -39,7 +39,7 @@
 
 ## 2. 实现状态标记
 
-下面的触发器/动作是**拟定目标契约**，不是当前已有能力。当前 `schema.js` 已定义 `tap`、`gaze`、`hold`、`enter`、`seq_event`、`node_done`，动作包含 `play_seq`、`show`、`hide`、`highlight`、`card`、`reward`、`goto_node`；编辑器内还有 `compound.points` 粒子预览。`leave`、`collision`、`collect`、状态机、飞掠路径及大部分下列动作均需开发和双端联调。`fx` 或 `helper` 也不是当前已有对象 type。
+当前已接入 `tap`、`gaze`、`hold`、`enter`、`leave`、`collision`、`collect` 的数据契约；编辑器和独立 Runtime 已能执行 `set_state`、`collect`、`destroy`、`add_score`、`emit_particles`、`camera_shake`、`vibrate` 等基础反馈。真实物理推动、可复制生成、空间传送和完整飞掠路径仍需后续实现和设备联调。
 
 ## 3. 触发器与动作
 
@@ -134,3 +134,38 @@
 - Helper 默认在编辑器可见、Runtime 隐藏；
 - 危险元素（熔岩、地雷、炮台）必须有明确的可视反馈和可关闭状态；
 - 每个元素都要支持“重置实例状态”，试玩结束不能污染编辑数据。
+
+## 7. 语音/文本指代协议
+
+### 7.1 稳定 ID
+
+- 目录元素使用 `element_id`，例如 `furniture.chair`。
+- 每个目录元素使用不可变 `voice.token`，例如 `xj.element.furniture.chair`。
+- 场景实例额外保存 `voice_token`，但实例唯一编辑目标仍是 `object.id`。
+
+### 7.2 解析顺序
+
+```text
+exact token / exact element_id
+→ 中文名称精确匹配
+→ aliases / tags / preset 归一化匹配
+→ 模糊匹配返回候选
+→ 多候选时暂停执行并向用户确认
+```
+
+示例：
+
+```text
+用户：在这里加一把椅子
+ASR：在这里加一把椅子
+解析：add_element(element_id="furniture.chair")
+结果：创建 object_id=obj_xxx，写入 voice_token=xj.element.furniture.chair
+```
+
+```text
+用户：把那把椅子移过来
+解析：先列出当前场景中所有 element_id=furniture.chair 的 object_id 和名称
+结果：若多于一个，询问“是椅子 A、椅子 B，还是最近选中的椅子？”；确认后才生成 update_object
+```
+
+禁止：把“椅子”直接当成唯一 `object.id`；把展示名称写进 `meta.assets`；在多个同名实例之间静默猜测。

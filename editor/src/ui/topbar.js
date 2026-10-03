@@ -4,6 +4,7 @@ import { projects } from '../core/projects.js';
 import { openAR } from './arview.js';
 import { log } from './log.js';
 import { iconMarkup } from './components/icon.js';
+import { copyText } from './toast.js';
 
 function randomDraftCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -34,6 +35,23 @@ function getRoomCode() {
     presenceInput?.value?.trim() ||
     'demo'
   );
+}
+
+function runtimeUrlForRelease(release) {
+  const url = new URL('./runtime.html', window.location.href)
+  // 同浏览器优先从当前 room 的发布快照读取；跨设备时部署下载的 JSON 后再填写 scene URL。
+  url.searchParams.set('release', release.id)
+  url.searchParams.set('room', getRoomCode())
+  return url.toString()
+}
+
+function localReleaseData(release) {
+  try {
+    const parsed = JSON.parse(release.snapshot || '{}')
+    return JSON.stringify(parsed, null, 2)
+  } catch {
+    return release.snapshot || '{}'
+  }
 }
 
 function getValidation() {
@@ -141,7 +159,7 @@ export function mount(el) {
   const demoButton = document.createElement('button');
   demoButton.className = 'btn';
   demoButton.type = 'button';
-  demoButton.title = '创建空白故事场景';
+  demoButton.title = '创建空白互动场景';
   demoButton.textContent = '新建';
 
   const syncButton = document.createElement('button');
@@ -174,7 +192,7 @@ export function mount(el) {
 
   const connection = document.createElement('span');
   connection.className = 'tb-connection';
-  connection.innerHTML = '<i class="tb-status-dot"></i><span>已连接</span>';
+  connection.innerHTML = '<i class="tb-status-dot"></i><span>未连接</span>';
 
   const noticeButton = document.createElement('button');
   noticeButton.className = 'btn icon-btn';
@@ -366,6 +384,34 @@ export function mount(el) {
       const version = options.release?.version ? ` v${options.release.version}` : '';
       published.innerHTML = `${iconMarkup('checkbox-circle-line')}<span>场景已发布${version}</span>`;
       body.appendChild(published);
+      if (options.release) {
+        const releaseActions = document.createElement('div');
+        releaseActions.className = 'tb-release-actions';
+        const runtimeLink = runtimeUrlForRelease(options.release);
+        const copyEntry = document.createElement('button');
+        copyEntry.className = 'btn btn-sm';
+        copyEntry.type = 'button';
+        copyEntry.textContent = '复制游客入口';
+        copyEntry.addEventListener('click', () => copyText(runtimeLink, '已复制游客入口'));
+        const download = document.createElement('button');
+        download.className = 'btn btn-sm';
+        download.type = 'button';
+        download.textContent = '下载 Release JSON';
+        download.addEventListener('click', () => {
+          const blob = new Blob([localReleaseData(options.release)], { type: 'application/json' });
+          const anchor = document.createElement('a');
+          anchor.href = URL.createObjectURL(blob);
+          anchor.download = `${options.release.id}.json`;
+          anchor.click();
+          setTimeout(() => URL.revokeObjectURL(anchor.href), 1000);
+        });
+        releaseActions.append(copyEntry, download);
+        body.appendChild(releaseActions);
+        const hint = document.createElement('div');
+        hint.className = 'tb-release-hint';
+        hint.textContent = '游客入口需要把 Release JSON 部署到可访问地址；当前浏览器本地发布用于预览与下载。';
+        body.appendChild(hint);
+      }
     }
 
     dialog.append(header, body);
@@ -586,7 +632,7 @@ export function mount(el) {
   demoButton.addEventListener('click', () => {
     if (!window.confirm('创建空白场景会清除当前场景内容，确定继续？')) return;
     store.newScene();
-    log('已创建空白故事场景');
+    log('已创建空白互动场景');
   });
 
   // ---- 工程切换 ----

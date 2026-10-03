@@ -1042,3 +1042,21 @@ OOOSplat 仓库声明使用 Apache License 2.0，同时包含 FFmpeg、COLMAP、
 第一期的成功标准不是“界面看起来像 OOOSplat”，而是：
 
 > 用户可以从一段视频或一组序列帧开始，在虚境中得到一个可编辑、可校准、可绑定碰撞体、可继续布置互动内容的真实空间底座。
+
+
+## 12. 2026-10-03 状态同步
+
+Provider 契约、Worker 任务链路和工作台基础已在客户端存在；本轮未自动引入新的 Gaussian 二进制或外部重建器。
+
+可以直接继续的工作：
+
+- 使用现有 PLY 和本地 Worker 做输入分析、任务状态、失败/取消/恢复和结果引用验收；
+- 在配置 `XIYOU_ENGINE_DIR` 后联调真实 FFmpeg / COLMAP / Brush 链路；
+- 补本地 Release Server 作为开发期结果交付；
+- 继续补 asset manifest、checksum、Collider/LOD 发布检查。
+
+需要用户/部署环境提供：
+
+- 已验证的 COLMAP / Brush / FFmpeg 引擎目录，或 `XIYOU_RECONSTRUCTOR_BIN`；
+- 真实结果资产（PLY/SOG/SPZ/Collider）及可持久化 URL；
+- 坐标系、尺度和 VPS/localize 坐标约定。

@@ -1,125 +1,125 @@
-category_id,category,element_id,element_name,render_kind,preset,interaction_profiles,priority,collider,placement,tags,visible_in_runtime,asset_policy,size_meters
-furniture,家居与室内,furniture.box,盒子,compound,box,static|pushable|pickup_throw,P0,box,surface,盒子|基础|可推动,true,builtin-procedural,0.8 0.8 0.8
-furniture,家居与室内,furniture.crate,木箱,compound,crate,static|pushable|pickup_throw|openable,P0,box,surface,木箱|容器|可打开,true,builtin-procedural,0.9 0.9 0.9
-furniture,家居与室内,furniture.table,桌子,compound,table,static|tap_feedback,P0,box,surface,桌子|家具|平台,true,builtin-procedural,1.2 1 1.2
-furniture,家居与室内,furniture.chair,椅子,compound,chair,static|pushable,P0,box,surface,椅子|家具|可推动,true,builtin-procedural,0.75 0.75 0.75
-furniture,家居与室内,furniture.stool,凳子,compound,stool,static|pushable,P0,box,surface,凳子|家具|可推动,true,builtin-procedural,0.6 0.6 0.6
-furniture,家居与室内,furniture.bench,长凳,compound,bench,static|pushable,P1,box,surface,长凳|家具|平台,true,builtin-procedural,1 0.8 1
-furniture,家居与室内,furniture.cabinet,柜子,compound,cabinet,static|openable,P1,box,surface,柜子|家具|开合,true,builtin-procedural,1 1.2 1
-furniture,家居与室内,furniture.shelf,货架,compound,shelf,static|tap_feedback,P1,box,surface,货架|家具|陈列,true,builtin-procedural,1 1.3 0.8
-furniture,家居与室内,furniture.barrel,木桶,compound,barrel,static|pushable|pickup_throw,P1,cylinder,surface,木桶|容器|滚动,true,builtin-procedural,0.65 0.9 0.65
-furniture,家居与室内,furniture.lamp,台灯,compound,lamp,static|tap_feedback|switchable,P1,box,surface,台灯|开关|灯光,true,builtin-procedural,0.45 0.7 0.45
-furniture,家居与室内,furniture.rug,地毯,compound,rug,static|tap_feedback,P1,box,surface,地毯|地面|装饰,true,builtin-procedural,1.5 0.05 1.2
-furniture,家居与室内,furniture.screen,桌面屏幕,quad,screen,static|display|tap_feedback,P1,box,surface,屏幕|展示|信息,true,optional-external,1 1 1
-environment,建筑与自然环境,environment.house,房子,compound,house,static|tap_feedback,P0,box,surface,房子|建筑|场景,true,builtin-procedural,2.5 2.5 2.5
-environment,建筑与自然环境,environment.cabin,小屋,compound,cabin,static|openable,P1,box,surface,小屋|建筑|入口,true,builtin-procedural,2 2 2
-environment,建筑与自然环境,environment.wall,墙体,compound,wall,static|helper,P0,box,surface,墙|建筑|遮挡,true,builtin-procedural,2 1.5 0.2
-environment,建筑与自然环境,environment.fence,栅栏,compound,fence,static|pushable,P1,box,surface,栅栏|边界|建筑,true,builtin-procedural,1.5 0.8 0.15
-environment,建筑与自然环境,environment.gate,大门,compound,gate,static|openable|switchable,P0,box,surface,大门|机关|开合,true,builtin-procedural,1.8 2 0.2
-environment,建筑与自然环境,environment.bridge,桥,compound,bridge,static|triggerable,P1,box,surface,桥|通道|路径,true,builtin-procedural,2 0.4 3
-environment,建筑与自然环境,environment.stairs,台阶,compound,stairs,static|helper,P1,box,surface,台阶|地形|通道,true,builtin-procedural,1.5 0.8 1.5
-environment,建筑与自然环境,environment.tree,树,compound,tree,static|tap_feedback,P0,box,surface,树|自然|环境,true,builtin-procedural,1.5 2.5 1.5
-environment,建筑与自然环境,environment.shrub,灌木,compound,shrub,static,P1,box,surface,灌木|自然|装饰,true,builtin-procedural,0.9 0.7 0.9
-environment,建筑与自然环境,environment.flower,花丛,compound,flower,static|tap_feedback,P1,box,surface,花|自然|装饰,true,builtin-procedural,0.8 0.5 0.8
-environment,建筑与自然环境,environment.rock,岩石,compound,rock,static|pushable,P0,sphere,surface,岩石|自然|障碍,true,builtin-procedural,1 0.8 1
-environment,建筑与自然环境,environment.boulder,巨石,compound,boulder,static|pushable,P1,sphere,surface,巨石|自然|障碍,true,builtin-procedural,1.8 1.5 1.8
-environment,建筑与自然环境,environment.signpost,路牌,compound,signpost,static|display|tap_feedback,P1,box,surface,路牌|指引|文字,true,builtin-procedural,0.6 1.2 0.2
-environment,建筑与自然环境,environment.lamp_post,路灯,compound,lamp_post,static|switchable,P1,box,surface,路灯|灯光|环境,true,builtin-procedural,0.5 2 0.5
-environment,建筑与自然环境,environment.well,井,compound,well,static|openable|triggerable,P2,cylinder,surface,水井|建筑|探索,true,builtin-procedural,1.1 0.8 1.1
-volume,材质与空间效果,volume.water_surface,水面,effect,water_surface,static|volume_effect|tap_feedback,P0,none,surface,水|水面|反射,true,builtin-procedural,2 0.05 2
-volume,材质与空间效果,volume.stream,溪流,effect,stream,static|volume_effect|triggerable,P1,none,surface,水|溪流|流动,true,builtin-procedural,3 0.05 0.8
-volume,材质与空间效果,volume.pool,水池,effect,pool,static|volume_effect|triggerable,P1,box,surface,水|水池|区域,true,builtin-procedural,2.5 0.25 2.5
-volume,材质与空间效果,volume.ice_patch,冰面,compound,ice_patch,static|physics|tap_feedback,P0,box,surface,冰|冰面|滑动,true,builtin-procedural,2 0.04 2
-volume,材质与空间效果,volume.ice_wall,冰墙,compound,ice_wall,static|pushable,P1,box,surface,冰|墙|障碍,true,builtin-procedural,1.5 1.5 0.2
-volume,材质与空间效果,volume.stone_block,石块,compound,stone_block,static|pushable|pickup_throw,P0,box,surface,石块|石头|基础,true,builtin-procedural,0.8 0.8 0.8
-volume,材质与空间效果,volume.sand_patch,沙地,effect,sand_patch,static|volume_effect,P1,none,surface,沙地|地面|材质,true,builtin-procedural,2.5 0.03 2.5
-volume,材质与空间效果,volume.mud_patch,泥地,effect,mud_patch,static|physics|volume_effect,P1,none,surface,泥地|地面|减速,true,builtin-procedural,2.5 0.03 2.5
-volume,材质与空间效果,volume.lava_flow,熔岩流,effect,lava_flow,static|volume_effect|damage,P1,none,surface,熔岩|危险|流动,true,builtin-procedural,2.5 0.08 0.8
-volume,材质与空间效果,volume.fog,雾气体积,effect,fog_volume,volume_effect|atmosphere,P0,none,volume,雾|体积|氛围,true,builtin-procedural,3 2 3
-volume,材质与空间效果,volume.wind,风场,effect,wind_volume,volume_effect|physics,P1,none,volume,风|体积|受力,true,builtin-procedural,2 1.5 2
-volume,材质与空间效果,volume.force_field,力场,effect,force_field,volume_effect|physics|triggerable,P0,sphere,volume,力场|范围|机关,true,builtin-procedural,2 2 2
-volume,材质与空间效果,volume.cloud,云团,effect,cloud_volume,static|atmosphere|tap_feedback,P1,none,floating,云|天空|氛围,true,builtin-procedural,2 1 2
-volume,材质与空间效果,volume.snow_field,积雪,effect,snow_field,static|volume_effect,P2,none,surface,雪|地面|季节,true,builtin-procedural,2.5 0.04 2.5
-volume,材质与空间效果,volume.grass_patch,草地,compound,grass_patch,static|tap_feedback,P1,none,surface,草|地面|自然,true,builtin-procedural,2 0.2 2
-volume,材质与空间效果,volume.ripple,水波,effect,ripple_surface,tap_feedback|volume_effect,P0,none,surface,水波|反馈|动画,true,builtin-procedural,1.5 0.02 1.5
-game,游戏道具与机关,game.chest,宝箱,compound,chest,static|openable|tap_feedback,P0,box,surface,宝箱|开合|奖励,true,builtin-procedural,0.9 0.8 0.9
-game,游戏道具与机关,game.treasure_chest,大型宝箱,compound,treasure_chest,static|openable|collectible,P1,box,surface,宝箱|奖励|关卡,true,builtin-procedural,1.3 1 1.3
-game,游戏道具与机关,game.key,钥匙,compound,key,collectible|tap_feedback,P0,sphere,floating,钥匙|收集|道具,true,builtin-procedural,0.3 0.3 0.3
-game,游戏道具与机关,game.coin,金币,compound,coin,collectible|tap_feedback,P0,sphere,floating,金币|收集|计分,true,builtin-procedural,0.25 0.25 0.25
-game,游戏道具与机关,game.crystal,能量晶体,compound,crystal,collectible|tap_feedback|gaze_feedback,P0,sphere,floating,晶体|收集|发光,true,builtin-procedural,0.4 0.7 0.4
-game,游戏道具与机关,game.health_pack,补给包,compound,health_pack,collectible|tap_feedback,P1,box,surface,补给|生命|道具,true,builtin-procedural,0.5 0.5 0.5
-game,游戏道具与机关,game.checkpoint,检查点,effect,checkpoint,triggerable|tap_feedback,P0,cylinder,surface,检查点|存档|进度,true,builtin-procedural,0.8 1.5 0.8
-game,游戏道具与机关,game.target,靶标,compound,target,tap_feedback|physics,P0,box,surface,靶标|射击|反馈,true,builtin-procedural,0.7 0.9 0.2
-game,游戏道具与机关,game.switch,拨杆开关,compound,switch,switchable|tap_feedback,P0,box,surface,开关|拨杆|联动,true,builtin-procedural,0.4 0.7 0.3
-game,游戏道具与机关,game.pressure_plate,压力板,compound,pressure_plate,switchable|physics|triggerable,P0,box,surface,压力板|机关|进入,true,builtin-procedural,1 0.08 1
-game,游戏道具与机关,game.button,按钮,compound,button,switchable|tap_feedback|hold_feedback,P0,box,surface,按钮|点击|按住,true,builtin-procedural,0.35 0.2 0.35
-game,游戏道具与机关,game.lever,拉杆,compound,lever,switchable|hold_feedback,P1,box,surface,拉杆|机关|开关,true,builtin-procedural,0.45 0.8 0.3
-game,游戏道具与机关,game.gear,齿轮,compound,gear,moving|physics|tap_feedback,P1,cylinder,surface,齿轮|旋转|机关,true,builtin-procedural,0.8 0.2 0.8
-game,游戏道具与机关,game.door,机关门,compound,door,openable|switchable|triggerable,P0,box,surface,门|开合|机关,true,builtin-procedural,1.6 2.2 0.2
-game,游戏道具与机关,game.moving_platform,移动平台,compound,moving_platform,moving|physics|triggerable,P0,box,surface,平台|移动|承载,true,builtin-procedural,1.8 0.2 1.8
-game,游戏道具与机关,game.spring_pad,弹跳板,compound,spring_pad,physics|tap_feedback|moving,P1,box,surface,弹跳|平台|受力,true,builtin-procedural,1 0.12 1
-game,游戏道具与机关,game.launcher,发射器,compound,launcher,switchable|physics|triggerable,P1,box,surface,发射|机关|投射,true,builtin-procedural,0.8 0.5 1.2
-game,游戏道具与机关,game.portal,传送门,effect,portal,triggerable|tap_feedback|gaze_feedback,P0,box,surface,传送门|入口|空间,true,builtin-procedural,1.5 2.5 0.2
-game,游戏道具与机关,game.teleporter,传送台,effect,teleporter,triggerable|tap_feedback,P1,cylinder,surface,传送|平台|移动,true,builtin-procedural,1.2 0.15 1.2
-game,游戏道具与机关,game.mine,地雷,compound,mine,triggerable|physics|tap_feedback,P1,sphere,surface,地雷|危险|碰撞,true,builtin-procedural,0.35 0.3 0.35
-game,游戏道具与机关,game.beacon,信标,effect,beacon,triggerable|tap_feedback|gaze_feedback,P0,cylinder,surface,信标|引导|定位,true,builtin-procedural,0.5 1.5 0.5
-game,游戏道具与机关,game.collectible_card,收集卡片,quad,collectible_card,collectible|tap_feedback|display,P1,box,floating,卡片|收集|信息,true,optional-external,0.7 1 1
-toy,载具与玩具,toy.toy_tank,玩具坦克,compound,toy_tank,vehicle|tap_feedback|physics,P0,box,surface,玩具|坦克|载具,true,builtin-procedural,0.9 0.5 1
-toy,载具与玩具,toy.tank,坦克,compound,tank,vehicle|physics|tap_feedback,P0,box,surface,坦克|载具|游戏,true,builtin-procedural,1.6 0.9 2
-toy,载具与玩具,toy.car,小车,compound,car,vehicle|physics|tap_feedback,P1,box,surface,小车|载具|移动,true,builtin-procedural,1 0.6 1.5
-toy,载具与玩具,toy.drone,无人机,compound,drone,vehicle|moving|tap_feedback,P0,box,floating,无人机|飞行|载具,true,builtin-procedural,0.8 0.25 0.8
-toy,载具与玩具,toy.robot,机器人,compound,robot,tap_feedback|moving|physics,P1,box,surface,机器人|角色|移动,true,builtin-procedural,0.8 1.4 0.6
-toy,载具与玩具,toy.turret,炮台,compound,turret,tap_feedback|moving|physics,P1,box,surface,炮台|瞄准|机关,true,builtin-procedural,0.8 0.9 0.8
-toy,载具与玩具,toy.cannon,火炮,compound,cannon,tap_feedback|physics|triggerable,P1,box,surface,火炮|发射|游戏,true,builtin-procedural,0.8 0.8 1.2
-toy,载具与玩具,toy.ball,球体玩具,compound,ball,physics|pickup_throw|pushable,P0,sphere,surface,球|投掷|物理,true,builtin-procedural,0.45 0.45 0.45
-toy,载具与玩具,toy.cube,彩色方块,compound,cube_toy,physics|pickup_throw|pushable,P0,box,surface,方块|玩具|物理,true,builtin-procedural,0.6 0.6 0.6
-toy,载具与玩具,toy.windup,发条玩具,compound,windup_toy,moving|tap_feedback,P1,box,surface,发条|玩具|自动移动,true,builtin-procedural,0.5 0.7 0.5
-toy,载具与玩具,toy.balloon,气球,compound,balloon,tap_feedback|moving|flyby,P1,sphere,floating,气球|漂浮|飞行,true,builtin-procedural,0.5 0.7 0.5
-toy,载具与玩具,toy.saucer,飞碟,compound,flying_saucer,vehicle|moving|flyby,P1,sphere,floating,飞碟|飞行|载具,true,builtin-procedural,1 0.35 1
-toy,载具与玩具,toy.boat,小船,compound,boat,vehicle|physics|moving,P2,box,surface,小船|水面|载具,true,builtin-procedural,1.5 0.5 2
-toy,载具与玩具,toy.glider,滑翔机,compound,glider,vehicle|moving|flyby,P2,box,floating,滑翔机|飞行|载具,true,builtin-procedural,1.5 0.3 1.5
-fx,粒子、氛围与飞掠效果,fx.particle_emitter,粒子发射器,effect,particle_emitter,particle_emitter|triggerable,P0,none,point,粒子|发射器|可配置,true,builtin-procedural,1 1 1
-fx,粒子、氛围与飞掠效果,fx.spark_burst,火花爆发,effect,spark_burst,particle_emitter|tap_feedback,P0,none,point,火花|爆发|反馈,true,builtin-procedural,0.8 0.8 0.8
-fx,粒子、氛围与飞掠效果,fx.firefly_swarm,萤火虫群,effect,firefly_swarm,particle_emitter|atmosphere|flyby,P0,none,volume,萤火虫|粒子|氛围,true,builtin-procedural,2 1.5 2
-fx,粒子、氛围与飞掠效果,fx.flyby_motes,飘飞光点,effect,flyby_motes,particle_emitter|flyby|atmosphere,P0,none,volume,飘飞|光点|经过,true,builtin-procedural,3 2 3
-fx,粒子、氛围与飞掠效果,fx.bird_flock,飞鸟群,effect,bird_flock,flyby|atmosphere,P1,none,volume,飞鸟|群体|飞掠,true,builtin-procedural,4 2 4
-fx,粒子、氛围与飞掠效果,fx.falling_leaves,落叶,effect,falling_leaves,particle_emitter|flyby|atmosphere,P1,none,volume,落叶|粒子|季节,true,builtin-procedural,3 2.5 3
-fx,粒子、氛围与飞掠效果,fx.petals,花瓣飘落,effect,petals,particle_emitter|flyby|atmosphere,P1,none,volume,花瓣|飘落|氛围,true,builtin-procedural,3 2 3
-fx,粒子、氛围与飞掠效果,fx.snow_particles,雪花,effect,snow_particles,particle_emitter|atmosphere,P2,none,volume,雪花|粒子|天气,true,builtin-procedural,4 3 4
-fx,粒子、氛围与飞掠效果,fx.rain,雨幕,effect,rain,particle_emitter|atmosphere|volume_effect,P2,none,volume,雨|天气|粒子,true,builtin-procedural,4 3 4
-fx,粒子、氛围与飞掠效果,fx.dust,尘埃,effect,dust,particle_emitter|atmosphere,P0,none,volume,尘埃|氛围|粒子,true,builtin-procedural,2 1.5 2
-fx,粒子、氛围与飞掠效果,fx.smoke,烟雾,effect,smoke,particle_emitter|atmosphere|volume_effect,P0,none,point,烟雾|体积|氛围,true,builtin-procedural,1.5 1.5 1.5
-fx,粒子、氛围与飞掠效果,fx.steam,蒸汽,effect,steam,particle_emitter|atmosphere|volume_effect,P1,none,point,蒸汽|体积|反馈,true,builtin-procedural,1 2 1
-fx,粒子、氛围与飞掠效果,fx.fire,火焰,effect,fire,particle_emitter|atmosphere|tap_feedback,P0,none,point,火焰|危险|粒子,true,builtin-procedural,1 1.5 1
-fx,粒子、氛围与飞掠效果,fx.magic_trail,能量轨迹,effect,magic_trail,particle_emitter|flyby|tap_feedback,P0,none,path,轨迹|能量|移动,true,builtin-procedural,2 1 2
-fx,粒子、氛围与飞掠效果,fx.vortex,旋涡,effect,vortex,particle_emitter|volume_effect|tap_feedback,P1,sphere,point,旋涡|空间|动画,true,builtin-procedural,1.5 1.5 1.5
-fx,粒子、氛围与飞掠效果,fx.floating_orbs,漂浮光球,effect,floating_orbs,particle_emitter|flyby|gaze_feedback,P0,sphere,volume,光球|漂浮|注视,true,builtin-procedural,2 2 2
-fx,粒子、氛围与飞掠效果,fx.shockwave,冲击波,effect,shockwave,particle_emitter|tap_feedback|physics,P0,none,surface,冲击波|点击|反馈,true,builtin-procedural,1 0.1 1
-fx,粒子、氛围与飞掠效果,fx.confetti,彩纸喷射,effect,confetti,particle_emitter|tap_feedback,P1,none,point,彩纸|庆祝|粒子,true,builtin-procedural,2 2 2
-interactive,交互装置与控制器,interactive.tap_target,点击目标,helper,tap_target,tap_feedback|triggerable,P0,box,surface,点击|目标|触发,false,builtin-procedural,0.8 0.8 0.2
-interactive,交互装置与控制器,interactive.gaze_target,注视目标,helper,gaze_target,gaze_feedback|triggerable,P0,sphere,floating,注视|目标|触发,false,builtin-procedural,0.8 0.8 0.2
-interactive,交互装置与控制器,interactive.hold_target,长按目标,helper,hold_target,hold_feedback|triggerable,P0,box,surface,长按|目标|触发,false,builtin-procedural,0.8 0.8 0.2
-interactive,交互装置与控制器,interactive.drag_handle,拖拽把手,helper,drag_handle,pickup_throw|triggerable,P1,sphere,floating,拖拽|控制|交互,false,builtin-procedural,0.4 0.4 0.4
-interactive,交互装置与控制器,interactive.pickup_object,拾取点,helper,pickup_object,pickup_throw|triggerable,P0,sphere,floating,拾取|抓取|交互,false,builtin-procedural,0.4 0.4 0.4
-interactive,交互装置与控制器,interactive.throwable,投掷物,helper,throwable,pickup_throw|physics,P0,sphere,surface,投掷|物理|交互,false,builtin-procedural,0.5 0.5 0.5
-interactive,交互装置与控制器,interactive.link_beam,联动光束,effect,link_beam,triggerable|tap_feedback,P1,none,between,光束|联动|连接,true,builtin-procedural,1 1 1
-interactive,交互装置与控制器,interactive.sound_source,空间音源,helper,sound_source,audio|triggerable,P0,sphere,point,声音|音效|空间,false,builtin-procedural,0.2 0.2 0.2
-interactive,交互装置与控制器,interactive.display_panel,信息面板,quad,display_panel,display|tap_feedback|gaze_feedback,P0,box,surface,面板|文字|展示,true,optional-external,1.4 0.8 1
-interactive,交互装置与控制器,interactive.timer,倒计时器,quad,timer,display|triggerable,P1,box,floating,倒计时|游戏|UI,true,optional-external,1 0.5 1
-interactive,交互装置与控制器,interactive.trigger_zone,触发区域,helper,trigger_zone,triggerable|volume_effect,P0,none,volume,区域|进入|触发,false,builtin-procedural,2 1.5 2
-interactive,交互装置与控制器,interactive.spawn_point,生成点,helper,spawn_point,triggerable|helper,P0,none,surface,生成|出生点|关卡,false,builtin-procedural,0.3 0.3 0.3
-interactive,交互装置与控制器,interactive.camera_rig,镜头轨道,helper,camera_rig,camera|path,P1,none,path,镜头|轨道|相机,false,builtin-procedural,1 1 1
-interactive,交互装置与控制器,interactive.spline_path,移动路径,helper,spline_path,path|helper,P1,none,path,路径|巡航|轨迹,false,builtin-procedural,1 0.1 1
-interactive,交互装置与控制器,interactive.animation_driver,动画控制器,helper,animation_driver,triggerable|moving,P1,none,point,动画|控制器|状态,false,builtin-procedural,0.3 0.3 0.3
-helper,空间辅助与调试,helper.ground_marker,地面标记,helper,ground_marker,helper|tap_feedback,P0,none,surface,地面|标记|定位,false,builtin-procedural,0.5 0.02 0.5
-helper,空间辅助与调试,helper.wall_anchor,墙面锚点,helper,wall_anchor,helper,P0,none,surface,墙面|锚点|定位,false,builtin-procedural,0.2 0.2 0.2
-helper,空间辅助与调试,helper.snap_point,吸附点,helper,snap_point,helper,P0,none,point,吸附|定位|编辑,false,builtin-procedural,0.15 0.15 0.15
-helper,空间辅助与调试,helper.waypoint,路径点,helper,waypoint,path|helper,P0,none,point,路径点|导航|巡航,false,builtin-procedural,0.2 0.2 0.2
-helper,空间辅助与调试,helper.checkpoint_marker,检查点标记,helper,checkpoint_marker,helper|triggerable,P0,none,surface,检查点|标记|进度,false,builtin-procedural,0.4 0.8 0.4
-helper,空间辅助与调试,helper.boundary_volume,边界体,helper,boundary_volume,helper|volume_effect,P0,none,volume,边界|限制|区域,false,builtin-procedural,3 2 3
-helper,空间辅助与调试,helper.nav_surface,导航面,helper,nav_surface,helper|path,P1,none,surface,导航|地面|路径,false,builtin-procedural,3 0.03 3
-helper,空间辅助与调试,helper.occluder,遮挡体,helper,occluder,helper,P1,box,surface,遮挡|优化|性能,false,builtin-procedural,2 2 0.1
-helper,空间辅助与调试,helper.light_probe,光照探针,helper,light_probe,helper,P1,none,point,光照|探针|调试,false,builtin-procedural,0.2 0.2 0.2
-helper,空间辅助与调试,helper.measurement_ruler,测量尺,helper,measurement_ruler,helper,P1,none,between,测量|尺寸|调试,false,builtin-procedural,1 0.05 0.05
-helper,空间辅助与调试,helper.camera_spawn,相机出生点,helper,camera_spawn,camera|helper,P0,none,point,相机|出生点|预览,false,builtin-procedural,0.3 0.3 0.3
-helper,空间辅助与调试,helper.reset_zone,重置区域,helper,reset_zone,triggerable|helper,P1,none,volume,重置|区域|失败处理,false,builtin-procedural,2 1 2
+category_id,category,element_id,element_name,render_kind,preset,interaction_profiles,priority,collider,placement,tags,visible_in_runtime,asset_policy,size_meters,visual_tier,max_parts,max_draw_calls,particle_max_count,binary_bytes,voice_token,voice_aliases
+furniture,家居与室内,furniture.box,盒子,compound,box,static|pushable|pickup_throw,P0,box,surface,盒子|基础|可推动,true,builtin-procedural,0.8 0.8 0.8,high-preview,3,3,0,0,xj.element.furniture.box,盒子|基础|可推动|box|furniture box|furniture.box
+furniture,家居与室内,furniture.crate,木箱,compound,crate,static|pushable|pickup_throw|openable,P0,box,surface,木箱|容器|可打开,true,builtin-procedural,0.9 0.9 0.9,high-preview,3,3,0,0,xj.element.furniture.crate,木箱|容器|可打开|crate|furniture crate|furniture.crate
+furniture,家居与室内,furniture.table,桌子,compound,table,static|tap_feedback,P0,box,surface,桌子|家具|平台,true,builtin-procedural,1.2 1 1.2,high-preview,6,6,0,0,xj.element.furniture.table,桌子|家具|平台|table|furniture table|furniture.table
+furniture,家居与室内,furniture.chair,椅子,compound,chair,static|pushable,P0,box,surface,椅子|家具|可推动,true,builtin-procedural,0.75 0.75 0.75,high-preview,6,6,0,0,xj.element.furniture.chair,椅子|家具|可推动|chair|furniture chair|furniture.chair
+furniture,家居与室内,furniture.stool,凳子,compound,stool,static|pushable,P0,box,surface,凳子|家具|可推动,true,builtin-procedural,0.6 0.6 0.6,high-preview,3,3,0,0,xj.element.furniture.stool,凳子|家具|可推动|stool|furniture stool|furniture.stool
+furniture,家居与室内,furniture.bench,长凳,compound,bench,static|pushable,P1,box,surface,长凳|家具|平台,true,builtin-procedural,1 0.8 1,high-preview,6,6,0,0,xj.element.furniture.bench,长凳|家具|平台|bench|furniture bench|furniture.bench
+furniture,家居与室内,furniture.cabinet,柜子,compound,cabinet,static|openable,P1,box,surface,柜子|家具|开合,true,builtin-procedural,1 1.2 1,high-preview,3,3,0,0,xj.element.furniture.cabinet,柜子|家具|开合|cabinet|furniture cabinet|furniture.cabinet
+furniture,家居与室内,furniture.shelf,货架,compound,shelf,static|tap_feedback,P1,box,surface,货架|家具|陈列,true,builtin-procedural,1 1.3 0.8,high-preview,6,6,0,0,xj.element.furniture.shelf,货架|家具|陈列|shelf|furniture shelf|furniture.shelf
+furniture,家居与室内,furniture.barrel,木桶,compound,barrel,static|pushable|pickup_throw,P1,cylinder,surface,木桶|容器|滚动,true,builtin-procedural,0.65 0.9 0.65,high-preview,3,3,0,0,xj.element.furniture.barrel,木桶|容器|滚动|barrel|furniture barrel|furniture.barrel
+furniture,家居与室内,furniture.lamp,台灯,compound,lamp,static|tap_feedback|switchable,P1,box,surface,台灯|开关|灯光,true,builtin-procedural,0.45 0.7 0.45,high-preview,3,3,0,0,xj.element.furniture.lamp,台灯|开关|灯光|lamp|furniture lamp|furniture.lamp
+furniture,家居与室内,furniture.rug,地毯,compound,rug,static|tap_feedback,P1,box,surface,地毯|地面|装饰,true,builtin-procedural,1.5 0.05 1.2,high-preview,3,3,0,0,xj.element.furniture.rug,地毯|地面|装饰|rug|furniture rug|furniture.rug
+furniture,家居与室内,furniture.screen,桌面屏幕,quad,screen,static|display|tap_feedback,P1,box,surface,屏幕|展示|信息,true,optional-external,1 1 1,high-preview,3,3,0,0,xj.element.furniture.screen,桌面屏幕|屏幕|展示|信息|screen|furniture screen|furniture.screen
+environment,建筑与自然环境,environment.house,房子,compound,house,static|tap_feedback,P0,box,surface,房子|建筑|场景,true,builtin-procedural,2.5 2.5 2.5,high-preview,6,6,0,0,xj.element.environment.house,房子|建筑|场景|house|environment house|environment.house
+environment,建筑与自然环境,environment.cabin,小屋,compound,cabin,static|openable,P1,box,surface,小屋|建筑|入口,true,builtin-procedural,2 2 2,high-preview,6,6,0,0,xj.element.environment.cabin,小屋|建筑|入口|cabin|environment cabin|environment.cabin
+environment,建筑与自然环境,environment.wall,墙体,compound,wall,static|helper,P0,box,surface,墙|建筑|遮挡,true,builtin-procedural,2 1.5 0.2,high-preview,3,3,0,0,xj.element.environment.wall,墙体|墙|建筑|遮挡|wall|environment wall|environment.wall
+environment,建筑与自然环境,environment.fence,栅栏,compound,fence,static|pushable,P1,box,surface,栅栏|边界|建筑,true,builtin-procedural,1.5 0.8 0.15,high-preview,3,3,0,0,xj.element.environment.fence,栅栏|边界|建筑|fence|environment fence|environment.fence
+environment,建筑与自然环境,environment.gate,大门,compound,gate,static|openable|switchable,P0,box,surface,大门|机关|开合,true,builtin-procedural,1.8 2 0.2,high-preview,3,3,0,0,xj.element.environment.gate,大门|机关|开合|gate|environment gate|environment.gate
+environment,建筑与自然环境,environment.bridge,桥,compound,bridge,static|triggerable,P1,box,surface,桥|通道|路径,true,builtin-procedural,2 0.4 3,high-preview,3,3,0,0,xj.element.environment.bridge,桥|通道|路径|bridge|environment bridge|environment.bridge
+environment,建筑与自然环境,environment.stairs,台阶,compound,stairs,static|helper,P1,box,surface,台阶|地形|通道,true,builtin-procedural,1.5 0.8 1.5,high-preview,3,3,0,0,xj.element.environment.stairs,台阶|地形|通道|stairs|environment stairs|environment.stairs
+environment,建筑与自然环境,environment.tree,树,compound,tree,static|tap_feedback,P0,box,surface,树|自然|环境,true,builtin-procedural,1.5 2.5 1.5,high-preview,6,6,0,0,xj.element.environment.tree,树|自然|环境|tree|environment tree|environment.tree
+environment,建筑与自然环境,environment.shrub,灌木,compound,shrub,static,P1,box,surface,灌木|自然|装饰,true,builtin-procedural,0.9 0.7 0.9,high-preview,3,3,0,0,xj.element.environment.shrub,灌木|自然|装饰|shrub|environment shrub|environment.shrub
+environment,建筑与自然环境,environment.flower,花丛,compound,flower,static|tap_feedback,P1,box,surface,花|自然|装饰,true,builtin-procedural,0.8 0.5 0.8,high-preview,3,3,0,0,xj.element.environment.flower,花丛|花|自然|装饰|flower|environment flower|environment.flower
+environment,建筑与自然环境,environment.rock,岩石,compound,rock,static|pushable,P0,sphere,surface,岩石|自然|障碍,true,builtin-procedural,1 0.8 1,high-preview,3,3,0,0,xj.element.environment.rock,岩石|自然|障碍|rock|environment rock|environment.rock
+environment,建筑与自然环境,environment.boulder,巨石,compound,boulder,static|pushable,P1,sphere,surface,巨石|自然|障碍,true,builtin-procedural,1.8 1.5 1.8,high-preview,3,3,0,0,xj.element.environment.boulder,巨石|自然|障碍|boulder|environment boulder|environment.boulder
+environment,建筑与自然环境,environment.signpost,路牌,compound,signpost,static|display|tap_feedback,P1,box,surface,路牌|指引|文字,true,builtin-procedural,0.6 1.2 0.2,high-preview,3,3,0,0,xj.element.environment.signpost,路牌|指引|文字|signpost|environment signpost|environment.signpost
+environment,建筑与自然环境,environment.lamp_post,路灯,compound,lamp_post,static|switchable,P1,box,surface,路灯|灯光|环境,true,builtin-procedural,0.5 2 0.5,high-preview,3,3,0,0,xj.element.environment.lamp_post,路灯|灯光|环境|lamp_post|environment lamp_post|environment.lamp_post
+environment,建筑与自然环境,environment.well,井,compound,well,static|openable|triggerable,P2,cylinder,surface,水井|建筑|探索,true,builtin-procedural,1.1 0.8 1.1,high-preview,3,3,0,0,xj.element.environment.well,井|水井|建筑|探索|well|environment well|environment.well
+volume,材质与空间效果,volume.water_surface,水面,effect,water_surface,static|volume_effect|tap_feedback,P0,none,surface,水|水面|反射,true,builtin-procedural,2 0.05 2,high-preview,2,2,0,0,xj.element.volume.water_surface,水面|水|反射|water_surface|volume water_surface|volume.water_surface
+volume,材质与空间效果,volume.stream,溪流,effect,stream,static|volume_effect|triggerable,P1,none,surface,水|溪流|流动,true,builtin-procedural,3 0.05 0.8,high-preview,2,2,0,0,xj.element.volume.stream,溪流|水|流动|stream|volume stream|volume.stream
+volume,材质与空间效果,volume.pool,水池,effect,pool,static|volume_effect|triggerable,P1,box,surface,水|水池|区域,true,builtin-procedural,2.5 0.25 2.5,high-preview,2,2,0,0,xj.element.volume.pool,水池|水|区域|pool|volume pool|volume.pool
+volume,材质与空间效果,volume.ice_patch,冰面,compound,ice_patch,static|physics|tap_feedback,P0,box,surface,冰|冰面|滑动,true,builtin-procedural,2 0.04 2,high-preview,3,3,0,0,xj.element.volume.ice_patch,冰面|冰|滑动|ice_patch|volume ice_patch|volume.ice_patch
+volume,材质与空间效果,volume.ice_wall,冰墙,compound,ice_wall,static|pushable,P1,box,surface,冰|墙|障碍,true,builtin-procedural,1.5 1.5 0.2,high-preview,3,3,0,0,xj.element.volume.ice_wall,冰墙|冰|墙|障碍|ice_wall|volume ice_wall|volume.ice_wall
+volume,材质与空间效果,volume.stone_block,石块,compound,stone_block,static|pushable|pickup_throw,P0,box,surface,石块|石头|基础,true,builtin-procedural,0.8 0.8 0.8,high-preview,3,3,0,0,xj.element.volume.stone_block,石块|石头|基础|stone_block|volume stone_block|volume.stone_block
+volume,材质与空间效果,volume.sand_patch,沙地,effect,sand_patch,static|volume_effect,P1,none,surface,沙地|地面|材质,true,builtin-procedural,2.5 0.03 2.5,high-preview,2,2,0,0,xj.element.volume.sand_patch,沙地|地面|材质|sand_patch|volume sand_patch|volume.sand_patch
+volume,材质与空间效果,volume.mud_patch,泥地,effect,mud_patch,static|physics|volume_effect,P1,none,surface,泥地|地面|减速,true,builtin-procedural,2.5 0.03 2.5,high-preview,2,2,0,0,xj.element.volume.mud_patch,泥地|地面|减速|mud_patch|volume mud_patch|volume.mud_patch
+volume,材质与空间效果,volume.lava_flow,熔岩流,effect,lava_flow,static|volume_effect|damage,P1,none,surface,熔岩|危险|流动,true,builtin-procedural,2.5 0.08 0.8,high-preview,2,2,0,0,xj.element.volume.lava_flow,熔岩流|熔岩|危险|流动|lava_flow|volume lava_flow|volume.lava_flow
+volume,材质与空间效果,volume.fog,雾气体积,effect,fog_volume,volume_effect|atmosphere,P0,none,volume,雾|体积|氛围,true,builtin-procedural,3 2 3,high-preview,2,2,0,0,xj.element.volume.fog,雾气体积|雾|体积|氛围|fog_volume|volume fog|volume.fog
+volume,材质与空间效果,volume.wind,风场,effect,wind_volume,volume_effect|physics,P1,none,volume,风|体积|受力,true,builtin-procedural,2 1.5 2,high-preview,2,2,0,0,xj.element.volume.wind,风场|风|体积|受力|wind_volume|volume wind|volume.wind
+volume,材质与空间效果,volume.force_field,力场,effect,force_field,volume_effect|physics|triggerable,P0,sphere,volume,力场|范围|机关,true,builtin-procedural,2 2 2,high-preview,2,2,0,0,xj.element.volume.force_field,力场|范围|机关|force_field|volume force_field|volume.force_field
+volume,材质与空间效果,volume.cloud,云团,effect,cloud_volume,static|atmosphere|tap_feedback,P1,none,floating,云|天空|氛围,true,builtin-procedural,2 1 2,high-preview,2,2,0,0,xj.element.volume.cloud,云团|云|天空|氛围|cloud_volume|volume cloud|volume.cloud
+volume,材质与空间效果,volume.snow_field,积雪,effect,snow_field,static|volume_effect,P2,none,surface,雪|地面|季节,true,builtin-procedural,2.5 0.04 2.5,high-preview,2,2,0,0,xj.element.volume.snow_field,积雪|雪|地面|季节|snow_field|volume snow_field|volume.snow_field
+volume,材质与空间效果,volume.grass_patch,草地,compound,grass_patch,static|tap_feedback,P1,none,surface,草|地面|自然,true,builtin-procedural,2 0.2 2,high-preview,3,3,0,0,xj.element.volume.grass_patch,草地|草|地面|自然|grass_patch|volume grass_patch|volume.grass_patch
+volume,材质与空间效果,volume.ripple,水波,effect,ripple_surface,tap_feedback|volume_effect,P0,none,surface,水波|反馈|动画,true,builtin-procedural,1.5 0.02 1.5,high-preview,2,2,0,0,xj.element.volume.ripple,水波|反馈|动画|ripple_surface|volume ripple|volume.ripple
+game,游戏道具与机关,game.chest,宝箱,compound,chest,static|openable|tap_feedback,P0,box,surface,宝箱|开合|奖励,true,builtin-procedural,0.9 0.8 0.9,high-preview,3,3,0,0,xj.element.game.chest,宝箱|开合|奖励|chest|game chest|game.chest
+game,游戏道具与机关,game.treasure_chest,大型宝箱,compound,treasure_chest,static|openable|collectible,P1,box,surface,宝箱|奖励|关卡,true,builtin-procedural,1.3 1 1.3,high-preview,3,3,0,0,xj.element.game.treasure_chest,大型宝箱|宝箱|奖励|关卡|treasure_chest|game treasure_chest|game.treasure_chest
+game,游戏道具与机关,game.key,钥匙,compound,key,collectible|tap_feedback,P0,sphere,floating,钥匙|收集|道具,true,builtin-procedural,0.3 0.3 0.3,high-preview,3,3,0,0,xj.element.game.key,钥匙|收集|道具|key|game key|game.key
+game,游戏道具与机关,game.coin,金币,compound,coin,collectible|tap_feedback,P0,sphere,floating,金币|收集|计分,true,builtin-procedural,0.25 0.25 0.25,high-preview,3,3,0,0,xj.element.game.coin,金币|收集|计分|coin|game coin|game.coin
+game,游戏道具与机关,game.crystal,能量晶体,compound,crystal,collectible|tap_feedback|gaze_feedback,P0,sphere,floating,晶体|收集|发光,true,builtin-procedural,0.4 0.7 0.4,high-preview,3,3,0,0,xj.element.game.crystal,能量晶体|晶体|收集|发光|crystal|game crystal|game.crystal
+game,游戏道具与机关,game.health_pack,补给包,compound,health_pack,collectible|tap_feedback,P1,box,surface,补给|生命|道具,true,builtin-procedural,0.5 0.5 0.5,high-preview,3,3,0,0,xj.element.game.health_pack,补给包|补给|生命|道具|health_pack|game health_pack|game.health_pack
+game,游戏道具与机关,game.checkpoint,检查点,effect,checkpoint,triggerable|tap_feedback,P0,cylinder,surface,检查点|存档|进度,true,builtin-procedural,0.8 1.5 0.8,high-preview,2,2,0,0,xj.element.game.checkpoint,检查点|存档|进度|checkpoint|game checkpoint|game.checkpoint
+game,游戏道具与机关,game.target,靶标,compound,target,tap_feedback|physics,P0,box,surface,靶标|射击|反馈,true,builtin-procedural,0.7 0.9 0.2,high-preview,3,3,0,0,xj.element.game.target,靶标|射击|反馈|target|game target|game.target
+game,游戏道具与机关,game.switch,拨杆开关,compound,switch,switchable|tap_feedback,P0,box,surface,开关|拨杆|联动,true,builtin-procedural,0.4 0.7 0.3,high-preview,3,3,0,0,xj.element.game.switch,拨杆开关|开关|拨杆|联动|switch|game switch|game.switch
+game,游戏道具与机关,game.pressure_plate,压力板,compound,pressure_plate,switchable|physics|triggerable,P0,box,surface,压力板|机关|进入,true,builtin-procedural,1 0.08 1,high-preview,3,3,0,0,xj.element.game.pressure_plate,压力板|机关|进入|pressure_plate|game pressure_plate|game.pressure_plate
+game,游戏道具与机关,game.button,按钮,compound,button,switchable|tap_feedback|hold_feedback,P0,box,surface,按钮|点击|按住,true,builtin-procedural,0.35 0.2 0.35,high-preview,3,3,0,0,xj.element.game.button,按钮|点击|按住|button|game button|game.button
+game,游戏道具与机关,game.lever,拉杆,compound,lever,switchable|hold_feedback,P1,box,surface,拉杆|机关|开关,true,builtin-procedural,0.45 0.8 0.3,high-preview,3,3,0,0,xj.element.game.lever,拉杆|机关|开关|lever|game lever|game.lever
+game,游戏道具与机关,game.gear,齿轮,compound,gear,moving|physics|tap_feedback,P1,cylinder,surface,齿轮|旋转|机关,true,builtin-procedural,0.8 0.2 0.8,high-preview,3,3,0,0,xj.element.game.gear,齿轮|旋转|机关|gear|game gear|game.gear
+game,游戏道具与机关,game.door,机关门,compound,door,openable|switchable|triggerable,P0,box,surface,门|开合|机关,true,builtin-procedural,1.6 2.2 0.2,high-preview,3,3,0,0,xj.element.game.door,机关门|门|开合|机关|door|game door|game.door
+game,游戏道具与机关,game.moving_platform,移动平台,compound,moving_platform,moving|physics|triggerable,P0,box,surface,平台|移动|承载,true,builtin-procedural,1.8 0.2 1.8,high-preview,3,3,0,0,xj.element.game.moving_platform,移动平台|平台|移动|承载|moving_platform|game moving_platform|game.moving_platform
+game,游戏道具与机关,game.spring_pad,弹跳板,compound,spring_pad,physics|tap_feedback|moving,P1,box,surface,弹跳|平台|受力,true,builtin-procedural,1 0.12 1,high-preview,3,3,0,0,xj.element.game.spring_pad,弹跳板|弹跳|平台|受力|spring_pad|game spring_pad|game.spring_pad
+game,游戏道具与机关,game.launcher,发射器,compound,launcher,switchable|physics|triggerable,P1,box,surface,发射|机关|投射,true,builtin-procedural,0.8 0.5 1.2,high-preview,3,3,0,0,xj.element.game.launcher,发射器|发射|机关|投射|launcher|game launcher|game.launcher
+game,游戏道具与机关,game.portal,传送门,effect,portal,triggerable|tap_feedback|gaze_feedback,P0,box,surface,传送门|入口|空间,true,builtin-procedural,1.5 2.5 0.2,high-preview,2,2,0,0,xj.element.game.portal,传送门|入口|空间|portal|game portal|game.portal
+game,游戏道具与机关,game.teleporter,传送台,effect,teleporter,triggerable|tap_feedback,P1,cylinder,surface,传送|平台|移动,true,builtin-procedural,1.2 0.15 1.2,high-preview,2,2,0,0,xj.element.game.teleporter,传送台|传送|平台|移动|teleporter|game teleporter|game.teleporter
+game,游戏道具与机关,game.mine,地雷,compound,mine,triggerable|physics|tap_feedback,P1,sphere,surface,地雷|危险|碰撞,true,builtin-procedural,0.35 0.3 0.35,high-preview,3,3,0,0,xj.element.game.mine,地雷|危险|碰撞|mine|game mine|game.mine
+game,游戏道具与机关,game.beacon,信标,effect,beacon,triggerable|tap_feedback|gaze_feedback,P0,cylinder,surface,信标|引导|定位,true,builtin-procedural,0.5 1.5 0.5,high-preview,2,2,0,0,xj.element.game.beacon,信标|引导|定位|beacon|game beacon|game.beacon
+game,游戏道具与机关,game.collectible_card,收集卡片,quad,collectible_card,collectible|tap_feedback|display,P1,box,floating,卡片|收集|信息,true,optional-external,0.7 1 1,high-preview,3,3,0,0,xj.element.game.collectible_card,收集卡片|卡片|收集|信息|collectible_card|game collectible_card|game.collectible_card
+toy,载具与玩具,toy.toy_tank,玩具坦克,compound,toy_tank,vehicle|tap_feedback|physics,P0,box,surface,玩具|坦克|载具,true,builtin-procedural,0.9 0.5 1,high-preview,6,6,0,0,xj.element.toy.toy_tank,玩具坦克|玩具|坦克|载具|toy_tank|toy toy_tank|toy.toy_tank
+toy,载具与玩具,toy.tank,坦克,compound,tank,vehicle|physics|tap_feedback,P0,box,surface,坦克|载具|游戏,true,builtin-procedural,1.6 0.9 2,high-preview,6,6,0,0,xj.element.toy.tank,坦克|载具|游戏|tank|toy tank|toy.tank
+toy,载具与玩具,toy.car,小车,compound,car,vehicle|physics|tap_feedback,P1,box,surface,小车|载具|移动,true,builtin-procedural,1 0.6 1.5,high-preview,6,6,0,0,xj.element.toy.car,小车|载具|移动|car|toy car|toy.car
+toy,载具与玩具,toy.drone,无人机,compound,drone,vehicle|moving|tap_feedback,P0,box,floating,无人机|飞行|载具,true,builtin-procedural,0.8 0.25 0.8,high-preview,6,6,0,0,xj.element.toy.drone,无人机|飞行|载具|drone|toy drone|toy.drone
+toy,载具与玩具,toy.robot,机器人,compound,robot,tap_feedback|moving|physics,P1,box,surface,机器人|角色|移动,true,builtin-procedural,0.8 1.4 0.6,high-preview,6,6,0,0,xj.element.toy.robot,机器人|角色|移动|robot|toy robot|toy.robot
+toy,载具与玩具,toy.turret,炮台,compound,turret,tap_feedback|moving|physics,P1,box,surface,炮台|瞄准|机关,true,builtin-procedural,0.8 0.9 0.8,high-preview,3,3,0,0,xj.element.toy.turret,炮台|瞄准|机关|turret|toy turret|toy.turret
+toy,载具与玩具,toy.cannon,火炮,compound,cannon,tap_feedback|physics|triggerable,P1,box,surface,火炮|发射|游戏,true,builtin-procedural,0.8 0.8 1.2,high-preview,3,3,0,0,xj.element.toy.cannon,火炮|发射|游戏|cannon|toy cannon|toy.cannon
+toy,载具与玩具,toy.ball,球体玩具,compound,ball,physics|pickup_throw|pushable,P0,sphere,surface,球|投掷|物理,true,builtin-procedural,0.45 0.45 0.45,high-preview,3,3,0,0,xj.element.toy.ball,球体玩具|球|投掷|物理|ball|toy ball|toy.ball
+toy,载具与玩具,toy.cube,彩色方块,compound,cube_toy,physics|pickup_throw|pushable,P0,box,surface,方块|玩具|物理,true,builtin-procedural,0.6 0.6 0.6,high-preview,3,3,0,0,xj.element.toy.cube,彩色方块|方块|玩具|物理|cube_toy|toy cube|toy.cube
+toy,载具与玩具,toy.windup,发条玩具,compound,windup_toy,moving|tap_feedback,P1,box,surface,发条|玩具|自动移动,true,builtin-procedural,0.5 0.7 0.5,high-preview,3,3,0,0,xj.element.toy.windup,发条玩具|发条|玩具|自动移动|windup_toy|toy windup|toy.windup
+toy,载具与玩具,toy.balloon,气球,compound,balloon,tap_feedback|moving|flyby,P1,sphere,floating,气球|漂浮|飞行,true,builtin-procedural,0.5 0.7 0.5,high-preview,3,3,0,0,xj.element.toy.balloon,气球|漂浮|飞行|balloon|toy balloon|toy.balloon
+toy,载具与玩具,toy.saucer,飞碟,compound,flying_saucer,vehicle|moving|flyby,P1,sphere,floating,飞碟|飞行|载具,true,builtin-procedural,1 0.35 1,high-preview,3,3,0,0,xj.element.toy.saucer,飞碟|飞行|载具|flying_saucer|toy saucer|toy.saucer
+toy,载具与玩具,toy.boat,小船,compound,boat,vehicle|physics|moving,P2,box,surface,小船|水面|载具,true,builtin-procedural,1.5 0.5 2,high-preview,3,3,0,0,xj.element.toy.boat,小船|水面|载具|boat|toy boat|toy.boat
+toy,载具与玩具,toy.glider,滑翔机,compound,glider,vehicle|moving|flyby,P2,box,floating,滑翔机|飞行|载具,true,builtin-procedural,1.5 0.3 1.5,high-preview,3,3,0,0,xj.element.toy.glider,滑翔机|飞行|载具|glider|toy glider|toy.glider
+fx,粒子、氛围与飞掠效果,fx.particle_emitter,粒子发射器,effect,particle_emitter,particle_emitter|triggerable,P0,none,point,粒子|发射器|可配置,true,builtin-procedural,1 1 1,high-preview,2,2,300,0,xj.element.fx.particle_emitter,粒子发射器|粒子|发射器|可配置|particle_emitter|fx particle_emitter|fx.particle_emitter
+fx,粒子、氛围与飞掠效果,fx.spark_burst,火花爆发,effect,spark_burst,particle_emitter|tap_feedback,P0,none,point,火花|爆发|反馈,true,builtin-procedural,0.8 0.8 0.8,high-preview,2,2,300,0,xj.element.fx.spark_burst,火花爆发|火花|爆发|反馈|spark_burst|fx spark_burst|fx.spark_burst
+fx,粒子、氛围与飞掠效果,fx.firefly_swarm,萤火虫群,effect,firefly_swarm,particle_emitter|atmosphere|flyby,P0,none,volume,萤火虫|粒子|氛围,true,builtin-procedural,2 1.5 2,high-preview,2,2,300,0,xj.element.fx.firefly_swarm,萤火虫群|萤火虫|粒子|氛围|firefly_swarm|fx firefly_swarm|fx.firefly_swarm
+fx,粒子、氛围与飞掠效果,fx.flyby_motes,飘飞光点,effect,flyby_motes,particle_emitter|flyby|atmosphere,P0,none,volume,飘飞|光点|经过,true,builtin-procedural,3 2 3,high-preview,2,2,300,0,xj.element.fx.flyby_motes,飘飞光点|飘飞|光点|经过|flyby_motes|fx flyby_motes|fx.flyby_motes
+fx,粒子、氛围与飞掠效果,fx.bird_flock,飞鸟群,effect,bird_flock,flyby|atmosphere,P1,none,volume,飞鸟|群体|飞掠,true,builtin-procedural,4 2 4,high-preview,2,2,0,0,xj.element.fx.bird_flock,飞鸟群|飞鸟|群体|飞掠|bird_flock|fx bird_flock|fx.bird_flock
+fx,粒子、氛围与飞掠效果,fx.falling_leaves,落叶,effect,falling_leaves,particle_emitter|flyby|atmosphere,P1,none,volume,落叶|粒子|季节,true,builtin-procedural,3 2.5 3,high-preview,2,2,180,0,xj.element.fx.falling_leaves,落叶|粒子|季节|falling_leaves|fx falling_leaves|fx.falling_leaves
+fx,粒子、氛围与飞掠效果,fx.petals,花瓣飘落,effect,petals,particle_emitter|flyby|atmosphere,P1,none,volume,花瓣|飘落|氛围,true,builtin-procedural,3 2 3,high-preview,2,2,180,0,xj.element.fx.petals,花瓣飘落|花瓣|飘落|氛围|petals|fx petals|fx.petals
+fx,粒子、氛围与飞掠效果,fx.snow_particles,雪花,effect,snow_particles,particle_emitter|atmosphere,P2,none,volume,雪花|粒子|天气,true,builtin-procedural,4 3 4,high-preview,2,2,180,0,xj.element.fx.snow_particles,雪花|粒子|天气|snow_particles|fx snow_particles|fx.snow_particles
+fx,粒子、氛围与飞掠效果,fx.rain,雨幕,effect,rain,particle_emitter|atmosphere|volume_effect,P2,none,volume,雨|天气|粒子,true,builtin-procedural,4 3 4,high-preview,2,2,180,0,xj.element.fx.rain,雨幕|雨|天气|粒子|rain|fx rain|fx.rain
+fx,粒子、氛围与飞掠效果,fx.dust,尘埃,effect,dust,particle_emitter|atmosphere,P0,none,volume,尘埃|氛围|粒子,true,builtin-procedural,2 1.5 2,high-preview,2,2,300,0,xj.element.fx.dust,尘埃|氛围|粒子|dust|fx dust|fx.dust
+fx,粒子、氛围与飞掠效果,fx.smoke,烟雾,effect,smoke,particle_emitter|atmosphere|volume_effect,P0,none,point,烟雾|体积|氛围,true,builtin-procedural,1.5 1.5 1.5,high-preview,2,2,300,0,xj.element.fx.smoke,烟雾|体积|氛围|smoke|fx smoke|fx.smoke
+fx,粒子、氛围与飞掠效果,fx.steam,蒸汽,effect,steam,particle_emitter|atmosphere|volume_effect,P1,none,point,蒸汽|体积|反馈,true,builtin-procedural,1 2 1,high-preview,2,2,180,0,xj.element.fx.steam,蒸汽|体积|反馈|steam|fx steam|fx.steam
+fx,粒子、氛围与飞掠效果,fx.fire,火焰,effect,fire,particle_emitter|atmosphere|tap_feedback,P0,none,point,火焰|危险|粒子,true,builtin-procedural,1 1.5 1,high-preview,2,2,300,0,xj.element.fx.fire,火焰|危险|粒子|fire|fx fire|fx.fire
+fx,粒子、氛围与飞掠效果,fx.magic_trail,能量轨迹,effect,magic_trail,particle_emitter|flyby|tap_feedback,P0,none,path,轨迹|能量|移动,true,builtin-procedural,2 1 2,high-preview,2,2,300,0,xj.element.fx.magic_trail,能量轨迹|轨迹|能量|移动|magic_trail|fx magic_trail|fx.magic_trail
+fx,粒子、氛围与飞掠效果,fx.vortex,旋涡,effect,vortex,particle_emitter|volume_effect|tap_feedback,P1,sphere,point,旋涡|空间|动画,true,builtin-procedural,1.5 1.5 1.5,high-preview,2,2,180,0,xj.element.fx.vortex,旋涡|空间|动画|vortex|fx vortex|fx.vortex
+fx,粒子、氛围与飞掠效果,fx.floating_orbs,漂浮光球,effect,floating_orbs,particle_emitter|flyby|gaze_feedback,P0,sphere,volume,光球|漂浮|注视,true,builtin-procedural,2 2 2,high-preview,2,2,300,0,xj.element.fx.floating_orbs,漂浮光球|光球|漂浮|注视|floating_orbs|fx floating_orbs|fx.floating_orbs
+fx,粒子、氛围与飞掠效果,fx.shockwave,冲击波,effect,shockwave,particle_emitter|tap_feedback|physics,P0,none,surface,冲击波|点击|反馈,true,builtin-procedural,1 0.1 1,high-preview,2,2,300,0,xj.element.fx.shockwave,冲击波|点击|反馈|shockwave|fx shockwave|fx.shockwave
+fx,粒子、氛围与飞掠效果,fx.confetti,彩纸喷射,effect,confetti,particle_emitter|tap_feedback,P1,none,point,彩纸|庆祝|粒子,true,builtin-procedural,2 2 2,high-preview,2,2,180,0,xj.element.fx.confetti,彩纸喷射|彩纸|庆祝|粒子|confetti|fx confetti|fx.confetti
+interactive,交互装置与控制器,interactive.tap_target,点击目标,helper,tap_target,tap_feedback|triggerable,P0,box,surface,点击|目标|触发,false,builtin-procedural,0.8 0.8 0.2,high-preview,2,2,0,0,xj.element.interactive.tap_target,点击目标|点击|目标|触发|tap_target|interactive tap_target|interactive.tap_target
+interactive,交互装置与控制器,interactive.gaze_target,注视目标,helper,gaze_target,gaze_feedback|triggerable,P0,sphere,floating,注视|目标|触发,false,builtin-procedural,0.8 0.8 0.2,high-preview,2,2,0,0,xj.element.interactive.gaze_target,注视目标|注视|目标|触发|gaze_target|interactive gaze_target|interactive.gaze_target
+interactive,交互装置与控制器,interactive.hold_target,长按目标,helper,hold_target,hold_feedback|triggerable,P0,box,surface,长按|目标|触发,false,builtin-procedural,0.8 0.8 0.2,high-preview,2,2,0,0,xj.element.interactive.hold_target,长按目标|长按|目标|触发|hold_target|interactive hold_target|interactive.hold_target
+interactive,交互装置与控制器,interactive.drag_handle,拖拽把手,helper,drag_handle,pickup_throw|triggerable,P1,sphere,floating,拖拽|控制|交互,false,builtin-procedural,0.4 0.4 0.4,high-preview,2,2,0,0,xj.element.interactive.drag_handle,拖拽把手|拖拽|控制|交互|drag_handle|interactive drag_handle|interactive.drag_handle
+interactive,交互装置与控制器,interactive.pickup_object,拾取点,helper,pickup_object,pickup_throw|triggerable,P0,sphere,floating,拾取|抓取|交互,false,builtin-procedural,0.4 0.4 0.4,high-preview,2,2,0,0,xj.element.interactive.pickup_object,拾取点|拾取|抓取|交互|pickup_object|interactive pickup_object|interactive.pickup_object
+interactive,交互装置与控制器,interactive.throwable,投掷物,helper,throwable,pickup_throw|physics,P0,sphere,surface,投掷|物理|交互,false,builtin-procedural,0.5 0.5 0.5,high-preview,2,2,0,0,xj.element.interactive.throwable,投掷物|投掷|物理|交互|throwable|interactive throwable|interactive.throwable
+interactive,交互装置与控制器,interactive.link_beam,联动光束,effect,link_beam,triggerable|tap_feedback,P1,none,between,光束|联动|连接,true,builtin-procedural,1 1 1,high-preview,2,2,0,0,xj.element.interactive.link_beam,联动光束|光束|联动|连接|link_beam|interactive link_beam|interactive.link_beam
+interactive,交互装置与控制器,interactive.sound_source,空间音源,helper,sound_source,audio|triggerable,P0,sphere,point,声音|音效|空间,false,builtin-procedural,0.2 0.2 0.2,high-preview,2,2,0,0,xj.element.interactive.sound_source,空间音源|声音|音效|空间|sound_source|interactive sound_source|interactive.sound_source
+interactive,交互装置与控制器,interactive.display_panel,信息面板,quad,display_panel,display|tap_feedback|gaze_feedback,P0,box,surface,面板|文字|展示,true,optional-external,1.4 0.8 1,high-preview,3,3,0,0,xj.element.interactive.display_panel,信息面板|面板|文字|展示|display_panel|interactive display_panel|interactive.display_panel
+interactive,交互装置与控制器,interactive.timer,倒计时器,quad,timer,display|triggerable,P1,box,floating,倒计时|游戏|UI,true,optional-external,1 0.5 1,high-preview,3,3,0,0,xj.element.interactive.timer,倒计时器|倒计时|游戏|UI|timer|interactive timer|interactive.timer
+interactive,交互装置与控制器,interactive.trigger_zone,触发区域,helper,trigger_zone,triggerable|volume_effect,P0,none,volume,区域|进入|触发,false,builtin-procedural,2 1.5 2,high-preview,2,2,0,0,xj.element.interactive.trigger_zone,触发区域|区域|进入|触发|trigger_zone|interactive trigger_zone|interactive.trigger_zone
+interactive,交互装置与控制器,interactive.spawn_point,生成点,helper,spawn_point,triggerable|helper,P0,none,surface,生成|出生点|关卡,false,builtin-procedural,0.3 0.3 0.3,high-preview,2,2,0,0,xj.element.interactive.spawn_point,生成点|生成|出生点|关卡|spawn_point|interactive spawn_point|interactive.spawn_point
+interactive,交互装置与控制器,interactive.camera_rig,镜头轨道,helper,camera_rig,camera|path,P1,none,path,镜头|轨道|相机,false,builtin-procedural,1 1 1,high-preview,2,2,0,0,xj.element.interactive.camera_rig,镜头轨道|镜头|轨道|相机|camera_rig|interactive camera_rig|interactive.camera_rig
+interactive,交互装置与控制器,interactive.spline_path,移动路径,helper,spline_path,path|helper,P1,none,path,路径|巡航|轨迹,false,builtin-procedural,1 0.1 1,high-preview,2,2,0,0,xj.element.interactive.spline_path,移动路径|路径|巡航|轨迹|spline_path|interactive spline_path|interactive.spline_path
+interactive,交互装置与控制器,interactive.animation_driver,动画控制器,helper,animation_driver,triggerable|moving,P1,none,point,动画|控制器|状态,false,builtin-procedural,0.3 0.3 0.3,high-preview,2,2,0,0,xj.element.interactive.animation_driver,动画控制器|动画|控制器|状态|animation_driver|interactive animation_driver|interactive.animation_driver
+helper,空间辅助与调试,helper.ground_marker,地面标记,helper,ground_marker,helper|tap_feedback,P0,none,surface,地面|标记|定位,false,builtin-procedural,0.5 0.02 0.5,high-preview,2,2,0,0,xj.element.helper.ground_marker,地面标记|地面|标记|定位|ground_marker|helper ground_marker|helper.ground_marker
+helper,空间辅助与调试,helper.wall_anchor,墙面锚点,helper,wall_anchor,helper,P0,none,surface,墙面|锚点|定位,false,builtin-procedural,0.2 0.2 0.2,high-preview,2,2,0,0,xj.element.helper.wall_anchor,墙面锚点|墙面|锚点|定位|wall_anchor|helper wall_anchor|helper.wall_anchor
+helper,空间辅助与调试,helper.snap_point,吸附点,helper,snap_point,helper,P0,none,point,吸附|定位|编辑,false,builtin-procedural,0.15 0.15 0.15,high-preview,2,2,0,0,xj.element.helper.snap_point,吸附点|吸附|定位|编辑|snap_point|helper snap_point|helper.snap_point
+helper,空间辅助与调试,helper.waypoint,路径点,helper,waypoint,path|helper,P0,none,point,路径点|导航|巡航,false,builtin-procedural,0.2 0.2 0.2,high-preview,2,2,0,0,xj.element.helper.waypoint,路径点|导航|巡航|waypoint|helper waypoint|helper.waypoint
+helper,空间辅助与调试,helper.checkpoint_marker,检查点标记,helper,checkpoint_marker,helper|triggerable,P0,none,surface,检查点|标记|进度,false,builtin-procedural,0.4 0.8 0.4,high-preview,2,2,0,0,xj.element.helper.checkpoint_marker,检查点标记|检查点|标记|进度|checkpoint_marker|helper checkpoint_marker|helper.checkpoint_marker
+helper,空间辅助与调试,helper.boundary_volume,边界体,helper,boundary_volume,helper|volume_effect,P0,none,volume,边界|限制|区域,false,builtin-procedural,3 2 3,high-preview,2,2,0,0,xj.element.helper.boundary_volume,边界体|边界|限制|区域|boundary_volume|helper boundary_volume|helper.boundary_volume
+helper,空间辅助与调试,helper.nav_surface,导航面,helper,nav_surface,helper|path,P1,none,surface,导航|地面|路径,false,builtin-procedural,3 0.03 3,high-preview,2,2,0,0,xj.element.helper.nav_surface,导航面|导航|地面|路径|nav_surface|helper nav_surface|helper.nav_surface
+helper,空间辅助与调试,helper.occluder,遮挡体,helper,occluder,helper,P1,box,surface,遮挡|优化|性能,false,builtin-procedural,2 2 0.1,high-preview,2,2,0,0,xj.element.helper.occluder,遮挡体|遮挡|优化|性能|occluder|helper occluder|helper.occluder
+helper,空间辅助与调试,helper.light_probe,光照探针,helper,light_probe,helper,P1,none,point,光照|探针|调试,false,builtin-procedural,0.2 0.2 0.2,high-preview,2,2,0,0,xj.element.helper.light_probe,光照探针|光照|探针|调试|light_probe|helper light_probe|helper.light_probe
+helper,空间辅助与调试,helper.measurement_ruler,测量尺,helper,measurement_ruler,helper,P1,none,between,测量|尺寸|调试,false,builtin-procedural,1 0.05 0.05,high-preview,2,2,0,0,xj.element.helper.measurement_ruler,测量尺|测量|尺寸|调试|measurement_ruler|helper measurement_ruler|helper.measurement_ruler
+helper,空间辅助与调试,helper.camera_spawn,相机出生点,helper,camera_spawn,camera|helper,P0,none,point,相机|出生点|预览,false,builtin-procedural,0.3 0.3 0.3,high-preview,2,2,0,0,xj.element.helper.camera_spawn,相机出生点|相机|出生点|预览|camera_spawn|helper camera_spawn|helper.camera_spawn
+helper,空间辅助与调试,helper.reset_zone,重置区域,helper,reset_zone,triggerable|helper,P1,none,volume,重置|区域|失败处理,false,builtin-procedural,2 1 2,high-preview,2,2,0,0,xj.element.helper.reset_zone,重置区域|重置|区域|失败处理|reset_zone|helper reset_zone|helper.reset_zone

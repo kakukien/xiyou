@@ -11,29 +11,33 @@ import { mount as mountChat } from './ui/chat.js'
 import { mount as mountVpchrome } from './ui/vpchrome.js'
 import { mount as mountSplatStudio } from './ui/splat-studio.js'
 import { collab } from './core/collab.js'
+import { addElementInstance } from './core/elements.js'
 import { projects } from './core/projects.js'
 
 // ---- bootstrap ----
 window.__xiyou = { viewport, store, player, projects }
 const params = new URLSearchParams(location.search)
-// 工程制：?proj=<id> → 协作房间 xiyou-proj-<id> + 独立本地存档
-// 兼容：?room= 直接指定任意房间（含 token 门控的命名房间）
+// 工程制：?proj=<id> → 协作房间 xiyou-proj-<id> + 独立本地存档；?room= 保持兼容。
 const PROJ = params.get('proj') || 'main'
 const ROOM = params.get('room') || `xiyou-proj-${PROJ}`
+const STORAGE_KEY = `xiyou.scene.v2.${ROOM}`
 window.__xiyouRoom = ROOM
 window.__xiyouProj = PROJ
-store.setStorageKey(`xiyou.scene.v2.${ROOM}`)
+store.setStorageKey(STORAGE_KEY)
 if (params.has('reset')) {
-  try { localStorage.removeItem(`xiyou.scene.v2.${ROOM}`) } catch {}
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(`${STORAGE_KEY}.backup`)
+  } catch {}
 }
 const loadedScene = store.load()
-const retiredPreset = loadedScene && (
-  store.scene?.meta?.name === '花果山觉醒' ||
-  store.scene?.story?.chapters?.some(chapter => chapter?.title === '花果山觉醒')
-)
-if (!loadedScene || retiredPreset) {
+// 场景名称不能用于判断“是否应清空”。旧演示场景也是用户真实草稿，升级只允许走 schema migration。
+if (!loadedScene && store.lastLoadStatus === 'missing') {
   store.newScene()
   store.save()
+}
+if (!loadedScene && store.lastLoadStatus !== 'missing') {
+  log('场景草稿未自动覆盖：请检查日志或从备份/JSON 恢复', 'warn')
 }
 
 // 言出法随热加载：?splat=assets/gen_x.ply 直接替换 3GS 底座（gen_space.py 产物）
@@ -77,7 +81,7 @@ const splatStudio = mountSplatStudio(document.getElementById('splat-studio'))
 window.__xiyou.splatStudio = splatStudio
 
 // auto-connect collab (non-fatal if server unreachable)
-if (presenceEl && presenceEl._connect) presenceEl._connect()
+if (presenceEl?._connect && presenceEl._hasExplicitCollab) presenceEl._connect()
 
 // 工程注册表（共享素材库也在这条 doc 里）
 projects.connect()
@@ -141,7 +145,16 @@ store.on('node-goto', ({ nodeId }) => {
   log(`跳转到节点 ${nodeId}`)
   store.select(nodeId)
 })
-store.on('published', () => log('已发布快照'))
+store.on('published', release => {
+  log(release ? `已发布快照 v${release.version}` : '已发布快照')
+})
+store.on('runtime-score', ({ score } = {}) => {
+  document.getElementById('viewport-overlay').textContent = store.mode === 'play' ? `模拟试玩 · 分数 ${Number(score) || 0}` : ''
+})
+store.on('spawn-element', ({ elementId, point, name } = {}) => {
+  if (store.mode !== 'play' || !elementId) return
+  addElementInstance(elementId, point, { name: name || undefined })
+})
 
 // 剧情卡片弹窗（编辑器内）
 store.on('card', ({ text }) => {
@@ -159,9 +172,14 @@ vpEl.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.drop
 vpEl.addEventListener('drop', e => {
   e.preventDefault()
   const type = e.dataTransfer.getData('xo-type')
+  const elementId = e.dataTransfer.getData('text/x-xiyou-element')
   const assetId = e.dataTransfer.getData('text/x-xiyou-asset')
   const sharedId = e.dataTransfer.getData('text/x-xiyou-shared')
   const point = viewport.placementPoint ? viewport.placementPoint(e.clientX, e.clientY) : [0, 0, -3]
+  if (elementId) {
+    addElementInstance(elementId, point)
+    return
+  }
   // 共享素材拖入视口：先复制进本工程资产表，对象引用才有解析源
   if (sharedId && !assetId) {
     const shared = (projects.sharedAssets?.() || []).find(item => item.id === sharedId)

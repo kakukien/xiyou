@@ -8,7 +8,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: 'index.html',
-        show: 'show.html'
+        show: 'show.html',
+        runtime: 'runtime.html'
       },
       external: ['/xiyou/vendor/mindar/mindar-image-three.prod.js']
     }

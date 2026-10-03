@@ -378,3 +378,18 @@ GPU Smoke 覆盖：
 3. 将 `XIYOU_RECONSTRUCTOR_BIN` 接到实际 GPU 重建服务，并约定模型/输出格式；
 4. 在目标公网域名确认 WebSocket 反代、房间令牌和 Yjs 服务；
 5. 用真实大体积 SOG/GLB 做显存峰值与长期运行测试。
+
+
+## 8. 当前分支进度盘点（2026-10-03）
+
+当前工作在 `codex/feature-fixes-audit-tests` 未提交工作区进行。已落地：
+
+- 草稿加载保护、备份恢复、协作初始同步保护和 Runtime 多页面构建；
+- Editor AI 计划确认、原子执行、撤销、实例歧义选择、Provider endpoint 配置；
+- 124 项固定元素目录、程序化预制体、voice token、编辑器添加和 Runtime 临时添加；
+- Runtime Session 状态、收集/分数/状态切换/离开区域/距离碰撞近似/临时生成；
+- Release payload、Release JSON 下载和开发用本地 Release Server。
+
+当前仓库中实际可确认的二进制资产包括 PLY、`xiyou_world.glb`、海报、现场图片、现场视频和 FX 贴图。当前仓库没有确认猴子、坦克、汽车专用 GLB；其他项目中的模型不能在未确认授权和依赖前自动接入。
+
+仍需外部输入才能完成生产联调：AI/STT/TTS 服务地址和鉴权、对象存储、Release API、VPS/localize、Yjs 持久化、真机和场地信息。
