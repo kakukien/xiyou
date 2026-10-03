@@ -451,6 +451,11 @@ const VPS_FALLBACK = '/xiyou-vps';
 let VPS_URL = new URLSearchParams(location.search).get('vps') || VPS_FALLBACK;
 const vpsReady = Promise.resolve();
 let vpsTimer = null, vpsGyroQ = null, vpsCamQ0 = null, vpsGyroQ0 = null;
+let xrSession = null, xrSpace = null, xrSupported = false;
+(async () => {
+  try { xrSupported = !!(navigator.xr && await navigator.xr.isSessionSupported('immersive-ar')); }
+  catch { xrSupported = false; }
+})();
 
 function capFrame(video, maxW = 960) {
   const w = video.videoWidth || 640, h = video.videoHeight || 480;
@@ -459,6 +464,42 @@ function capFrame(video, maxW = 960) {
   c.width = Math.round(w * s); c.height = Math.round(h * s);
   c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
   return new Promise(res => c.toBlob(res, 'image/jpeg', 0.72));
+}
+
+// VPS 锁定后接管：释放相机 -> ARCore SLAM。M = C·P⁻¹，场景矩阵 = P·C⁻¹
+async function enterXR() {
+  if (!vpsCamQ0) { setState('先完成首次定位再进 AR'); return; }
+  try {
+    const session = await navigator.xr.requestSession('immersive-ar', {
+      requiredFeatures: ['local-floor'], optionalFeatures: ['hit-test', 'camera-access'] });
+    freeVideo?.srcObject?.getTracks().forEach(t => t.stop());
+    freeVideo?.remove(); freeVideo = null;
+    clearInterval(vpsTimer);
+    freeRenderer.xr.enabled = true;
+    await freeRenderer.xr.setSession(session);
+    xrSpace = await session.requestReferenceSpace('local-floor');
+    xrSession = session; mode = 'xr';
+    const C = new THREE.Matrix4().compose(vpsCamP0, vpsCamQ0, new THREE.Vector3(1, 1, 1));
+    let got = false;
+    freeRenderer.setAnimationLoop((t, frame) => {
+      if (frame && xrSpace && !got) {
+        const pose = frame.getViewerPose(xrSpace);
+        if (pose) {
+          got = true;
+          const P = new THREE.Matrix4().fromArray(pose.transform.matrix);
+          const alignInv = P.multiply(C.clone().invert()); // P · C⁻¹：世界->XR局部
+          sceneContent.matrixAutoUpdate = false; sceneContent.matrix.copy(alignInv);
+          streamGroup.matrixAutoUpdate = false; streamGroup.matrix.copy(alignInv);
+          sceneContent.visible = true;
+          setState('AR 跟踪中 · ARCore SLAM');
+        }
+      }
+      tickStream(freeRenderer.xr.isPresenting ? freeRenderer.xr.getCamera() : freeCamera);
+      tickPlayer(1 / 60);
+      freeRenderer.render(freeScene, freeCamera);
+    });
+    session.addEventListener('end', () => location.reload());
+  } catch (e) { setState('WebXR 不可用 · ' + (e.message || e)); }
 }
 
 async function startVpsMode() {
@@ -559,6 +600,7 @@ async function startVpsMode() {
             freeCamera.updateMatrix();
           }
           sceneContent.visible = true;
+          if (xrSupported) $('btn-xr').style.display = '';
           setState(`已定位 · 内点 ${j.inliers} · ${j.ms}ms`);
         } else {
           locFail++;
@@ -588,7 +630,7 @@ async function startVpsMode() {
 
   rootEl.addEventListener('pointerup', e => {
     const x = (e.clientX / innerWidth) * 2 - 1, y = -(e.clientY / innerHeight) * 2 + 1;
-    raycaster.setFromCamera({ x, y }, freeCamera);
+    raycaster.setFromCamera({ x, y }, freeRenderer?.xr?.isPresenting ? freeRenderer.xr.getCamera() : freeCamera);
     const hits = raycaster.intersectObjects([...nodeMap.values()], true);
     if (hits.length) {
       let o = hits[0].object;
@@ -659,6 +701,7 @@ $('btn-mode').onclick = async () => {
   await startFreeMode();
 };
 $('btn-rescan').onclick = () => location.reload();
+$('btn-xr').onclick = () => enterXR();
 
 $('btn-enter').onclick = async () => {
   $('boot').style.display = 'none';
