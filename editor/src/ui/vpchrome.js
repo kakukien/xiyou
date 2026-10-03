@@ -45,7 +45,8 @@ export function mount(wrap, viewport) {
     lastMapDraw: 0,
     savedCamera: null,
     labels: new Map(),
-    dirtyMap: true
+    dirtyMap: true,
+    mapBounds: null
   };
 
   const getCamera = () => viewport.camera || viewport._camera;
@@ -375,67 +376,107 @@ export function mount(wrap, viewport) {
     });
   }
 
+  function mapBounds() {
+    const points = [];
+    (store.scene.objects || []).forEach(obj => {
+      const p = obj.transform?.p || [0, 0, 0];
+      points.push({ x: Number(p[0]) || 0, z: Number(p[2]) || 0 });
+    });
+    (store.scene.zones || []).forEach(zone => {
+      const p = zone.transform?.p || [0, 0, 0];
+      const size = zone.transform?.s || [2, 2, 2];
+      const halfX = Math.abs(Number(size[0]) || 0) * 0.5;
+      const halfZ = Math.abs(Number(size[2]) || 0) * 0.5;
+      const x = Number(p[0]) || 0;
+      const z = Number(p[2]) || 0;
+      points.push({ x: x - halfX, z: z - halfZ }, { x: x + halfX, z: z + halfZ });
+    });
+    const base = store.scene.base || {};
+    const collider = base.collider || {};
+    if (collider.visible !== false || base.sog_url || base.proxy) {
+      const center = collider.center || [0, 0, 0];
+      const size = collider.size || [20, 2, 20];
+      const cx = Number(center[0]) || 0;
+      const cz = Number(center[2]) || 0;
+      const halfX = Math.abs(Number(size[0]) || 20) * 0.5;
+      const halfZ = Math.abs(Number(size[2]) || 20) * 0.5;
+      points.push({ x: cx - halfX, z: cz - halfZ }, { x: cx + halfX, z: cz + halfZ });
+    }
+    if (!points.length) points.push({ x: -10, z: -10 }, { x: 10, z: 10 });
+    let minX = Math.min(...points.map(point => point.x));
+    let maxX = Math.max(...points.map(point => point.x));
+    let minZ = Math.min(...points.map(point => point.z));
+    let maxZ = Math.max(...points.map(point => point.z));
+    const minSpan = 10;
+    if (maxX - minX < minSpan) { const mid = (minX + maxX) * 0.5; minX = mid - minSpan * 0.5; maxX = mid + minSpan * 0.5; }
+    if (maxZ - minZ < minSpan) { const mid = (minZ + maxZ) * 0.5; minZ = mid - minSpan * 0.5; maxZ = mid + minSpan * 0.5; }
+    return { minX, maxX, minZ, maxZ };
+  }
+
+  function minimapPoint(x, z, bounds, width, height, margin = 18) {
+    const scale = Math.min((width - margin * 2) / Math.max(1, bounds.maxX - bounds.minX), (height - margin * 2) / Math.max(1, bounds.maxZ - bounds.minZ));
+    const mapWidth = (bounds.maxX - bounds.minX) * scale;
+    const mapHeight = (bounds.maxZ - bounds.minZ) * scale;
+    return { x: (width - mapWidth) * 0.5 + (x - bounds.minX) * scale, y: (height - mapHeight) * 0.5 + (z - bounds.minZ) * scale };
+  }
+
   function drawMinimap() {
     const ctx = minimap.getContext('2d');
     if (!ctx) return;
-
     const width = minimap.width;
     const height = minimap.height;
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = 'rgba(19, 22, 27, 0.92)';
     ctx.fillRect(0, 0, width, height);
-
-    const objects = store.scene.objects || [];
-    const points = objects.map((obj) => {
-      const p = obj.transform && obj.transform.p ? obj.transform.p : [0, 0, 0];
-      return { obj, x: Number(p[0]) || 0, z: Number(p[2]) || 0 };
-    });
-
-    const baseRadius = store.scene.base && store.scene.base.transform
-      ? Math.max(
-        Math.abs(store.scene.base.transform.t?.[0] || 0),
-        Math.abs(store.scene.base.transform.t?.[2] || 0),
-        5
-      )
-      : 5;
-
-    let minX = -baseRadius;
-    let maxX = baseRadius;
-    let minZ = -baseRadius;
-    let maxZ = baseRadius;
-
-    points.forEach((point) => {
-      minX = Math.min(minX, point.x);
-      maxX = Math.max(maxX, point.x);
-      minZ = Math.min(minZ, point.z);
-      maxZ = Math.max(maxZ, point.z);
-    });
-
     const margin = 18;
-    const spanX = Math.max(1, maxX - minX);
-    const spanZ = Math.max(1, maxZ - minZ);
-    const scale = Math.min((width - margin * 2) / spanX, (height - margin * 2) / spanZ);
-    const toCanvas = (x, z) => ({
-      x: margin + (x - minX) * scale,
-      y: margin + (z - minZ) * scale
-    });
-
+    const bounds = mapBounds();
+    state.mapBounds = bounds;
+    const scale = Math.min((width - margin * 2) / Math.max(1, bounds.maxX - bounds.minX), (height - margin * 2) / Math.max(1, bounds.maxZ - bounds.minZ));
+    const mapWidth = (bounds.maxX - bounds.minX) * scale;
+    const mapHeight = (bounds.maxZ - bounds.minZ) * scale;
+    const topLeft = minimapPoint(bounds.minX, bounds.minZ, bounds, width, height, margin);
+    const toCanvas = (x, z) => minimapPoint(x, z, bounds, width, height, margin);
     ctx.strokeStyle = 'rgba(125, 137, 153, .28)';
     ctx.lineWidth = 1;
-    ctx.strokeRect(margin, margin, width - margin * 2, height - margin * 2);
+    ctx.strokeRect(topLeft.x, topLeft.y, mapWidth, mapHeight);
 
-    const colors = {
-      quad: '#4e9bea',
-      video_quad: '#b16cea',
-      glb: '#e98942',
-      splat_segment: '#9aa5ae',
-      light: '#e8c94c'
-    };
+    const base = store.scene.base || {};
+    const collider = base.collider || {};
+    if (collider.visible !== false || base.sog_url || base.proxy) {
+      const center = collider.center || [0, 0, 0];
+      const size = collider.size || [20, 2, 20];
+      const cx = Number(center[0]) || 0;
+      const cz = Number(center[2]) || 0;
+      const halfX = Math.abs(Number(size[0]) || 20) * 0.5;
+      const halfZ = Math.abs(Number(size[2]) || 20) * 0.5;
+      const a = toCanvas(cx - halfX, cz - halfZ);
+      const b = toCanvas(cx + halfX, cz + halfZ);
+      ctx.strokeStyle = '#ef6c16';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
+      ctx.setLineDash([]);
+    }
 
+    (store.scene.zones || []).forEach(zone => {
+      if (zone.visible === false) return;
+      const p = zone.transform?.p || [0, 0, 0];
+      const size = zone.transform?.s || [2, 2, 2];
+      const halfX = Math.abs(Number(size[0]) || 0) * 0.5;
+      const halfZ = Math.abs(Number(size[2]) || 0) * 0.5;
+      const a = toCanvas((Number(p[0]) || 0) - halfX, (Number(p[2]) || 0) - halfZ);
+      const b = toCanvas((Number(p[0]) || 0) + halfX, (Number(p[2]) || 0) + halfZ);
+      ctx.strokeStyle = zone.kind === 'forbidden' ? '#dc2626' : zone.kind === 'trigger' ? '#d97706' : '#2563eb';
+      ctx.globalAlpha = 0.85;
+      ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
+      ctx.globalAlpha = 1;
+    });
+
+    const colors = { quad: '#4e9bea', video_quad: '#b16cea', glb: '#e98942', splat_segment: '#9aa5b5', light: '#e8c94c' };
     const selected = new Set(store.selected());
-
-    points.forEach(({ obj, x, z }) => {
-      const point = toCanvas(x, z);
+    (store.scene.objects || []).forEach(obj => {
+      const p = obj.transform?.p || [0, 0, 0];
+      const point = toCanvas(Number(p[0]) || 0, Number(p[2]) || 0);
       const radius = selected.has(obj.id) ? 5 : 3;
       ctx.beginPath();
       ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
@@ -453,17 +494,13 @@ export function mount(wrap, viewport) {
     const camera = getCamera();
     if (camera) {
       const point = toCanvas(camera.position.x, camera.position.z);
-      const direction = new THREE.Vector3(0, 0, -1)
-        .applyQuaternion(camera.quaternion);
+      const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
       const angle = Math.atan2(direction.x, direction.z);
       ctx.save();
       ctx.translate(point.x, point.y);
       ctx.rotate(angle);
       ctx.beginPath();
-      ctx.moveTo(0, -7);
-      ctx.lineTo(4, 5);
-      ctx.lineTo(-4, 5);
-      ctx.closePath();
+      ctx.moveTo(0, -7); ctx.lineTo(4, 5); ctx.lineTo(-4, 5); ctx.closePath();
       ctx.fillStyle = '#f2f5f8';
       ctx.fill();
       ctx.restore();
