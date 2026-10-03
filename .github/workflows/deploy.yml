@@ -23,10 +23,10 @@ jobs:
         working-directory: editor
         run: npm ci && npm run build
 
-      # .ply 点云不进发布包：线上由持久目录 /app/static/xiyou-assets 分流服务
-      # （发布是整站换目录，大资产换版后不丢）
+      # .ply/.glb 大资产不进发布包：线上由持久目录 xiyou-assets 分流服务
+      # （发布是整站换目录，大资产换版后不丢；包从 ~54MB 瘦到 ~3MB，避开 CF 100s 超时）
       - name: pack
-        run: tar -czf site.tgz --exclude='*.ply' -C editor/dist .
+        run: tar -czf site.tgz --exclude='*.ply' --exclude='*.glb' -C editor/dist .
 
       # 54MB 包走 CF 回源常超 100s 网关超时：服务端其实已完成部署，响应被 CF 吃掉回 504
       # 所以不拿 curl 退出码当成败——POST 后轮询 status，last_success 时间戳变了才算真部署
