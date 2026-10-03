@@ -31,6 +31,24 @@ export function mount(el) {
 
   const lockHint = document.createElement('div');
   lockHint.className = 'presence-lock-hint';
+
+  const roleTag = document.createElement('span');
+  roleTag.className = 'presence-role';
+
+  const ownerTag = document.createElement('span');
+  ownerTag.className = 'presence-owner';
+
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'btn btn-sm presence-save';
+  saveBtn.textContent = '保存工程到房间';
+  saveBtn.title = '房主：把当前本地场景覆盖写入协作房间';
+  saveBtn.style.display = 'none';
+  saveBtn.addEventListener('click', () => {
+    if (collab.publishLocalScene()) {
+      store.emit('log', { msg: '已将当前工程保存到协作房间', level: 'info' });
+    }
+  });
+
   const wrap = document.createElement('div');
   wrap.className = 'presence-wrap';
   statusText.addEventListener('click', () => {
@@ -43,16 +61,27 @@ export function mount(el) {
     }).catch(() => window.prompt('复制协作链接', url.toString()));
   });
 
-  wrap.append(status, peersCount, avatars, roomInput, lockHint);
+  wrap.append(status, peersCount, avatars, roomInput, roleTag, ownerTag, saveBtn, lockHint);
   root.append(wrap);
   el.append(root);
 
   let connectionState = 'disconnected';
   let peers = [];
   let selectedIds = [];
+  let awaitingOwner = false;
 
   const user = getUser();
   const params = new URLSearchParams(location.search);
+  const ROLE_LABEL = { owner: '房主', editor: '编辑', previewer: '观看' };
+
+  function currentRole(room) {
+    const fromUrl = params.get('role');
+    if (fromUrl === 'owner' || fromUrl === 'previewer' || fromUrl === 'editor') {
+      if (room) localStorage.setItem(`xiyou.role.${room}`, fromUrl);
+      return fromUrl;
+    }
+    return localStorage.getItem(`xiyou.role.${room || 'demo'}`) || 'editor';
+  }
   const hasExplicitCollab = params.has('ws') || params.has('collab') || location.hostname === 'agentpay.xx.kg';
   const wsUrl = params.get('ws') ||
     (location.hostname === 'agentpay.xx.kg'
@@ -103,7 +132,7 @@ export function mount(el) {
     };
     statusDot.style.background = colors[connectionState] || colors.disconnected;
     statusText.textContent = connectionState === 'connected'
-      ? '已连接'
+      ? (awaitingOwner ? '等待房主同步' : '已连接')
       : connectionState === 'connecting'
         ? '连接中'
         : '邀请协作 →';
@@ -113,6 +142,15 @@ export function mount(el) {
     peersCount.textContent = connectionState === 'connected'
       ? `${peers.length} 人在线`
       : '';
+
+    const role = collab.role || 'editor';
+    roleTag.textContent = connectionState === 'connected' ? `· ${ROLE_LABEL[role] || role}` : '';
+    const info = collab.roomInfo?.();
+    ownerTag.textContent = connectionState === 'connected' && info?.owner?.name
+      ? `房主:${info.owner.name}`
+      : '';
+    ownerTag.title = info?.owner?.at ? `认领于 ${info.owner.at}` : '';
+    saveBtn.style.display = connectionState === 'connected' && collab.isOwner ? '' : 'none';
 
     avatars.replaceChildren();
     peers.forEach(peer => {
@@ -172,9 +210,10 @@ export function mount(el) {
     const keyParam = new URLSearchParams(location.search).get('key')
       || localStorage.getItem(`xiyou.key.${room}`)
       || '';
+    const role = currentRole(room);
     try {
       Promise.resolve(
-        collab.connect({ url: wsUrl, room, user: { name: user, key: keyParam } })
+        collab.connect({ url: wsUrl, room, user: { name: user, key: keyParam, role } })
       ).catch(error => {
         connectionState = 'disconnected';
         renderStatus();
@@ -207,6 +246,16 @@ export function mount(el) {
 
   store.on('collab-peers', value => {
     peers = normalisePeers(value);
+    renderStatus();
+  });
+
+  store.on('collab-awaiting', () => {
+    awaitingOwner = true;
+    renderStatus();
+  });
+
+  store.on('collab-seeded', () => {
+    awaitingOwner = false;
     renderStatus();
   });
 

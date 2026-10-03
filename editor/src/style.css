@@ -1321,3 +1321,8 @@ select.field,
 .mode-btn-splat.active, .btn.btn-sm.active { outline:1.5px solid var(--accent); }
 .tb-proj { max-width:150px; font-size:12px; padding:3px 6px; }
 .cb-folders-head + .cb-folder { margin-top:2px; }
+
+/* 协作角色徽标 */
+.presence-role, .presence-owner { font-size:11px; color:var(--fg-dim); white-space:nowrap; }
+.presence-owner { color:var(--accent2); font-weight:600; }
+.btn.btn-sm.presence-save { padding:2px 8px; font-size:11px; }

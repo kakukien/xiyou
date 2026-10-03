@@ -1,0 +1,39 @@
+name: deploy-xiyou
+
+# 只有 master 分支更新才发布 https://agentpay.xx.kg/xiyou/
+# 其他分支随便改，合并进 master 才同步线上
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: editor/package-lock.json
+
+      - name: build
+        working-directory: editor
+        run: npm ci && npm run build
+
+      # .ply 点云不进发布包：线上由持久目录 /app/static/xiyou-assets 分流服务
+      # （发布是整站换目录，大资产换版后不丢）
+      - name: pack
+        run: tar -czf site.tgz --exclude='*.ply' -C editor/dist .
+
+      - name: publish
+        env:
+          XIYOU_PUBLISH_TOKEN: ${{ secrets.XIYOU_PUBLISH_TOKEN }}
+        run: |
+          curl -fsS --retry 3 -X POST "https://agentpay.xx.kg/publish/xiyou" \
+            -H "User-Agent: agentpay-publish-client/1.2" \
+            -H "X-Publish-Token: $XIYOU_PUBLISH_TOKEN" \
+            -H "X-Publish-Filename: site.tgz" \
+            --data-binary @site.tgz

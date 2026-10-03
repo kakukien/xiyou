@@ -47,7 +47,7 @@ function help() {
 
 function json(res, status, value) {
   const body = JSON.stringify(value)
-  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET,POST,OPTIONS', 'access-control-allow-headers': 'content-type,accept' })
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET,POST,OPTIONS', 'access-control-allow-headers': 'content-type,accept', 'access-control-allow-private-network': 'true' })
   res.end(body)
 }
 
@@ -102,11 +102,13 @@ async function parseJobRequest(req) {
   let options = {}
   try { options = fields.options ? JSON.parse(fields.options) : {} } catch {}
   return {
-    body: { type: 'reconstruct', payload: {
+    body: { type: fields.type || 'reconstruct', payload: {
       input: paths.length > 1 && (fields.inputType || '').toLowerCase() === 'images' ? dir : paths[0],
       inputs: paths,
       inputType: fields.inputType || 'video',
       quality: fields.quality || 'balanced',
+      prompt: fields.prompt || '',
+      name: fields.name || '',
       options
     } },
     files: paths,
@@ -325,9 +327,64 @@ async function prepareReconstruction(input, output, fps = 2, maxFrames = 120, qu
   return metadata
 }
 
+function findGenspace() {
+  const script = join(ROOT, 'genspace', 'gen_space.py')
+  const checkpoint = join(ROOT, 'genspace', 'models', 'sharp_2572gikvuh.pt')
+  return { script, checkpoint, ready: existsSync(script) && existsSync(checkpoint) }
+}
+
+// 言出法随快通道：单图/一句话 → ml-sharp 前馈 → 3DGS 底座，产物落 editor/public/assets
+async function genSpace(payload) {
+  const progress = payload.progress || (() => {})
+  const gs = findGenspace()
+  if (!gs.ready) throw new Error(`gen-space 环境未就绪（缺 ${existsSync(gs.script) ? '模型权重 sharp_2572gikvuh.pt' : 'tools/genspace/gen_space.py'}）`)
+  const name = payload.name ? String(payload.name).replace(/[^\w一-鿿-]+/g, '-').slice(0, 40) : `w${Date.now().toString(36)}`
+  const args = [gs.script, '--name', name]
+  if (payload.prompt) args.push('--prompt', String(payload.prompt))
+  else if (payload.input) args.push('--image', resolve(payload.input))
+  else throw new Error('gen-space 需要 input(图片路径) 或 prompt(文字描述)')
+  progress('generating', 25, 'ml-sharp 正在生成高斯空间')
+  const { stdout } = await runCommand(process.env.XIYOU_PYTHON || 'python', args, { cwd: ROOT })
+  const plyName = `gen_${name}.ply`
+  const plyPath = join(PROJECT_ROOT, 'editor', 'public', 'assets', plyName)
+  if (!existsSync(plyPath)) throw new Error(`gen_space 未产出 ${plyName}\n${stdout.slice(-1200)}`)
+  progress('validating', 95, '校验输出')
+  const stat = await fs.stat(plyPath)
+  const artifact = { name: plyName, path: plyPath, format: 'ply', kind: 'splat', bytes: stat.size }
+  return { mode: 'ml-sharp-genspace', editorAssetUrl: `assets/${plyName}`, artifact, artifacts: [artifact] }
+}
+
+function findGenobj() {
+  const script = join(ROOT, 'hy3d', 'gen_obj.py')
+  const dit = join(ROOT, 'hy3d', 'models', 'tencent', 'Hunyuan3D-2', 'hunyuan3d-dit-v2-0', 'model.fp16.safetensors')
+  return { script, ready: existsSync(script) && existsSync(dit) }
+}
+
+// 主体模式：单图 → rembg → Hunyuan3D-2 → GLB 网格主体，落 editor/public/assets
+async function genObj(payload) {
+  const progress = payload.progress || (() => {})
+  const go = findGenobj()
+  if (!go.ready) throw new Error('gen-obj 环境未就绪（缺 gen_obj.py 或 Hunyuan3D-2 权重）')
+  const name = payload.name ? String(payload.name).replace(/[^\w一-鿿-]+/g, '-').slice(0, 40) : `w${Date.now().toString(36)}`
+  if (!payload.input) throw new Error('gen-obj 需要 input(图片路径)')
+  const args = [go.script, '--image', resolve(payload.input), '--name', name]
+  if (payload.tex) args.push('--tex')
+  progress('generating', 25, payload.tex ? 'Hunyuan3D 生成网格+贴图' : 'Hunyuan3D 生成网格')
+  const { stdout } = await runCommand(process.env.XIYOU_PYTHON || 'python', args, { cwd: ROOT })
+  const glbName = `obj_${name}.glb`
+  const glbPath = join(PROJECT_ROOT, 'editor', 'public', 'assets', glbName)
+  if (!existsSync(glbPath)) throw new Error(`gen_obj 未产出 ${glbName}\n${stdout.slice(-1200)}`)
+  progress('validating', 95, '校验输出')
+  const stat = await fs.stat(glbPath)
+  const artifact = { name: glbName, path: glbPath, format: 'glb', kind: 'model', bytes: stat.size }
+  return { mode: 'hunyuan3d-obj', editorAssetUrl: `assets/${glbName}`, artifact, artifacts: [artifact] }
+}
+
 async function execute(type, payload) {
   if (type === 'analyze') return analyze(payload.input)
   if (type === 'convert-alpha') return convertAlpha(payload.input, payload.output, payload.colorKey || '0x00ff00')
+  if (type === 'gen-space') return genSpace(payload)
+  if (type === 'gen-obj') return genObj(payload)
   if (type === 'prepare-reconstruction' || type === 'reconstruct') {
     const output = payload.output || join(tmpdir(), `xiyou-reconstruction-${randomUUID()}`)
     return prepareReconstruction(payload.input, output, Number(payload.fps || 2), Number(payload.maxFrames || 120), payload.quality || 'balanced', payload.progress, payload.inputType || 'video', payload.inputs || [], payload.options || {}, type === 'reconstruct')
@@ -369,13 +426,51 @@ function engineStatus(name) {
 function localEngineHealth() {
   const engines = ['ffmpeg', 'ffprobe', 'colmap', 'brush'].map(engineStatus)
   const missing = engines.filter(item => !item.exists).map(item => item.name)
-  return { ready: missing.length === 0, engines, missing }
+  return { ready: missing.length === 0, engines, missing, genspace: findGenspace().ready, genobj: findGenobj().ready }
+}
+
+const VENDOR_FILES = {
+  'three.module.js': join(PROJECT_ROOT, 'editor', 'node_modules', 'three', 'build', 'three.module.js'),
+  'OrbitControls.js': join(PROJECT_ROOT, 'editor', 'node_modules', 'three', 'examples', 'jsm', 'controls', 'OrbitControls.js'),
+  'gaussian-splats-3d.module.js': join(PROJECT_ROOT, 'editor', 'node_modules', '@mkkellogg', 'gaussian-splats-3d', 'build', 'gaussian-splats-3d.module.js')
+}
+const JSM_ROOT = join(PROJECT_ROOT, 'editor', 'node_modules', 'three', 'examples', 'jsm')
+
+function serveStatic(res, path, contentType = 'application/javascript') {
+  res.writeHead(200, { 'content-type': `${contentType}; charset=utf-8`, 'cache-control': 'no-store', 'access-control-allow-origin': '*', 'access-control-allow-private-network': 'true' })
+  createReadStream(path).on('error', () => res.end()).pipe(res)
 }
 
 function serve(port) {
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`)
     if (req.method === 'OPTIONS') { json(res, 204, {}); return }
+    if (req.method === 'GET' && (url.pathname === '/genlab' || url.pathname === '/')) {
+      return serveStatic(res, join(ROOT, 'genlab.html'), 'text/html')
+    }
+    const vendorMatch = url.pathname.match(/^\/vendor\/([\w./-]+)$/)
+    if (req.method === 'GET' && vendorMatch) {
+      const rel = vendorMatch[1]
+      const path = VENDOR_FILES[rel] || (rel.startsWith('addons/') ? join(JSM_ROOT, rel.slice(7)) : null)
+      const safe = path && !path.includes('..')
+      return safe && existsSync(path) ? serveStatic(res, path) : json(res, 404, { error: 'vendor file not found' })
+    }
+    const genAssetMatch = url.pathname.match(/^\/genlab-assets\/((?:gen|obj)_[\w.-]+\.(?:ply|glb))$/)
+    if (req.method === 'GET' && genAssetMatch) {
+      const path = join(PROJECT_ROOT, 'editor', 'public', 'assets', genAssetMatch[1])
+      return existsSync(path) ? serveStatic(res, path, 'application/octet-stream') : json(res, 404, { error: 'asset not found' })
+    }
+    if (req.method === 'GET' && url.pathname === '/genlab/history') {
+      const dir = join(PROJECT_ROOT, 'editor', 'public', 'assets')
+      try {
+        const files = (await fs.readdir(dir)).filter(name => /^(gen_.+\.ply|obj_.+\.glb)$/i.test(name))
+        const items = await Promise.all(files.map(async name => {
+          const stat = await fs.stat(join(dir, name))
+          return { name, bytes: stat.size, mtime: stat.mtime.toISOString(), url: `/genlab-assets/${name}`, editorAssetUrl: `assets/${name}` }
+        }))
+        return json(res, 200, items.sort((a, b) => b.mtime.localeCompare(a.mtime)))
+      } catch { return json(res, 200, []) }
+    }
     if (req.method === 'GET' && url.pathname === '/health') {
       const local = localEngineHealth()
       return json(res, 200, { ok: true, running, queued: queue.length, concurrency, local })
@@ -397,7 +492,7 @@ function serve(port) {
         const requested = decodeURIComponent(artifactMatch[2])
         const artifact = artifacts.find(item => item.name === requested)
         if (!artifact) return json(res, 404, { error: 'artifact not found' })
-        res.writeHead(200, { 'content-type': artifact.format === 'json' ? 'application/json; charset=utf-8' : 'application/octet-stream', 'cache-control': 'no-store', 'access-control-allow-origin': '*' })
+        res.writeHead(200, { 'content-type': artifact.format === 'json' ? 'application/json; charset=utf-8' : 'application/octet-stream', 'cache-control': 'no-store', 'access-control-allow-origin': '*', 'access-control-allow-private-network': 'true' })
         createReadStream(artifact.path).on('error', () => res.end()).pipe(res)
         return
       }
@@ -424,6 +519,6 @@ if (command === 'help' || command === '--help' || !command) help()
 else if (command === 'serve') serve(Number(arg('port', '8787')))
 else {
   const type = command === 'run' ? arg('job') : command
-  const payload = { input: arg('input'), output: arg('output'), colorKey: arg('color-key', '0x00ff00'), fps: arg('fps', '2'), maxFrames: arg('max-frames', '120'), inputType: arg('input-type', 'video'), options: {} }
-  if (!payload.input) { help(); process.exitCode = 2 } else execute(type, payload).then(result => console.log(JSON.stringify(result, null, 2))).catch(error => { console.error(error.message); process.exitCode = 1 })
+  const payload = { input: arg('input'), output: arg('output'), colorKey: arg('color-key', '0x00ff00'), fps: arg('fps', '2'), maxFrames: arg('max-frames', '120'), inputType: arg('input-type', 'video'), prompt: arg('prompt'), name: arg('name'), options: {} }
+  if (!payload.input && !payload.prompt) { help(); process.exitCode = 2 } else execute(type, payload).then(result => console.log(JSON.stringify(result, null, 2))).catch(error => { console.error(error.message); process.exitCode = 1 })
 }

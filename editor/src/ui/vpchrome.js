@@ -148,6 +148,26 @@ export function mount(wrap, viewport) {
   });
   toolbar.appendChild(lockButton);
 
+  // 底座显示：代理（结构面片+box站位）/ 高斯 / 双显。有 proxy 时才出现
+  const baseViewGroup = makeSegment(
+    [
+      { value: 'proxy', label: '代理', title: '结构代理：面片墙 + box 站位，编辑不卡' },
+      { value: 'splat', label: '高斯', title: '真实高斯泼溅底座' },
+      { value: 'both', label: '双显', title: '代理与高斯叠加' }
+    ],
+    'proxy',
+    value => viewport.setBaseView?.(value)
+  );
+  baseViewGroup.classList.add('baseview-seg');
+  const syncBaseView = () => {
+    const hasProxy = store.scene?.base?.proxy?.v === 1;
+    baseViewGroup.style.display = hasProxy ? '' : 'none';
+    if (hasProxy) setActive(baseViewGroup, store.scene.base.viewMode || 'proxy');
+  };
+  syncBaseView();
+  store.on?.('change', syncBaseView);
+  toolbar.appendChild(baseViewGroup);
+
   const navigationButton = button('切换操作', 'navigation-mode-button', '切换操作方式', 'cursor-move-line');
   navigationButton.addEventListener('click', () => {
     const next = viewport.navigationStyle === 'blender' ? 'default' : 'blender';

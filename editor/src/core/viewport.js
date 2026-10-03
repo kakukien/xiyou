@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DropInViewer, SceneFormat } from '@mkkellogg/gaussian-splats-3d';
 import { buildProxyGroup } from './proxyrender.js';
 import { store } from './store.js';
-import { createNode, applyTransform, placeholderTexture } from './objects.js';
+import { createNode, applyTransform } from './objects.js';
 import { player, triggers } from './playback.js';
 import { log } from '../ui/log.js';
 
@@ -243,7 +243,7 @@ export const viewport = {
   init(container) {
     this.container = container;
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color('#dfe6ef');
+    this.scene.background = new THREE.Color('#e8eef6');
 
     this.camera = new THREE.PerspectiveCamera(
       60,
@@ -918,8 +918,8 @@ export const viewport = {
       const grid = new THREE.GridHelper(
         20,
         20,
-        0xa8b4c4,
-        0xc8d0dc
+        0xb2bfd0,
+        0xd7dfe9
       );
       grid.userData.isBaseHelper = true;
       this.baseGroup.add(grid);
@@ -940,31 +940,8 @@ export const viewport = {
       this.baseGroup.add(ground);
       this.baseHelpers.push(ground);
 
-      const wallData = [
-        { text: '现场照片A', position: [0, 2, -6], rotation: [0, 0, 0] },
-        { text: '现场照片B', position: [-4.2, 2, -4.2], rotation: [0, -Math.PI / 4, 0] },
-        { text: '现场照片C', position: [4.2, 2, -4.2], rotation: [0, Math.PI / 4, 0] }
-      ];
-
-      wallData.forEach(item => {
-        const texture = placeholderTexture(item.text);
-        texture.userData.xiyouDisposable = true;
-
-        const wall = new THREE.Mesh(
-          new THREE.PlaneGeometry(4, 4),
-          new THREE.MeshBasicMaterial({
-            map: texture,
-            transparent: true,
-            side: THREE.DoubleSide
-          })
-        );
-
-        wall.position.set(...item.position);
-        wall.rotation.set(...item.rotation);
-        wall.userData.isBaseHelper = true;
-        this.baseGroup.add(wall);
-        this.baseHelpers.push(wall);
-      });
+      // 现场照片占位墙已改为可编辑 quad 对象（main.js 引导期播种），
+      // 这里只留网格地面，不再塞不可选中的辅助体。
     } else {
       // DropInViewer 的内部 Viewer 不允许并发 add/remove；按队列异步加载，
       // 单个分块失败只标记本块，后续分块继续加载。
@@ -1126,7 +1103,7 @@ export const viewport = {
       this.baseGroup.add(dome);
       this.scene.background = null;
     } else if (this.scene.background === null) {
-      this.scene.background = new THREE.Color('#dfe6ef');
+      this.scene.background = new THREE.Color('#e8eef6');
     }
 
     this.scene.add(this.baseGroup);

@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { DropInViewer, SceneFormat } from '@mkkellogg/gaussian-splats-3d'
 import { store } from '../core/store.js'
 import { createReconstructionProviders, makeClientJob } from '../core/reconstruction.js'
+import { proxyToGlbBuffer } from '../core/proxyrender.js'
 import { iconMarkup } from './components/icon.js'
 import { log } from './log.js'
 
@@ -16,6 +17,7 @@ const STAGES = [
   ['preparing_frames', '准备画面'],
   ['extracting_features', '提取特征'],
   ['matching', '相机匹配'],
+  ['generating', '生成空间'],
   ['reconstructing', '相机重建'],
   ['training_splats', '训练 Gaussian'],
   ['validating', '校验输出'],
@@ -204,6 +206,12 @@ export function mount(root) {
     sceneAssetId: '',
     polling: null,
     busy: false,
+    optimizing: false,
+    optPct: 0,
+    optStage: '',
+    optStats: null,
+    proxy: null,
+    optPreset: 'balanced',
     notice: null,
     footerTab: 'logs',
     sourceObjectUrls: []
@@ -359,17 +367,19 @@ export function mount(root) {
   async function createJob() {
     if (!state.source || !state.sources.length) return
     const provider = providers[state.provider]
+    const options = { plannerEnabled: true }
+    if (isGenSpaceRoute()) options.jobType = 'gen-space'
     state.busy = true
     state.job = makeClientJob({ source: state.source, sources: state.sources, inputType: state.inputType, quality: state.quality, provider: state.provider })
     state.job.stage = 'analyzing'
     state.job.status = 'running'
-    state.job.message = '正在连接重建 Provider'
+    state.job.message = options.jobType === 'gen-space' ? '正在连接本地生成通道（ml-sharp）' : '正在连接重建 Provider'
     state.job.logs = [{ at: new Date().toISOString(), stage: 'analyzing', message: state.job.message }]
     state.step = 'job'
     state.notice = null
     render()
     try {
-      const result = await provider.createJob({ file: state.source, files: state.sources, inputType: state.inputType, quality: state.quality, options: { plannerEnabled: true } })
+      const result = await provider.createJob({ file: state.source, files: state.sources, inputType: state.inputType, quality: state.quality, options })
       state.job = { ...state.job, ...result, id: result.id || result.jobId || state.job.id }
       state.job.message = result.message || '任务已创建，等待 GPU Worker'
       state.polling = window.setInterval(() => pollJob(), 900)
@@ -383,6 +393,10 @@ export function mount(root) {
       state.notice = { message: state.job.message, level: 'danger' }
       render()
     }
+  }
+
+  function isGenSpaceRoute() {
+    return state.provider === 'local' && state.inputType === 'images' && state.sources.length === 1
   }
 
   async function materializeLocalArtifact(artifact) {
@@ -415,7 +429,8 @@ export function mount(root) {
         const artifact = next.artifact || result.artifact || result.splat || result.output || state.outputs.find(item => item.kind === 'splat' || item.format === 'sog' || item.format === 'ply')
         if (artifact?.url) {
           const resolvedArtifact = await materializeLocalArtifact(artifact)
-          state.asset = { name: resolvedArtifact.name || 'scene.sog', url: resolvedArtifact.url, persistentUrl: resolvedArtifact.persistentUrl || resolvedArtifact.url, format: resolvedArtifact.format || 'sog', bytes: resolvedArtifact.bytes || 0, source: 'provider', temporary: state.provider === 'local' }
+          const editorUrl = result.editorAssetUrl || ''
+          state.asset = { name: resolvedArtifact.name || 'scene.sog', url: editorUrl || resolvedArtifact.url, persistentUrl: editorUrl || resolvedArtifact.persistentUrl || resolvedArtifact.url, format: resolvedArtifact.format || 'sog', bytes: resolvedArtifact.bytes || 0, source: 'provider', temporary: editorUrl ? false : state.provider === 'local' }
           state.step = 'edit'
           render()
           requestAnimationFrame(() => loadPreview())
@@ -489,6 +504,75 @@ export function mount(root) {
     renderStatusOnly()
   }
 
+  // —— 空间优化：PLY → 降噪 + 体素抽稀 + 结构代理（Worker 内跑，不冻 UI）——
+  function runOptimize() {
+    if (!state.asset?.url || state.optimizing) return
+    state.optimizing = true
+    state.optPct = 0
+    state.optStage = '准备'
+    state.optStats = null
+    state.proxy = null
+    render()
+    fetch(state.asset.url)
+      .then(r => {
+        if (!r.ok) throw new Error(`读取资产失败：${r.status}`)
+        return r.arrayBuffer()
+      })
+      .then(buf => {
+        const worker = new Worker(new URL('../core/plyproc.worker.js', import.meta.url), { type: 'module' })
+        worker.onmessage = e => {
+          const data = e.data || {}
+          if (data.stage === 'done') {
+            worker.terminate()
+            state.optimizing = false
+            state.optStats = data.stats
+            state.proxy = data.proxy
+            const cleanName = `${(state.asset.name || 'scene').replace(/\.[^.]+$/, '')}_clean.ply`
+            const cleanFile = new File([data.cleanBuf], cleanName, { type: 'application/octet-stream' })
+            showAsset(cleanFile, { name: cleanName })
+            setNotice(`优化完成：${data.stats.raw.toLocaleString()} → ${data.stats.kept.toLocaleString()} 点（${formatBytes(data.stats.cleanBytes)}）· 面片 ${data.proxy?.stats?.walls ?? 0} + 站位 ${data.proxy?.stats?.boxes ?? 0}`, 'info')
+          } else if (data.stage === 'error') {
+            worker.terminate()
+            state.optimizing = false
+            setNotice(`空间优化失败：${data.error}`, 'danger')
+          } else {
+            state.optPct = data.pct || 0
+            state.optStage = { parse: '解析点云', denoise: '降噪去毛刺', sample: '体素抽稀', write: '回写 PLY', proxy: '生成结构代理' }[data.stage] || data.stage
+            renderStatusOnly()
+          }
+        }
+        worker.onerror = err => {
+          worker.terminate()
+          state.optimizing = false
+          setNotice(`空间优化失败：${err?.message || 'Worker 异常'}`, 'danger')
+        }
+        worker.postMessage({ buf, opts: { preset: state.optPreset, proxy: true } }, [buf])
+      })
+      .catch(error => {
+        state.optimizing = false
+        setNotice(`空间优化失败：${error?.message || error}`, 'danger')
+      })
+  }
+
+  // 代理 → 碰撞 GLB → local:// 资产
+  async function bakeColliderRef() {
+    if (!state.proxy) return ''
+    const glb = await proxyToGlbBuffer(state.proxy)
+    const file = new File([glb], `collider_${Date.now().toString(36)}.glb`, { type: 'model/gltf-binary' })
+    const local = createLocalRef(file)
+    const asset = store.addAsset({
+      name: file.name,
+      kind: 'collider',
+      type: 'model',
+      bytes: file.size,
+      mime: 'model/gltf-binary',
+      url: local.ref,
+      source: 'proxy-collider',
+      metadata: { generated: true, temporary: true }
+    })
+    return local.ref
+  }
+
   function persistentAssetUrl() {
     return state.asset?.persistentUrl || state.asset?.url || ''
   }
@@ -510,7 +594,7 @@ export function mount(root) {
     return asset
   }
 
-  function applyToScene() {
+  async function applyToScene() {
     if (!state.asset?.url) {
       setNotice('请先导入或生成一个高斯资产', 'warn')
       return
@@ -534,7 +618,7 @@ export function mount(root) {
       created_at: store.scene.base.capture?.created_at || new Date().toISOString()
     }
     const revision = Number(store.scene.base.editing?.revision) || 0
-    store.setBase({
+    const patch = {
       capture_id: captureId,
       capture,
       sog_url: url,
@@ -544,7 +628,18 @@ export function mount(root) {
       editing: { revision: revision + 1, transform: state.transform, crop: state.crop, deletion_mask: null },
       quality: state.qualityReport || { provider: state.provider, quality: state.quality, warnings: state.job?.warnings || [] },
       splat_editor: { transform: state.transform, crop: state.crop, asset_id: asset.id, revision: revision + 1 }
-    })
+    }
+    // 跑过空间优化：代理体挂进底座，默认编辑视图切代理，碰撞 GLB 开内点判定
+    if (state.proxy) {
+      patch.proxy = state.proxy
+      patch.viewMode = 'proxy'
+      try {
+        patch.collider_url = await bakeColliderRef()
+      } catch (error) {
+        log(`碰撞体烘焙失败：${error?.message || error}`, 'warn')
+      }
+    }
+    store.setBase(patch)
     log(`已将「${asset.name}」应用为空间底座`)
     state.step = 'apply'
     state.notice = { message: state.asset.temporary ? '已应用为本机临时预览；发布前请上传到持久化资产存储。' : '已应用到底座，可返回场景创作继续布置互动内容。', level: state.asset.temporary ? 'warn' : 'info' }
@@ -552,11 +647,12 @@ export function mount(root) {
   }
 
   function renderStatusOnly() {
-    root.querySelectorAll('[data-studio-progress], [data-studio-notice], [data-transform-status], [data-crop-status]').forEach(node => {
+    root.querySelectorAll('[data-studio-progress], [data-studio-notice], [data-transform-status], [data-crop-status], [data-opt-status]').forEach(node => {
       if (node.matches('[data-studio-progress]')) node.innerHTML = progressMarkup()
       if (node.matches('[data-studio-notice]')) node.innerHTML = noticeMarkup()
       if (node.matches('[data-transform-status]')) node.textContent = `${state.transform.position.map(value => Number(value).toFixed(2)).join(' / ')} · 缩放 ${Number(state.transform.scale).toFixed(2)}`
       if (node.matches('[data-crop-status]')) node.textContent = state.crop ? `${state.crop.kind === 'box' ? '盒形' : '球形'} · 非破坏式修订` : '未启用裁切'
+      if (node.matches('[data-opt-status]')) node.textContent = state.optimizing ? `${state.optStage || '处理中'} ${state.optPct}%` : '一键优化底座'
     })
   }
 
@@ -619,7 +715,7 @@ export function mount(root) {
     const countLabel = state.sources.length > 1 ? `${state.sources.length} 帧` : state.source ? formatBytes(state.source.size) : '从真实空间素材开始'
     return `<div class="studio-section-title"><span>工作流</span><span class="studio-live-dot"></span></div>
       <div class="studio-mini-stepper" aria-label="场景工作流程">${[['input','输入素材'],['job','生成任务'],['edit','编辑场景'],['apply','应用场景']].map(([id,label], index) => `<span class="studio-mini-step ${state.step === id ? 'active' : state.step === 'edit' && index < 3 || state.step === 'apply' && index < 4 ? 'done' : ''}"><i>${index + 1}</i>${label}</span>`).join('')}</div>
-      <div class="studio-source-card"><div class="studio-source-icon">${iconMarkup(state.source && state.inputType === 'video' ? 'video-line' : 'image-2-line')}</div><div><strong>${state.source ? esc(state.source.name) : '选择视频或序列帧'}</strong><span>${state.source ? `${countLabel} · ${state.inputType === 'video' ? '视频' : '图片序列'}` : '从真实空间素材开始'}</span></div></div>
+      <div class="studio-source-card"><div class="studio-source-icon">${iconMarkup(state.source && state.inputType === 'video' ? 'video-line' : 'image-2-line')}</div><div><strong>${state.source ? esc(state.source.name) : '选择视频或序列帧'}</strong><span>${state.source ? `${countLabel} · ${state.inputType === 'video' ? '视频' : isGenSpaceRoute() ? '单图 · ml-sharp 速生' : '图片序列'}` : '从真实空间素材开始'}</span></div></div>
       <div class="studio-workflow-actions"><div class="studio-input-actions"><label class="btn btn-secondary">${iconMarkup('upload-2-line')} <span>选择视频 / 文件</span><input hidden type="file" accept="${ACCEPTED_VIDEO},${ACCEPTED_IMAGES},${ACCEPTED_SPLATS}" data-studio-file></label><label class="btn">${iconMarkup('folder-upload-line')} <span>选择序列帧目录</span><input hidden type="file" multiple webkitdirectory accept="${ACCEPTED_IMAGES}" data-studio-directory></label></div><button class="btn studio-reset-action" data-studio-reset ${state.source || state.asset ? '' : 'disabled'}>${iconMarkup('refresh-line')} <span>重新开始</span></button></div>
       ${state.source && !state.asset ? `<div class="studio-source-meta">${metaMarkup()}</div>` : ''}
       <div class="studio-quality"><div class="studio-label-row"><strong>生成质量</strong><span>Provider</span></div><div class="quality-segments">${Object.entries(QUALITY_LABELS).map(([id, label]) => `<button class="${state.quality === id ? 'active' : ''}" data-quality="${id}">${label}</button>`).join('')}</div><label class="studio-select-row"><span>重建 Provider</span><select data-provider>${Object.entries(providers).map(([id, provider]) => `<option value="${id}" ${state.provider === id ? 'selected' : ''}>${provider.label}</option>`).join('')}</select></label><div class="provider-health ${health ? colorForStatus(health.status) : 'info'}"><i></i><span>${esc(health?.message || '正在检测 Provider')}</span></div></div>
@@ -642,6 +738,12 @@ export function mount(root) {
     return `<div class="studio-section-title"><span>编辑属性</span><span class="studio-status-chip ok">已加载</span></div>
       <div class="studio-inspector-card"><h3>Transform</h3>${vectorMarkup('位置', 'position', t.position, 0.01)}${vectorMarkup('旋转', 'rotation', t.rotation, 1)}<label class="studio-number-row"><span>等比缩放</span><input type="number" min="0.001" max="10000" step="0.01" value="${esc(t.scale)}" data-transform-scale></label><div class="studio-transform-status" data-transform-status>${t.position.map(value => Number(value).toFixed(2)).join(' / ')} · 缩放 ${Number(t.scale).toFixed(2)}</div></div>
       <div class="studio-inspector-card"><div class="studio-card-heading"><h3>裁切区域</h3><span class="studio-status-chip ${c ? 'warn' : ''}">${c ? '已启用' : '未启用'}</span></div><div class="studio-crop-actions"><button class="btn ${c?.kind === 'box' ? 'active' : ''}" data-crop="box">${iconMarkup('box-3-line')} 盒形</button><button class="btn ${c?.kind === 'sphere' ? 'active' : ''}" data-crop="sphere">${iconMarkup('checkbox-blank-circle-line')} 球形</button><button class="btn" data-crop="clear">清除</button></div>${c ? `${vectorMarkup('中心', 'center', c.center, 0.01)}${c.kind === 'box' ? vectorMarkup('尺寸', 'size', c.size, 0.01) : `<label class="studio-number-row"><span>半径</span><input type="number" min="0.001" step="0.01" value="${esc(c.radius)}" data-crop-radius></label>`}` : ''}<div class="studio-transform-status" data-crop-status>${c ? `${c.kind === 'box' ? '盒形' : '球形'} · 非破坏式修订` : '未启用裁切'}</div><p class="studio-help">裁切框会进入 Capture Package 的 editing.crop；逐点 bake / edit.ply 由 Provider 的编辑能力决定，不在浏览器端伪造。</p></div>
+      <div class="studio-inspector-card"><div class="studio-card-heading"><h3>空间优化</h3><span class="studio-status-chip ${state.optStats ? 'ok' : ''}">${state.optimizing ? '处理中' : state.optStats ? '已优化' : '未优化'}</span></div>
+        <p class="studio-help">去毛刺飞点 → 体素均匀抽稀（位置无关，换个位置内点密度不掉）→ 生成面片/站位结构代理与内点碰撞体。应用后编辑器默认渲染代理，高斯可随时切回。</p>
+        <label class="studio-select-row"><span>优化强度</span><select data-opt-preset ${state.optimizing ? 'disabled' : ''}>${[['light', '轻 · 保留约 50 万点'], ['balanced', '均衡 · 保留约 30 万点'], ['strong', '强 · 保留约 16 万点']].map(([id, label]) => `<option value="${id}" ${state.optPreset === id ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
+        <button class="btn studio-generate-btn" data-opt-run ${state.optimizing ? 'disabled' : ''}>${iconMarkup(state.optimizing ? 'loader-4-line' : 'magic-line')} <span data-opt-status>${state.optimizing ? `${state.optStage || '处理中'} ${state.optPct}%` : '一键优化底座'}</span></button>
+        ${state.optStats ? `<div class="studio-output-row"><span>点数</span><b>${state.optStats.raw.toLocaleString()} → ${state.optStats.kept.toLocaleString()}</b></div><div class="studio-output-row"><span>体积</span><b>${formatBytes(state.optStats.cleanBytes)}</b></div><div class="studio-output-row"><span>结构代理</span><b>面片 ${state.proxy?.stats?.walls ?? 0} · 站位 ${state.proxy?.stats?.boxes ?? 0}</b></div>` : ''}
+      </div>
       <div class="studio-inspector-card"><h3>Capture Package</h3><div class="studio-output-row"><span>Capture ID</span><b>${esc(store.scene.base.capture_id || '未应用')}</b></div><div class="studio-output-row"><span>坐标系</span><b>Y-up · 米制</b></div><div class="studio-output-row"><span>Provider</span><b>${esc(state.provider)}</b></div><div class="studio-output-row"><span>临时资产</span><b class="${state.asset.temporary ? 'studio-warning-text' : ''}">${state.asset.temporary ? '是，不能直接发布' : '否'}</b></div></div>
       <div class="studio-inspector-card"><h3>输出</h3><div class="studio-output-row"><span>格式</span><b>${esc(String(state.asset.format || 'splat').toUpperCase())}</b></div><div class="studio-output-row"><span>文件大小</span><b>${formatBytes(state.asset.bytes)}</b></div><div class="studio-output-row"><span>来源</span><b>${state.asset.source === 'provider' ? '重建 Provider' : '本地导入'}</b></div></div>`
   }
@@ -657,6 +759,8 @@ export function mount(root) {
     root.querySelector('[data-studio-directory]')?.addEventListener('change', pickSource)
     root.querySelector('[data-studio-reset]')?.addEventListener('click', resetInput)
     root.querySelector('[data-studio-generate]')?.addEventListener('click', createJob)
+    root.querySelector('[data-opt-run]')?.addEventListener('click', runOptimize)
+    root.querySelector('[data-opt-preset]')?.addEventListener('change', event => { state.optPreset = event.target.value })
     root.querySelector('[data-studio-cancel]')?.addEventListener('click', cancelJob)
     root.querySelector('[data-studio-resume]')?.addEventListener('click', resumeJob)
     root.querySelector('[data-studio-retry]')?.addEventListener('click', createJob)

@@ -143,6 +143,8 @@ export function defaults() {
       visible: true,
       collider_url: null,
       collider: { type: 'box', size: [20, 2, 20], center: [0, 1, 0], visible: false },
+      proxy: null,
+      viewMode: '',
       lod: { enabled: false, levels: ['high', 'medium', 'low'], current: 'high', urls: { high: '', medium: '', low: '' }, thresholds: { near: 12, far: 30 } },
       chunks: [],
       transform: {
