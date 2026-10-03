@@ -143,7 +143,12 @@ export function applyGlbMaterialOverrides(root, mat) {
     const list = Array.isArray(child.material) ? child.material : [child.material];
     list.forEach(m => {
       if (mat.color) m.color?.set(mat.color);
+      // 自发光=diffuse 贴图的增量：强度>0 时复用漫反射贴图为 emissiveMap，
+      // 未显式给自发光色则默认白（否则黑发光不起作用）
+      const ei = Number.isFinite(mat.emissiveIntensity) ? mat.emissiveIntensity : 0;
       if (mat.emissive) m.emissive?.set(mat.emissive);
+      else if (ei > 0) m.emissive?.set(0xffffff);
+      if (ei > 0 && m.map && !m.emissiveMap) m.emissiveMap = m.map;
       if (Number.isFinite(mat.emissiveIntensity)) m.emissiveIntensity = mat.emissiveIntensity;
       if (Number.isFinite(mat.metalness)) m.metalness = mat.metalness;
       if (Number.isFinite(mat.roughness)) m.roughness = mat.roughness;
