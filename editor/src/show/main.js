@@ -446,14 +446,10 @@ async function startFreeMode() {
 // ---------- VPS 视觉定位 ----------
 // 帧 -> hloc 服务 (DINOv2 检索 -> SuperPoint+LightGlue -> PnP) -> AR 坐标系位姿。
 // 位姿是 COLMAP 约定（相机 +Z 向前、+Y 向下），转 three 需右乘 diag(1,-1,-1)。
-const VPS_FALLBACK = 'https://protecting-rug-frequent-calvin.trycloudflare.com'; // 快隧道，变了就推 vps.txt
-let VPS_URL = new URLSearchParams(location.search).get('vps')
-  || VPS_FALLBACK;
-// 动态发现：vps.txt 里是最新隧道地址（隧道重启只需推文件，免发版）
-const vpsReady = fetch('vps.txt?v=' + Date.now()).then(r => r.ok ? r.text() : '').then(t => {
-  const u = (t || '').trim();
-  if (/^https:\/\//.test(u) && !new URLSearchParams(location.search).get('vps')) VPS_URL = u;
-}).catch(() => {});
+// 默认同源代理：服务器读 vps.txt 转发到当前隧道，地址恒定免 CORS；?vps= 可覆盖调试
+const VPS_FALLBACK = '/xiyou-vps';
+let VPS_URL = new URLSearchParams(location.search).get('vps') || VPS_FALLBACK;
+const vpsReady = Promise.resolve();
 let vpsTimer = null, vpsGyroQ = null, vpsCamQ0 = null, vpsGyroQ0 = null;
 
 function capFrame(video, maxW = 960) {
