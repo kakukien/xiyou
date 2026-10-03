@@ -52,19 +52,13 @@ if (splatQ) {
   }
 }
 
-// 空底座占位：现场照片墙播种为可编辑 quad（可选中/移动/换图/删除）
-// photo_walls_seeded 标记保证只播种一次，用户删掉后不会再冒回来
+// 空底座不再自动播种“现场照片 A/B/C”占位物；场景对象只展示用户实际添加的内容。
+// 清理旧版本已经写入草稿的占位照片，避免它们从历史存档中继续出现在预览区。
 {
-  const base = store.scene.base || {}
-  const meta = store.scene.meta || (store.scene.meta = {})
-  if (!meta.photo_walls_seeded && !base.sog_url && !(base.chunks || []).length && !base.proxy) {
-    meta.photo_walls_seeded = true
-    ;[
-      { name: '现场照片A', p: [0, 2, -6], r: [0, 0, 0] },
-      { name: '现场照片B', p: [-4.2, 2, -4.2], r: [0, -45, 0] },
-      { name: '现场照片C', p: [4.2, 2, -4.2], r: [0, 45, 0] }
-    ].forEach(wall => store.addObject('quad', { name: wall.name, transform: { p: wall.p, r: wall.r, s: [4, 4, 1] } }))
-  }
+  const legacyPhotoNames = new Set(['现场照片A', '现场照片B', '现场照片C'])
+  ;(store.scene.objects || []).slice().forEach(object => {
+    if (legacyPhotoNames.has(object?.name)) store.removeObject(object.id)
+  })
 }
 
 viewport.init(document.getElementById('viewport'))

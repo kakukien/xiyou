@@ -770,6 +770,7 @@ export const viewport = {
     const objects = [...this.nodes.values()].filter(node => node.visible);
     const zoneObjects = this.zoneGroup && store.mode !== 'play' ? [this.zoneGroup] : [];
     const hits = raycaster.intersectObjects([...objects, ...zoneObjects], true);
+    let picked = false
 
     for (const hit of hits) {
       let current = hit.object;
@@ -785,10 +786,12 @@ export const viewport = {
       }
 
       if (zoneId && store.mode !== 'play') {
+        picked = true
         store.select(zoneId, { add: Boolean(ctrlKey) });
         break;
       }
       if (helper || !id) continue;
+      picked = true
 
       if (store.mode === 'play') {
         triggers.fire('tap', id);
@@ -797,6 +800,7 @@ export const viewport = {
       }
       break;
     }
+    if (!picked && store.mode !== 'play') store.select(null)
   },
 
   disposeBase() {

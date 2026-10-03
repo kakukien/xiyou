@@ -248,8 +248,6 @@ function renderAssets() {
   importButton.addEventListener('click', () => root?.querySelector('.cb-import input')?.click());
   toolbar.append(search, kind, importButton);
   panel.appendChild(toolbar);
-  panel.appendChild(renderSharedElementLibrary());
-
   // ---- 工作目录树：共享素材库（全员同步）+ 项目素材（仅本工程）----
   const personalId = store.ensureWorkspaceFolders?.() || ''
   if (assetFolder === null) assetFolder = `p:${personalId}`
@@ -403,13 +401,14 @@ function renderAssets() {
   rail.appendChild(railOps)
   body.appendChild(rail)
 
+  const sharedScope = assetFolder.startsWith('s:')
   const stripWrap = document.createElement('div')
   stripWrap.className = 'cb-strip-wrap'
+  if (sharedScope) stripWrap.appendChild(renderSharedElementLibrary())
 
   const strip = document.createElement('div');
   strip.className = 'asset-strip';
 
-  const sharedScope = assetFolder.startsWith('s:')
   const currentFolderId = assetFolder.slice(2)
   // fld_shared 是旧项目目录里的归档：显示并入共享素材库，不再出现在项目区
   const registryAssets = projects.sharedAssets?.() || []
