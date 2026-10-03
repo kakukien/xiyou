@@ -206,12 +206,64 @@ export function mount(root) {
     busy: false,
     notice: null,
     footerTab: 'logs',
+    footerHeight: loadFooterHeight(),
+    providerHealthRetry: 0,
+    providerHealthTimer: null,
     sourceObjectUrls: []
   }
 
   const api = { enter, exit, dispose }
   root._studio = api
   root.innerHTML = ''
+
+  function loadFooterHeight() {
+    try {
+      const value = Number(localStorage.getItem('xiyou.splatStudio.footerHeight'))
+      return Number.isFinite(value) ? Math.max(120, Math.min(480, Math.round(value))) : 166
+    } catch {
+      return 166
+    }
+  }
+
+  function saveFooterHeight() {
+    try { localStorage.setItem('xiyou.splatStudio.footerHeight', String(state.footerHeight)) } catch {}
+  }
+
+  function resizeFooter(event) {
+    const handle = event.currentTarget
+    const startY = Number(handle.dataset.resizeStartY)
+    const startHeight = Number(handle.dataset.resizeStartHeight)
+    if (!Number.isFinite(startY) || !Number.isFinite(startHeight)) return
+    const maxHeight = Math.max(220, Math.min(480, Math.floor(window.innerHeight * 0.68)))
+    state.footerHeight = Math.max(120, Math.min(maxHeight, Math.round(startHeight + startY - event.clientY)))
+    const footer = root.querySelector('.studio-footer')
+    if (footer) footer.style.flexBasis = `${state.footerHeight}px`
+  }
+
+  function stopFooterResize(event) {
+    const handle = event.currentTarget
+    if (handle.hasPointerCapture?.(event.pointerId)) handle.releasePointerCapture(event.pointerId)
+    handle.removeEventListener('pointermove', resizeFooter)
+    handle.removeEventListener('pointerup', stopFooterResize)
+    handle.removeEventListener('pointercancel', stopFooterResize)
+    handle.removeAttribute('data-resize-start-y')
+    handle.removeAttribute('data-resize-start-height')
+    document.body.classList.remove('studio-footer-resizing')
+    saveFooterHeight()
+  }
+
+  function startFooterResize(event) {
+    if (event.pointerType === 'mouse' && event.button !== 0) return
+    const handle = event.currentTarget
+    handle.dataset.resizeStartY = String(event.clientY)
+    handle.dataset.resizeStartHeight = String(state.footerHeight)
+    handle.setPointerCapture?.(event.pointerId)
+    handle.addEventListener('pointermove', resizeFooter)
+    handle.addEventListener('pointerup', stopFooterResize)
+    handle.addEventListener('pointercancel', stopFooterResize)
+    document.body.classList.add('studio-footer-resizing')
+    event.preventDefault()
+  }
 
   function enter() {
     render()
@@ -229,6 +281,8 @@ export function mount(root) {
 
   function dispose() {
     exit()
+    if (state.providerHealthTimer) window.clearTimeout(state.providerHealthTimer)
+    state.providerHealthTimer = null
     releaseSessionUrls()
   }
 
@@ -275,9 +329,22 @@ export function mount(root) {
     state.polling = null
   }
 
-  async function refreshProviders() {
+  async function refreshProviders({ retry = true } = {}) {
     const entries = await Promise.all(Object.entries(providers).map(async ([key, provider]) => [key, await provider.health()]))
     entries.forEach(([key, health]) => { state.providerHealth[key] = health })
+    const local = state.providerHealth.local
+    if (local?.ok) {
+      state.providerHealthRetry = 0
+      if (state.providerHealthTimer) window.clearTimeout(state.providerHealthTimer)
+      state.providerHealthTimer = null
+    } else if (retry && state.step !== 'edit' && state.providerHealthRetry < 8) {
+      state.providerHealthRetry += 1
+      if (state.providerHealthTimer) window.clearTimeout(state.providerHealthTimer)
+      state.providerHealthTimer = window.setTimeout(() => {
+        state.providerHealthTimer = null
+        refreshProviders({ retry: true })
+      }, 1200)
+    }
     render()
   }
 
@@ -359,6 +426,16 @@ export function mount(root) {
   async function createJob() {
     if (!state.source || !state.sources.length) return
     const provider = providers[state.provider]
+    const health = await provider.health()
+    state.providerHealth[state.provider] = health
+    if (!health.ok) {
+      state.notice = {
+        message: `${health.message || '重建 Provider 不可用'}。请先重启本地开发服务，或检查本地 Worker 是否运行在 127.0.0.1:8787。`,
+        level: 'danger'
+      }
+      render()
+      return
+    }
     state.busy = true
     state.job = makeClientJob({ source: state.source, sources: state.sources, inputType: state.inputType, quality: state.quality, provider: state.provider })
     state.job.stage = 'analyzing'
@@ -369,7 +446,21 @@ export function mount(root) {
     state.notice = null
     render()
     try {
-      const result = await provider.createJob({ file: state.source, files: state.sources, inputType: state.inputType, quality: state.quality, options: { plannerEnabled: true } })
+      const result = await provider.createJob({
+        file: state.source,
+        files: state.sources,
+        inputType: state.inputType,
+        quality: state.quality,
+        options: { plannerEnabled: true },
+        onProgress: (progress) => {
+          if (!state.job || !state.busy) return
+          state.job.message = `正在上传素材（${progress}%）`
+          state.job.progress = Math.min(8, Math.round(progress / 100 * 8))
+          state.job.logs = [...(state.job.logs || []).slice(-20), { at: new Date().toISOString(), stage: 'analyzing', message: state.job.message }]
+          renderStatusOnly()
+        }
+      })
+      if (!result || typeof result !== 'object') throw new Error('重建服务返回了无效任务响应')
       state.job = { ...state.job, ...result, id: result.id || result.jobId || state.job.id }
       state.job.message = result.message || '任务已创建，等待 GPU Worker'
       state.polling = window.setInterval(() => pollJob(), 900)
@@ -587,7 +678,7 @@ export function mount(root) {
   function footerMarkup() {
     const tabs = [['logs', '任务与日志'], ['outputs', '输出资产'], ['quality', '质量报告']]
     const content = state.footerTab === 'outputs' ? outputMarkup() : state.footerTab === 'quality' ? qualityMarkup() : `<div data-studio-progress>${progressMarkup()}</div><div class="studio-log-list">${(state.job?.logs || []).slice(-12).map(item => `<div><time>${esc(item.at ? new Date(item.at).toLocaleTimeString('zh-CN', { hour12: false }) : '')}</time><span>${esc(item.message || '')}</span></div>`).join('') || '<div class="studio-empty-copy">任务日志会显示在这里。</div>'}</div>${noticeMarkup() ? `<div data-studio-notice>${noticeMarkup()}</div>` : '<div data-studio-notice></div>'}`
-    return `<footer class="studio-footer"><div class="studio-footer-tabs">${tabs.map(([id, label]) => `<button class="${state.footerTab === id ? 'active' : ''}" data-footer-tab="${id}">${label}${id === 'outputs' && state.outputs.length ? ` <em>${state.outputs.length}</em>` : ''}</button>`).join('')}</div><div class="studio-footer-content">${content}</div></footer>`
+    return `<footer class="studio-footer" style="flex-basis:${state.footerHeight}px"><button class="studio-footer-resize" type="button" data-studio-footer-resize aria-label="调整任务日志高度" title="拖动调整任务日志高度"><i></i></button><div class="studio-footer-tabs">${tabs.map(([id, label]) => `<button class="${state.footerTab === id ? 'active' : ''}" data-footer-tab="${id}">${label}${id === 'outputs' && state.outputs.length ? ` <em>${state.outputs.length}</em>` : ''}</button>`).join('')}</div><div class="studio-footer-content">${content}</div></footer>`
   }
 
   function render() {
@@ -660,9 +751,10 @@ export function mount(root) {
     root.querySelector('[data-studio-cancel]')?.addEventListener('click', cancelJob)
     root.querySelector('[data-studio-resume]')?.addEventListener('click', resumeJob)
     root.querySelector('[data-studio-retry]')?.addEventListener('click', createJob)
-    root.querySelector('[data-provider]')?.addEventListener('change', event => { state.provider = event.target.value; refreshProviders() })
+    root.querySelector('[data-provider]')?.addEventListener('change', event => { state.provider = event.target.value; state.providerHealthRetry = 0; refreshProviders() })
     root.querySelectorAll('[data-quality]').forEach(button => button.addEventListener('click', () => { state.quality = button.dataset.quality; render() }))
     root.querySelectorAll('[data-footer-tab]').forEach(button => button.addEventListener('click', () => { state.footerTab = button.dataset.footerTab; render() }))
+    root.querySelector('[data-studio-footer-resize]')?.addEventListener('pointerdown', startFooterResize)
     root.querySelectorAll('[data-transform-group]').forEach(input => input.addEventListener('change', () => updateTransform(input.dataset.transformGroup, Number(input.dataset.transformIndex), input.value)))
     root.querySelector('[data-transform-scale]')?.addEventListener('change', event => updateScale(event.target.value))
     root.querySelectorAll('[data-crop-group]').forEach(input => input.addEventListener('change', () => updateCrop(input.dataset.cropGroup, Number(input.dataset.cropIndex), input.value)))
