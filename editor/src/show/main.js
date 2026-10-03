@@ -563,7 +563,7 @@ async function startVpsMode() {
   await vpsReady; // 先拿到 vps.txt 的最新隧道地址
   let inflight = 0, locFail = 0, pending = null;
   const angBetween = (a, b) => 2 * Math.acos(Math.min(1, Math.abs(a.dot(b)))) * 180 / Math.PI;
-  const MAX_INFLIGHT = 5; // 流水线并发：服务端单次 ~0.4-2.5s，5 并发才撑得起 0.2s 节奏
+  const MAX_INFLIGHT = 3; // 服务端吞吐 ~1.75 req/s 封顶，深队列只会让返回的解对应过期帧
   const locateOnce = async () => {
     try {
       const blob = await capFrame(freeVideo, 640); // 隧道链路慢(~20s/req)：帧越小上行越快
@@ -573,28 +573,31 @@ async function startVpsMode() {
         const m = new THREE.Matrix4().fromArray(j.cam2world).multiply(flip);
         _fq.setFromRotationMatrix(m); _fp.setFromMatrixPosition(m);
         // 置信闸门：低内点解只在与上帧一致时才采信；大跳变要两帧互相印证才认
-        const strong = j.inliers >= 25;
+        const strong = j.inliers >= 20;
         let accept = false, dropWhy = '';
         if (!vpsCamQ0) {
-          // 首定：单帧 >=15 直落；或连续两帧 >=10 且互相印证（弱但一致的解也认）
+          // 首定：单帧 >=15 直落；或连续两帧 >=12 且互相印证（pending 只由达帧解充当，弱解不锚基线）
           if (j.inliers >= 15) accept = true;
-          else if (j.inliers >= 10 && pending && _fp.distanceTo(pending.p) < 0.8 && angBetween(_fq, pending.q) < 15) accept = true;
-          else pending = { p: _fp.clone(), q: _fq.clone() };
+          else if (j.inliers >= 12 && pending && _fp.distanceTo(pending.p) < 0.6 && angBetween(_fq, pending.q) < 12) accept = true;
+          else if (j.inliers >= 10) pending = { p: _fp.clone(), q: _fq.clone() };
           if (!accept) dropWhy = `首定质量不足 内点${j.inliers}`;
         } else {
           const dp = _fp.distanceTo(vpsCamP0), da = angBetween(_fq, vpsCamQ0);
-          // 锁定后冻结：只信强解（一致微调 或 两帧印证的真移动）；弱解一律保持位姿
-          if (strong && dp < 3.5 && da < 50) accept = true;
-          else if (strong && pending && _fp.distanceTo(pending.p) < 1.2 && angBetween(_fq, pending.q) < 25) accept = true;
+          // 锁定后：中等解(>=10)紧一致→小权重收敛；强解(>=20)稍大范围也收；
+          // 大跳变要两帧>=20 印证；其余弱解一律保持位姿
+          if (j.inliers >= 10 && dp < 0.5 && da < 18) accept = 'weak';
+          else if (strong && dp < 2.0 && da < 35) accept = true;
+          else if (j.inliers >= 20 && pending && _fp.distanceTo(pending.p) < 0.8 && angBetween(_fq, pending.q) < 15) accept = true;
           else {
-            if (strong) pending = { p: _fp.clone(), q: _fq.clone() }; // 弱解连存疑资格都没有
-            dropWhy = strong ? `跳变待印证 内点${j.inliers}` : `弱解保持 内点${j.inliers}`;
+            if (j.inliers >= 20) pending = { p: _fp.clone(), q: _fq.clone() }; // 弱解连存疑资格都没有
+            dropWhy = j.inliers >= 20 ? `跳变待印证 内点${j.inliers}` : `弱解保持 内点${j.inliers}`;
           }
         }
         if (accept) {
           locFail = 0; pending = null;
-          // 置信加权融合：内点越多话语权越大（>=60 全权），弱解只轻微修正——钉住不漂
-          const w = Math.min(1, Math.max(0.15, j.inliers / 60));
+          // 置信加权融合：中等解权值封顶 0.25 慢慢纠；强解最多 0.5 防跳动
+          const w = accept === 'weak' ? Math.min(0.25, Math.max(0.08, j.inliers / 150))
+            : Math.min(0.5, Math.max(0.1, j.inliers / 120));
           if (!vpsCamQ0) {
             vpsCamQ0 = _fq.clone();
             vpsCamP0.copy(_fp);
@@ -635,7 +638,7 @@ async function startVpsMode() {
     if (inflight >= MAX_INFLIGHT) return;
     inflight++;
     locateOnce().finally(() => { inflight--; });
-  }, 200);
+  }, 400); // 400ms 节奏≈服务端吞吐上限(1.75 req/s)，再快只会让返回解对应过期帧
 
   rootEl.addEventListener('pointerup', e => {
     const x = (e.clientX / innerWidth) * 2 - 1, y = -(e.clientY / innerHeight) * 2 + 1;
