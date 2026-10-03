@@ -13,6 +13,14 @@ import { WebsocketProvider } from 'y-websocket'
 
 const REGISTRY_ROOM = 'xiyou-projects'
 
+// 内置共享素材：客户端常量，注册表连不上/被清空也始终可见
+// id/结构必须与 main.js 播种的 BUILTIN_SHARED 一致，避免连上后出现两份
+const BUILTIN_SHARED_FOLDER = { id: 'fld_shared', name: '共享素材', parent: '' }
+const BUILTIN_SHARED_ASSETS = [
+  { id: 'a_world', name: '虚境世界·体素.glb', url: 'assets/xiyou_world.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 1915952, mime: 'model/gltf-binary', builtin: true },
+  { id: 'a_belltower', name: '西安钟楼·体块.glb', url: 'assets/xiyou_belltower.glb', kind: 'model', type: 'glb', folder: 'fld_shared', bytes: 782288, mime: 'model/gltf-binary', builtin: true },
+]
+
 const listeners = new Map()
 let doc = null
 let provider = null
@@ -127,11 +135,14 @@ export const projects = {
 
   // ---- 共享素材库（目录树 + 素材元数据，全员同步）----
   sharedFolders() {
-    return parseJSON(sharedMap?.get('folders'), [])
+    const reg = parseJSON(sharedMap?.get('folders'), [])
+    return [BUILTIN_SHARED_FOLDER, ...reg.filter(f => f.id !== BUILTIN_SHARED_FOLDER.id)]
   },
 
   sharedAssets() {
-    return parseJSON(sharedMap?.get('assets'), [])
+    const reg = parseJSON(sharedMap?.get('assets'), [])
+    const dup = new Set(BUILTIN_SHARED_ASSETS.map(a => a.id))
+    return [...BUILTIN_SHARED_ASSETS, ...reg.filter(a => !a.builtin && !dup.has(a.id))]
   },
 
   setSharedFolders(folders) {
